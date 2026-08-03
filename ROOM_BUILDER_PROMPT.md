@@ -1,102 +1,106 @@
-# MASTER PROMPT & SCENE BUILDER SPECIFICATION: VR PCCC COMPUTER LAB
+# MASTER PROMPT: THIẾT KẾ PHÒNG LAB MÁY TÍNH THỰC TẾ & KỊCH BẢN DIỄN TIẾN TỪ TỪ (PROGRESSIVE SCENARIO)
 
-> **Mục đích:** Prompt chuẩn và Hướng dẫn Kiến trúc Không gian 3D chi tiết dùng để ra lệnh cho AI Agent (hoặc tự động dựng bằng C# Script / Unity MCP) nhằm đóng gói hoàn chỉnh phòng Lab máy tính khép kín 10m x 8m x 3.5m theo đúng kịch bản `game_scenario_script.md`.
+> **Mục đích:** Prompt chuẩn và Hướng dẫn Dựng Cảnh chi tiết dành cho AI Agent / Unity MCP để xây dựng một **Phòng Lab máy tính thực tế, sinh động (nhiều bàn ghế, máy tính, cửa, cửa sổ)** và cài đặt **Cơ chế Sự cố Bùng phát Từ từ (Progressive Emergency Event)** theo đúng kịch bản `game_scenario_script.md`.
 
 ---
 
-## 🎯 PROMPT MẪU DÀNH CHO AI AGENT / UNITY BUILDER
+## 🎯 PROMPT MẪU HOÀN CHỈNH DÀNH CHO AI AGENT / UNITY MCP
 
 ```text
-Hãy sử dụng Unity MCP (hoặc C# Editor Script) để xây dựng hoàn chỉnh một phòng Lab Máy tính / Server khép kín (Enclosed Computer Lab Room) trong Unity Scene dựa trên gói 3D Asset "POLYGON Office" và "Technical Laboratory Designer" với các yêu cầu không gian chi tiết sau:
+Hãy sử dụng Unity MCP (hoặc C# Editor Script) để xây dựng hoàn chỉnh một Phòng Lab Máy tính Trường Đại học sinh động, chân thực và cài đặt Kịch bản Diễn tiến Sự cố Từ từ (Progressive Incident Flow) trong Unity dựa trên các gói Asset "POLYGON Office" và "Technical Laboratory Designer":
 
-1. KÍCH THƯỚC PHÒNG & KHUNG KIẾN TRÚC (ROOM SHELL):
-   - Kích thước phòng: Rộng 10m (Trục X từ -5m đến +5m) x Dài 8m (Trục Z từ -4m đến +4m) x Cao 3.5m (Trục Y từ 0m đến 3.5m).
-   - Sàn nhà (Floor): Ghép các tấm sàn `SM_Bld_Floor_Tiles_01.prefab` hoặc `SM_Bld_Floor_Concrete_01.prefab` thành mặt sàn khép kín 10m x 8m tại Y = 0.
-   - 4 Vách tường (Enclosed Walls): 
-     * Tường Bắc (North Wall, Z = +4m): Tường sơn xám/trắng `SM_Bld_Wall_01`.
-     * Tường Nam (South Wall, Z = -4m): Tường có gắn Cửa thoát hiểm khẩn cấp `SM_Bld_Door_01` (ở vị trí X = 0) và Nút báo cháy `SM_Prop_FireAlarm_Switch_01` (X = +0.8m).
-     * Tường Đông (East Wall, X = +5m): Tường gắn Tủ cầu dao điện Aptomat `panel_for_server.prefab` (X = +4.8m, Y = 1.5m, Z = +1.0m).
-     * Tường Tây (West Wall, X = -5m): Tường có ô cửa sổ kính và giá treo bình chữa cháy bọt/nước decoy.
-   - Trần nhà (Ceiling): Lắp hệ thống trần thạch cao `SM_Bld_Ceiling_Panel_01` ở độ cao Y = 3.5m, xen kẽ 4 đèn LED âm trần `SM_Bld_Ceiling_Panel_Light_01` phát ánh sáng trắng (Intensity = 1.2).
+--------------------------------------------------------------------------------
+1. KIẾN TRÚC PHÒNG KHÉP KÍN THỰC TẾ (10m x 8m x 3.5m):
+--------------------------------------------------------------------------------
+- Tỷ lệ không gian: Trục X (Rộng 10m từ -5m đến +5m), Trục Z (Dài 8m từ -4m đến +4m), Trục Y (Cao 3.5m).
+- Sàn nhà (Floor): Lát gạch caro/bề mặt bê tông mượt `SM_Bld_Floor_Tiles_01.prefab` hoặc `SM_Bld_Floor_Panel_01.prefab` tại Y = 0.
+- Vách Tường Nam (South Wall, Z = -4m): 
+  * Gắn Cửa chính thoát hiểm gỗ/gỗ kính `SM_Bld_Door_01.prefab` tại trung tâm (X = 0, Y = 0).
+  * Gắn Nút bấm báo cháy khẩn cấp đỏ `SM_Prop_FireAlarm_Switch_01.prefab` bên phải cửa (X = +0.8m, Y = 1.4m).
+  * Treo giá đỡ Bình chữa cháy CO2 `SM_Prop_Fire_Extinguisher_01.prefab` bên trái cửa (X = -1.2m, Y = 1.2m).
+- Vách Tường Bắc (North Wall, Z = +4m):
+  * Gắn Bảng trắng giảng dạy lớn `SM_Prop_Whiteboard_01.prefab` ở giữa tường.
+  * Góc Đông-Bắc đặt Tủ Server chính `Server_full.prefab` (X = +3.5m, Z = +3.0m).
+- Vách Tường Đông (East Wall, X = +5m):
+  * Gắn Tủ điện Cầu dao Aptomat `panel_for_server.prefab` (X = +4.8m, Y = 1.5m, Z = +1.0m).
+- Vách Tường Tây (West Wall, X = -5m):
+  * Lắp 2 khung Cửa sổ kính lớn `SM_Bld_Window_01.prefab` lấy ánh sáng tự nhiên.
+  * Treo Bình chữa cháy Bọt/Nước decoy `SM_Prop_Fire_Extinguisher_01.prefab` (X = -4.8m, Y = 1.2m, Z = 0.0m).
+- Trần Nhà (Ceiling): Hệ thống trần thạch cao `SM_Bld_Ceiling_Panel_01.prefab` tại Y = 3.5m với 4 cụm đèn tuýp/đèn LED âm trần chiếu ánh sáng trắng sáng rõ.
 
-2. BỐ TRÍ NỘI THẤT HỌC TẬP (STUDENT WORKSTATIONS):
-   - Xếp 2 dãy bàn máy tính song song ở trung tâm phòng:
-     * Dãy 1 (Bên trái X = -1.8m, Z từ -1m đến +1.5m): Gồm 3 bộ bàn `SM_Prop_Desk_01`, ghế xoay `SM_Prop_Chair_01`, trên bàn đặt PC Monitor, bàn phím, chuột và ổ cắm điện.
-     * Dãy 2 (Bên phải X = +1.8m, Z từ -1m đến +1.5m): Gồm 3 bộ bàn ghế tương tự.
+--------------------------------------------------------------------------------
+2. BỐ TRÍ DÃY MÁY TÍNH HỌC SINH (STUDENT WORKSTATIONS):
+--------------------------------------------------------------------------------
+Xếp 2 Dãy bàn máy tính thực hành song song chạy dọc phòng:
+- Dãy 1 (Bên trái X = -2.0m, Z từ -1.5m đến +1.5m):
+  * Đặt 3 bàn máy tính gỗ/kim loại `SM_Prop_Desk_01.prefab`.
+  * Trên mỗi bàn trang bị: Màn hình PC `SM_Prop_Monitor_01.prefab`, Bàn phím, Chuột, Ổ cắm điện và Ghế xoay văn phòng `SM_Prop_Chair_01.prefab`.
+- Dãy 2 (Bên phải X = +2.0m, Z từ -1.5m đến +1.5m):
+  * Đặt 3 bàn ghế và bộ máy tính PC tương tự.
+- Bàn Giảng viên (X = -3.5m, Z = +3.0m):
+  * Đặt 1 bàn giáo viên có Laptop, micro và tài liệu giảng dạy.
 
-3. KHU VỰC SỰ CỐ & THIẾT BỊ AN TOÀN (HAZARD & SAFETY ZONES):
-   - Zone A (Góc Đông-Bắc X = +3.5m, Z = +3.0m): Đặt Tủ Server chính `Server_full.prefab` với hệ thống hạt lửa `Fire.prefab` gắn ở độ cao Y = 1.2m.
-   - Zone C1 (Góc Nam cạnh Cửa X = -1.2m, Y = 1.2m, Z = -3.8m): Treo Bình chữa cháy CO2 `SM_Prop_Fire_Extinguisher_01` có gắn component `XRGrabInteractable` và `FireExtinguisher (Type = CO2)`.
-   - Zone C2 (Vách Tây X = -4.8m, Y = 1.2m, Z = 0.0m): Treo Bình chữa cháy Nước/Bọt decoy.
-
-4. ÁNH SÁNG & KHÓI ĐỘC ÂM TRẦN (ATMOSPHERE & LIGHTING):
-   - Đặt 1 vùng khói độc volumetric `Interactive Smoke.prefab` ở trần nhà (Y = 3.2m).
-   - Đặt 1 đèn spotlight màu đỏ khẩn cấp `Emergency Red Light` ở giữa trần nhà (ban đầu tắt, bật lên khi lửa bùng phát).
+--------------------------------------------------------------------------------
+3. CƠ CHẾ DIỄN TIẾN TÌNH HUỐNG TỪ TỪ (PROGRESSIVE EVENT LOGIC):
+--------------------------------------------------------------------------------
+- PHASE 0 (Thực hành Bình thường - 0 đến 30 giây đầu):
+  * Tất cả đèn trần sáng bình thường (White Lighting).
+  * Hạt Lửa (`Fire.prefab`) và Khói (`Smoke.prefab`) ở trạng thái TẮT (`SetActive(false)`).
+  * Sinh viên tự do di chuyển làm quen không gian và thao tác với máy tính.
+- PHASE 1 (Bùng phát Sự cố Khẩn cấp - Khi kích hoạt Event):
+  * Phát âm thanh nổ tụ điện / xẹt điện (`Electrical Spark SFX`).
+  * Hạt Lửa trên Tủ Server bật sáng (`SetActive(true)`).
+  * Đèn trần bắt đầu nhấp nháy đỏ khẩn cấp (Emergency Red Lights flickering).
+  * Khói độc từ trần nhà tích tụ và hạ thấp dần theo thời gian.
 ```
 
 ---
 
-## 🛠️ CÁC BƯỚC THỰC HIỆN DỰNG PHÒNG TỰ ĐỘNG BẰNG UNITY MCP
+## 🛠️ SCRIPT KHỞI TẠO NỘI THẤT DÃY MÁY TÍNH VÀ CỬA TRONG UNITY (C# CODE)
 
-Dưới đây là mã lệnh C# Automation Script để tạo dựng toàn bộ Sàn, 4 Vách tường và Trần nhà kín trong Unity chỉ bằng 1 thao tác:
+Bạn có thể chạy đoạn C# script dưới đây để tự động sinh toàn bộ Dãy bàn máy tính, Cửa ra vào và Cửa sổ vào Scene Unity:
 
 ```csharp
-// C# Editor Script: GenerateEnclosedRoom.cs
+// C# Editor Script: PopulateLabInteriors.cs
 using UnityEngine;
 using UnityEditor;
 
-public class GenerateEnclosedRoom
+public class PopulateLabInteriors
 {
-    [MenuItem("VR PCCC/Generate Full Enclosed Room")]
-    public static void BuildRoom()
+    [MenuItem("VR PCCC/Populate Student Workstations & Doors")]
+    public static void Populate()
     {
-        GameObject roomParent = new GameObject("[ROOM_ENCLOSURE_SHELL]");
-        
-        // 1. Dựng Mặt Sàn (Floor 10m x 8m)
-        GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        floor.name = "Floor_Concrete";
-        floor.transform.parent = roomParent.transform;
-        floor.transform.position = new Vector3(0, -0.1f, 0);
-        floor.transform.localScale = new Vector3(10f, 0.2f, 8f);
-        
-        // 2. Dựng 4 Vách Tường (Walls 3.5m High)
-        // Tường Bắc (North)
-        GameObject wallNorth = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        wallNorth.name = "Wall_North";
-        wallNorth.transform.parent = roomParent.transform;
-        wallNorth.transform.position = new Vector3(0, 1.75f, 4.0f);
-        wallNorth.transform.localScale = new Vector3(10f, 3.5f, 0.2f);
+        GameObject interiorParent = new GameObject("[LAB_INTERIORS]");
 
-        // Tường Nam (South)
-        GameObject wallSouth = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        wallSouth.name = "Wall_South";
-        wallSouth.transform.parent = roomParent.transform;
-        wallSouth.transform.position = new Vector3(0, 1.75f, -4.0f);
-        wallSouth.transform.localScale = new Vector3(10f, 3.5f, 0.2f);
+        // 1. Tạo 2 Dãy Bàn ghế Máy tính
+        for (int i = 0; i < 3; i++)
+        {
+            float zPos = -1.5m + (i * 1.5f);
 
-        // Tường Đông (East)
-        GameObject wallEast = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        wallEast.name = "Wall_East";
-        wallEast.transform.parent = roomParent.transform;
-        wallEast.transform.position = new Vector3(5.0f, 1.75f, 0);
-        wallEast.transform.localScale = new Vector3(0.2f, 3.5f, 8f);
+            // Dãy 1 (Bên trái X = -2.0)
+            CreateWorkstation(interiorParent.transform, new Vector3(-2.0f, 0, zPos), "Desk_Left_" + i);
 
-        // Tường Tây (West)
-        GameObject wallWest = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        wallWest.name = "Wall_West";
-        wallWest.transform.parent = roomParent.transform;
-        wallWest.transform.position = new Vector3(-5.0f, 1.75f, 0);
-        wallWest.transform.localScale = new Vector3(0.2f, 3.5f, 8f);
+            // Dãy 2 (Bên phải X = +2.0)
+            CreateWorkstation(interiorParent.transform, new Vector3(2.0f, 0, zPos), "Desk_Right_" + i);
+        }
 
-        // 3. Dựng Trần Nhà (Ceiling)
-        GameObject ceiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        ceiling.name = "Ceiling_Drop";
-        ceiling.transform.parent = roomParent.transform;
-        ceiling.transform.position = new Vector3(0, 3.6f, 0);
-        ceiling.transform.localScale = new Vector3(10f, 0.2f, 8f);
+        Debug.Log("[VR PCCC] Đã khởi tạo xong 6 Bộ Bàn ghế Máy tính trong phòng Lab!");
+    }
 
-        Undo.RegisterCreatedObjectUndo(roomParent, "Build Enclosed Room");
-        Debug.Log("[VR PCCC] Phòng khép kín 10m x 8m x 3.5m đã được dựng thành công!");
+    private static void CreateWorkstation(Transform parent, Vector3 pos, string name)
+    {
+        GameObject desk = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        desk.name = name;
+        desk.transform.parent = parent;
+        desk.transform.position = pos + new Vector3(0, 0.4f, 0);
+        desk.transform.localScale = new Vector3(1.2f, 0.8f, 0.7f);
+
+        // Màn hình PC trên bàn
+        GameObject monitor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        monitor.name = "PC_Monitor";
+        monitor.transform.parent = desk.transform;
+        monitor.transform.localPosition = new Vector3(0, 0.6f, 0.1f);
+        monitor.transform.localScale = new Vector3(0.5f, 0.4f, 0.1f);
     }
 }
 ```
