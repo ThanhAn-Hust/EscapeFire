@@ -1202,6 +1202,119 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 266759907}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &276009816
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 276009818}
+  - component: {fileID: 276009817}
+  m_Layer: 0
+  m_Name: XR Device Simulator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &276009817
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 276009816}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b34befe5d0cbb642bb5d09104a47160, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Inputs.Simulation.XRDeviceSimulator
+  m_DeviceSimulatorActionAsset: {fileID: 0}
+  m_ControllerActionAsset: {fileID: 0}
+  m_KeyboardXTranslateAction: {fileID: 0}
+  m_KeyboardYTranslateAction: {fileID: 0}
+  m_KeyboardZTranslateAction: {fileID: 0}
+  m_ManipulateLeftAction: {fileID: 0}
+  m_ManipulateRightAction: {fileID: 0}
+  m_ToggleManipulateLeftAction: {fileID: 0}
+  m_ToggleManipulateRightAction: {fileID: 0}
+  m_ToggleManipulateBodyAction: {fileID: 0}
+  m_ManipulateHeadAction: {fileID: 0}
+  m_HandControllerModeAction: {fileID: 0}
+  m_CycleDevicesAction: {fileID: 0}
+  m_StopManipulationAction: {fileID: 0}
+  m_MouseDeltaAction: {fileID: 0}
+  m_MouseScrollAction: {fileID: 0}
+  m_RotateModeOverrideAction: {fileID: 0}
+  m_ToggleMouseTransformationModeAction: {fileID: 0}
+  m_NegateModeAction: {fileID: 0}
+  m_XConstraintAction: {fileID: 0}
+  m_YConstraintAction: {fileID: 0}
+  m_ZConstraintAction: {fileID: 0}
+  m_ResetAction: {fileID: 0}
+  m_ToggleCursorLockAction: {fileID: 0}
+  m_ToggleDevicePositionTargetAction: {fileID: 0}
+  m_TogglePrimary2DAxisTargetAction: {fileID: 0}
+  m_ToggleSecondary2DAxisTargetAction: {fileID: 0}
+  m_Axis2DAction: {fileID: 0}
+  m_RestingHandAxis2DAction: {fileID: 0}
+  m_GripAction: {fileID: 0}
+  m_TriggerAction: {fileID: 0}
+  m_PrimaryButtonAction: {fileID: 0}
+  m_SecondaryButtonAction: {fileID: 0}
+  m_MenuAction: {fileID: 0}
+  m_Primary2DAxisClickAction: {fileID: 0}
+  m_Secondary2DAxisClickAction: {fileID: 0}
+  m_Primary2DAxisTouchAction: {fileID: 0}
+  m_Secondary2DAxisTouchAction: {fileID: 0}
+  m_PrimaryTouchAction: {fileID: 0}
+  m_SecondaryTouchAction: {fileID: 0}
+  m_HandActionAsset: {fileID: 0}
+  m_CameraTransform: {fileID: 0}
+  m_KeyboardTranslateSpace: 0
+  m_MouseTranslateSpace: 2
+  m_KeyboardXTranslateSpeed: 0.2
+  m_KeyboardYTranslateSpeed: 0.2
+  m_KeyboardZTranslateSpeed: 0.2
+  m_KeyboardBodyTranslateMultiplier: 5
+  m_MouseXTranslateSensitivity: 0.0004
+  m_MouseYTranslateSensitivity: 0.0004
+  m_MouseScrollTranslateSensitivity: 0.0002
+  m_MouseXRotateSensitivity: 0.2
+  m_MouseYRotateSensitivity: 0.2
+  m_MouseScrollRotateSensitivity: 0.05
+  m_MouseYRotateInvert: 0
+  m_DesiredCursorLockMode: 1
+  m_DeviceSimulatorUI: {fileID: 0}
+  m_GripAmount: 1
+  m_TriggerAmount: 1
+  m_HMDIsTracked: 1
+  m_HMDTrackingState: 3
+  m_LeftControllerIsTracked: 1
+  m_LeftControllerTrackingState: 3
+  m_RightControllerIsTracked: 1
+  m_RightControllerTrackingState: 3
+  m_LeftHandIsTracked: 1
+  m_RightHandIsTracked: 1
+  m_RestingHandExpressionCapture: {fileID: 0}
+  m_SimulatedHandExpressions: []
+--- !u!4 &276009818
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 276009816}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &299639867
 GameObject:
   m_ObjectHideFlags: 0
@@ -1837,9 +1950,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 1717954561962503725, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 526669257}
-    - targetCorrespondingSourceObject: {fileID: 1717954561962503725, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 526669260}
   m_SourcePrefab: {fileID: 100100000, guid: f6336ac4ac8b4d34bc5072418cdc62a0, type: 3}
 --- !u!1 &526669250 stripped
 GameObject:
@@ -1889,26 +1999,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EscapeFire.Player.VRHeightDetector
   crouchThresholdHeight: 1.2
   headTransform: {fileID: 0}
---- !u!114 &526669260
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 526669250}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8949e7cccbf46764280bd541cd30cb59, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EscapeFire.Player.DesktopVREmulator
-  moveSpeed: 4
-  mouseSensitivity: 2
-  standingHeight: 1.6
-  crouchingHeight: 0.9
-  interactDistance: 3.5
-  headCameraTransform: {fileID: 0}
-  heightDetector: {fileID: 0}
-  currentHeldExtinguisher: {fileID: 0}
 --- !u!21 &563010788
 Material:
   serializedVersion: 8
@@ -1926,8 +2016,10 @@ Material:
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses:
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -2024,7 +2116,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.9, g: 0.4, b: 0.5, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.9, g: 0.39999998, b: 0.5, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
@@ -3007,8 +3099,10 @@ Material:
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses:
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -3105,7 +3199,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.2, g: 0.5, b: 0.8, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.19999996, g: 0.5, b: 0.8, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
@@ -9418,3 +9512,4 @@ SceneRoots:
   - {fileID: 1224782518}
   - {fileID: 781139618}
   - {fileID: 1107643501}
+  - {fileID: 276009818}
