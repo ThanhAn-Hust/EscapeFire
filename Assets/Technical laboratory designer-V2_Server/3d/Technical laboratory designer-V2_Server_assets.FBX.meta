@@ -1,0 +1,178 @@
+fileFormatVersion: 2
+guid: 877874577ddd29c498d92c8eea531629
+timeCreated: 1499339878
+licenseType: Store
+ModelImporter:
+  serializedVersion: 19
+  fileIDToRecycleName:
+    100000: Box-1
+    100002: Box-2
+    100004: Box-3
+    100006: Box089
+    100008: Computer
+    100010: container-1
+    100012: container-2
+    100014: Object194
+    100016: Object195
+    100018: Object196
+    100020: Object197
+    100022: Object198
+    100024: Object199
+    100026: panel_for_server
+    100028: Server_empty
+    100030: Server_full
+    100032: Server_Hardware-02
+    100034: Server_Hardware_01
+    100036: Shelves_Big
+    100038: Shelves_small
+    100040: //RootNode
+    100042: Ventilation
+    400000: Box-1
+    400002: Box-2
+    400004: Box-3
+    400006: Box089
+    400008: Computer
+    400010: container-1
+    400012: container-2
+    400014: Object194
+    400016: Object195
+    400018: Object196
+    400020: Object197
+    400022: Object198
+    400024: Object199
+    400026: panel_for_server
+    400028: Server_empty
+    400030: Server_full
+    400032: Server_Hardware-02
+    400034: Server_Hardware_01
+    400036: Shelves_Big
+    400038: Shelves_small
+    400040: //RootNode
+    400042: Ventilation
+    2300000: Box-1
+    2300002: Box-2
+    2300004: Box-3
+    2300006: Box089
+    2300008: Computer
+    2300010: container-1
+    2300012: container-2
+    2300014: Object194
+    2300016: Object195
+    2300018: Object196
+    2300020: Object197
+    2300022: Object198
+    2300024: Object199
+    2300026: panel_for_server
+    2300028: Server_empty
+    2300030: Server_full
+    2300032: Server_Hardware-02
+    2300034: Server_Hardware_01
+    2300036: Shelves_Big
+    2300038: Shelves_small
+    2300040: Ventilation
+    3300000: Box-1
+    3300002: Box-2
+    3300004: Box-3
+    3300006: Box089
+    3300008: Computer
+    3300010: container-1
+    3300012: container-2
+    3300014: Object194
+    3300016: Object195
+    3300018: Object196
+    3300020: Object197
+    3300022: Object198
+    3300024: Object199
+    3300026: panel_for_server
+    3300028: Server_empty
+    3300030: Server_full
+    3300032: Server_Hardware-02
+    3300034: Server_Hardware_01
+    3300036: Shelves_Big
+    3300038: Shelves_small
+    3300040: Ventilation
+    4300000: Box089
+    4300002: Ventilation
+    4300004: Server_Hardware-02
+    4300006: Box-2
+    4300008: Shelves_small
+    4300010: Server_Hardware_01
+    4300012: container-1
+    4300014: container-2
+    4300016: Computer
+    4300018: Box-1
+    4300020: Box-3
+    4300022: Shelves_Big
+    4300024: panel_for_server
+    4300026: Server_empty
+    4300028: Object194
+    4300030: Object195
+    4300032: Object196
+    4300034: Object197
+    4300036: Object198
+    4300038: Object199
+    4300040: Server_full
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importBlendShapes: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
