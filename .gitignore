@@ -28,6 +28,8 @@
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
 
+# Gemini/Antigravity
+.gemini/
 # Recordings can get excessive in size
 /[Rr]ecordings/
 
