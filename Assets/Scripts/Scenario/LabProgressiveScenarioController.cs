@@ -19,7 +19,7 @@ namespace EscapeFire.Scenario
 
     /// <summary>
     /// Master Controller driving the full VR PCCC game loop across all phases.
-    /// Handles Phase 0 -> Phase 5 transitions, AI Mentor warnings, and Win/Loss rules.
+    /// Handles Phase 0 -> Phase 5 transitions, AI Mentor warnings, auto-wiring, and Win/Loss rules.
     /// </summary>
     public class LabProgressiveScenarioController : MonoBehaviour
     {
@@ -29,7 +29,7 @@ namespace EscapeFire.Scenario
         [SerializeField] private float peacefulDurationSeconds = 15f;
         [SerializeField] private float warningDurationSeconds = 10f;
 
-        [Header("Scene Object References")]
+        [Header("Scene Object References (Auto-discovered if null)")]
         [SerializeField] private FireHazard serverFire;
         [SerializeField] private CircuitBreakerSwitch circuitBreaker;
         [SerializeField] private GameObject redEmergencyLight;
@@ -53,13 +53,22 @@ namespace EscapeFire.Scenario
 
         private void Start()
         {
+            // Auto-discover references if not manually set in Inspector
+            if (serverFire == null) serverFire = FindObjectOfType<FireHazard>();
+            if (circuitBreaker == null) circuitBreaker = FindObjectOfType<CircuitBreakerSwitch>();
+            if (oxygenSystem == null) oxygenSystem = FindObjectOfType<OxygenSystem>();
+            if (healthSystem == null) healthSystem = FindObjectOfType<HealthSystem>();
+
+            // Auto-wire event listeners
             if (circuitBreaker != null)
             {
                 circuitBreaker.OnPowerStateChanged += HandlePowerStateChanged;
+                Debug.Log("[ProgressiveScenario] Connected listener to CircuitBreakerSwitch (Aptomat)");
             }
             if (serverFire != null)
             {
                 serverFire.OnFireExtinguished += HandleFireExtinguished;
+                Debug.Log("[ProgressiveScenario] Connected listener to FireHazard");
             }
             if (oxygenSystem != null)
             {
@@ -151,6 +160,7 @@ namespace EscapeFire.Scenario
             if (!isPowerOn && !_hasPowerBeenCut)
             {
                 _hasPowerBeenCut = true;
+                Debug.Log("[ProgressiveScenario] Aptomat Power Cut Off Detected!");
                 if (ScoringManager.Instance != null)
                 {
                     ScoringManager.Instance.AddScore(20, "Ngắt Aptomat nguồn điện tổng an toàn");
