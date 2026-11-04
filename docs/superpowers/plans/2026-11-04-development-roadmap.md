@@ -92,6 +92,7 @@
 - Export JSON + POST `/api/v1/sessions/{id}/complete` (LMS daotao.ai) với hàng đợi offline.
 
 ### M6 — Tối ưu Quest 2, build & đánh giá (≈ 1.5 tuần)
+**Trạng thái (2026-11-04):** 🟡 Code xong: `LabSceneDresser` (thay bàn/màn hình/NPC capsule bằng asset PolygonOffice thật, đặt sát sàn, bình chữa cháy áp tường, lớp khói, wrist HUD, sửa vai Hoa + cứu được), `LabSceneAudit` (missing script, vật liệu hồng, placeholder, Rigidbody rơi, ngoài phòng, NPC), `QuestPerformanceSettings` (72 Hz + foveation), `FrameTimeMonitor`, `QuestBuildSetup` (IL2CPP/ARM64/Vulkan/ASTC/URP MSAA4x + build APK). **Còn lại:** chạy `EscapeFire/Setup All` trong Unity, xem audit, chơi thử qua Link, profiling trên kính, pilot người dùng.
 - Profiling trên thiết bị: frame ≤ 13.8 ms, CPU logic ≤ 2 ms; LOD, occlusion, bake light, giảm overdraw khói.
 - Build APK, cấu hình OpenXR Meta Quest feature.
 - Kịch bản thử nghiệm người dùng (pilot 5–10 sinh viên), so sánh Guided vs Exam vs Adaptive.

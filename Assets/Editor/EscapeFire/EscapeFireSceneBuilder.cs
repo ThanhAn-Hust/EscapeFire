@@ -236,12 +236,13 @@ namespace EscapeFire.EditorTools
             Debug.Log("[EscapeFire] M4 voice coach:\n- " + string.Join("\n- ", report));
         }
 
-        [MenuItem("EscapeFire/Setup All (M1 + M2 + M4)")]
+        [MenuItem("EscapeFire/Setup All (Menu + AAR + Lab + AI + Voice + Real Assets)")]
         public static void SetupAll()
         {
             BuildEverything();
             AddAdaptiveDirector();
             AddVoiceCoach();
+            LabSceneDresser.DressLab(); // real assets, grounding, smoke, HUD + runs the scene audit
             EditorSceneManager.OpenScene(MenuPath);
         }
 

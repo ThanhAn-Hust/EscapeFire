@@ -7,7 +7,9 @@
         "Unity.XR.Interaction.Toolkit",
         "Unity.XR.CoreUtils",
         "Unity.XR.Management",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.XR.MetaOpenXR",
+        "Unity.XR.OpenXR"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

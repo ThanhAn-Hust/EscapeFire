@@ -73,6 +73,8 @@ namespace EscapeFire.Analytics
                 AverageCognitiveFriction = CognitiveFrictionTracker.Instance != null ? CognitiveFrictionTracker.Instance.AverageCF : 0f,
                 StressResilienceIndex = CognitiveFrictionTracker.Instance != null ? 1f - CognitiveFrictionTracker.Instance.AverageCF : 1f,
                 SafetyMistakes = CognitiveFrictionTracker.Instance != null ? CognitiveFrictionTracker.Instance.Mistakes : 0,
+                AverageFrameMs = FrameTimeMonitor.Instance != null ? FrameTimeMonitor.Instance.AverageMs : 0f,
+                FramesOverBudgetPercent = FrameTimeMonitor.Instance != null ? FrameTimeMonitor.Instance.OverBudgetPercent : 0f,
                 AdaptiveEscalations = Scenario.MicroAIGovernor.Instance != null ? Scenario.MicroAIGovernor.Instance.EscalationCount : 0,
                 TimeElapsedSeconds = GetElapsedSeconds(),
                 ComplianceLogs = logs
