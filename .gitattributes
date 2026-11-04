@@ -150,3 +150,6 @@ Packages/packages-lock.json linguist-generated
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
 Assets/Overtone/Resources/en-us-libritts-high.bytes filter=lfs diff=lfs merge=lfs -text
+
+# Shell scripts must keep LF for bash
+*.sh text eol=lf
