@@ -78,6 +78,7 @@
 **Done khi:** latency LAN ≤ 50 ms, directive sai schema bị loại 100% trong test, rút dây mạng giữa phiên game vẫn chạy.
 
 ### M4 — Giọng nói Socratic (≈ 1 tuần)
+**Trạng thái (2026-11-04):** 🟡 Code xong: `SocraticRules` (4 tình huống + FM-200 có sẵn, cooldown 15s), `DeterministicVoiceTriggerManager`, `MentorVoice` (clip thu sẵn → Overtone TTS → chỉ chữ), `VoiceCommandParser` (phân biệt cháy/chạy/chảy), `VoiceCommandRouter` (push-to-talk nút X tay trái, phím V trong Editor), adapter `OvertoneSpeechOutput` + `GoogleCloudSpeechInput` (vi-VN). Menu `EscapeFire/M4/...` và `EscapeFire/Setup All`. **Còn lại:** tải giọng TTS tiếng Việt cho Overtone hoặc thu âm 5 câu; API key Google STT.
 - `DeterministicVoiceTriggerManager`: 5 tình huống trong spec mục 4.1, phát qua Overtone offline TTS (0 ms logic).
 - Walkie-talkie: STT (Frostweep Google Cloud — cần API key, chỉ chạy khi có mạng) → lệnh báo động bằng giọng nói cho anomaly `TRIGGER_ALARM_CABLE_CUT`.
 

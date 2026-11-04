@@ -20,6 +20,7 @@ namespace EscapeFire.Interactions
         [SerializeField] private AudioClip hotWarningSound;
 
         public bool HasCheckedHeat { get; private set; } = false;
+        public bool IsDoorHot => isDoorHot;
 
         public void CheckDoorHeatWithHand()
         {

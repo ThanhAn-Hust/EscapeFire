@@ -96,6 +96,13 @@ namespace EscapeFire.Core
         }
     }
 
+    public readonly struct VoiceCommandEvent
+    {
+        public readonly VoiceCommand Command;
+        public readonly string Transcript;
+        public VoiceCommandEvent(VoiceCommand command, string transcript) { Command = command; Transcript = transcript; }
+    }
+
     public enum Fm200Stage { Started, Tick, Discharged }
 
     public readonly struct Fm200CountdownEvent

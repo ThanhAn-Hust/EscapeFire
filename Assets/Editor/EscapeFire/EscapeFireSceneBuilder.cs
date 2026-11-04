@@ -196,6 +196,37 @@ namespace EscapeFire.EditorTools
             report.Add($"Created {name} at {position}.");
         }
 
+        [MenuItem("EscapeFire/M4/Add Socratic Voice Coach To Lab")]
+        public static void AddVoiceCoach()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            var scene = EditorSceneManager.OpenScene(LabPath, OpenSceneMode.Single);
+            var report = new List<string>();
+
+            var voice = GameObject.Find("[AI_MENTOR_VOICE]") ?? new GameObject("[AI_MENTOR_VOICE]");
+            if (voice.GetComponent<AudioSource>() == null) voice.AddComponent<AudioSource>();
+            AddIfMissing<MentorVoice>(voice, report);
+            AddIfMissing<DeterministicVoiceTriggerManager>(voice, report);
+            AddIfMissing<VoiceCommandRouter>(voice, report);
+            report.Add("Optional: add Overtone TTSPlayer + OvertoneSpeechOutput (Vietnamese voice) and the Frostweep " +
+                       "GCSpeechRecognition prefab + GoogleCloudSpeechInput (API key) to [AI_MENTOR_VOICE].");
+            report.Add("Optional: assign pre-recorded clips for the 5 Socratic lines in MentorVoice.recordedLines.");
+            report.Add("Test without STT: in Play mode release key V (or left X button) → fallback transcript 'Cháy! Có cháy!'.");
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[EscapeFire] M4 voice coach:\n- " + string.Join("\n- ", report));
+        }
+
+        [MenuItem("EscapeFire/Setup All (M1 + M2 + M4)")]
+        public static void SetupAll()
+        {
+            BuildEverything();
+            AddAdaptiveDirector();
+            AddVoiceCoach();
+            EditorSceneManager.OpenScene(MenuPath);
+        }
+
         [MenuItem("EscapeFire/M1/Apply Build Settings")]
         public static void ApplyBuildSettings()
         {
