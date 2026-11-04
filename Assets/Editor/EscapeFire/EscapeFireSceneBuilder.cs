@@ -10,7 +10,9 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.UI;
+using EscapeFire.Analytics;
 using EscapeFire.Core;
+using EscapeFire.Hazards;
 using EscapeFire.Interactions;
 using EscapeFire.Scenario;
 using EscapeFire.UI;
@@ -143,6 +145,53 @@ namespace EscapeFire.EditorTools
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log("[EscapeFire] Lab wiring:\n- " + string.Join("\n- ", report));
+        }
+
+        [MenuItem("EscapeFire/M2/Add Adaptive AI Director To Lab")]
+        public static void AddAdaptiveDirector()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            var scene = EditorSceneManager.OpenScene(LabPath, OpenSceneMode.Single);
+            var report = new List<string>();
+
+            var director = GameObject.Find("[AI_DIRECTOR_SYSTEM]") ?? new GameObject("[AI_DIRECTOR_SYSTEM]");
+            AddIfMissing<PerformanceBudgetGovernor>(director, report);
+            AddIfMissing<CognitiveFrictionTracker>(director, report);
+            AddIfMissing<FM200System>(director, report);
+            AddIfMissing<MicroAIGovernor>(director, report);
+
+            if (Object.FindFirstObjectByType<SecondaryFireSlot>(FindObjectsInactive.Include) == null)
+            {
+                var controller = Object.FindFirstObjectByType<LabProgressiveScenarioController>(FindObjectsInactive.Include);
+                Vector3 origin = controller != null && controller.ServerFire != null
+                    ? controller.ServerFire.transform.position
+                    : Vector3.zero;
+                CreateSlot("SecondaryFireSlot_ChemicalTray", origin + new Vector3(2.5f, 0f, 0f), "khay hóa chất tẩy mạch", report);
+                CreateSlot("SecondaryFireSlot_CableDesk", origin + new Vector3(-2.5f, 0f, 1.5f), "bàn kỹ thuật đầy dây cáp", report);
+                report.Add("CHECK: move the two SecondaryFireSlot objects onto real desks/trays (orange gizmos); never next to the exit door.");
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[EscapeFire] M2 director:\n- " + string.Join("\n- ", report));
+        }
+
+        private static void AddIfMissing<T>(GameObject go, List<string> report) where T : Component
+        {
+            if (Object.FindFirstObjectByType<T>(FindObjectsInactive.Include) != null) return;
+            go.AddComponent<T>();
+            report.Add($"Added {typeof(T).Name} to {go.name}.");
+        }
+
+        private static void CreateSlot(string name, Vector3 position, string description, List<string> report)
+        {
+            var go = new GameObject(name);
+            go.transform.position = position;
+            var slot = go.AddComponent<SecondaryFireSlot>();
+            var so = new SerializedObject(slot);
+            so.FindProperty("description").stringValue = description;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            report.Add($"Created {name} at {position}.");
         }
 
         [MenuItem("EscapeFire/M1/Apply Build Settings")]

@@ -55,6 +55,7 @@
 **Done khi:** chơi từ menu → lab → AAR (bảng điểm tĩnh) không lỗi, giữ ≥ 72 FPS trên Quest 2 với scene hiện tại.
 
 ### M2 — Adaptive cục bộ trên kính (≈ 1.5 tuần)
+**Trạng thái (2026-11-04):** 🟡 Code xong: `PerformanceBudgetGovernor` (≤4 lửa/≤5 khói, `FireHazard` tự xin phép), `CognitiveFrictionTracker` (cửa sổ 2s, hysteresis 0.75/0.65 và 0.25/0.35), `FM200System` (tự kích hoạt sau 90s cháy, đếm 30s), kẹt chốt CO₂, đứt cáp báo cháy, `SecondaryFireSlot`, `MicroAIGovernor` + Tier-2 `DirectiveValidator` (đã sửa 6 lỗi của plan 10-08). Menu `EscapeFire/M2/Add Adaptive AI Director To Lab`. **Còn lại:** chạy trong Unity, đặt vị trí slot cháy phụ, tinh chỉnh ngưỡng CF bằng dữ liệu thật.
 **Mục tiêu:** thực thi plan 2026-10-08 (Task 1–4) **sau khi sửa 6 lỗi ở mục 0**.
 - `PerformanceBudgetGovernor` (≤ 4 lửa, ≤ 5 khói) — mọi spawn bắt buộc đi qua.
 - `CognitiveFrictionTracker` (cửa sổ 2s, hysteresis).
