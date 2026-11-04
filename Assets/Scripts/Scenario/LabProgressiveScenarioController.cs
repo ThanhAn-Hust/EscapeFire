@@ -36,6 +36,7 @@ namespace EscapeFire.Scenario
         [SerializeField] private AudioSource alarmAudioSource;
 
         public ScenarioPhase CurrentPhase { get; private set; } = ScenarioPhase.Phase0_PeacefulPractice;
+        public FireHazard ServerFire => serverFire;
         public event Action<ScenarioPhase> OnPhaseChanged;
         public event Action<string> OnAIMentorMessage;
 

@@ -70,6 +70,10 @@ namespace EscapeFire.Analytics
                 SessionId = GameSession.SessionId,
                 Mode = GameSession.Mode.ToString(),
                 FinalScore = TotalScore,
+                AverageCognitiveFriction = CognitiveFrictionTracker.Instance != null ? CognitiveFrictionTracker.Instance.AverageCF : 0f,
+                StressResilienceIndex = CognitiveFrictionTracker.Instance != null ? 1f - CognitiveFrictionTracker.Instance.AverageCF : 1f,
+                SafetyMistakes = CognitiveFrictionTracker.Instance != null ? CognitiveFrictionTracker.Instance.Mistakes : 0,
+                AdaptiveEscalations = Scenario.MicroAIGovernor.Instance != null ? Scenario.MicroAIGovernor.Instance.EscalationCount : 0,
                 TimeElapsedSeconds = GetElapsedSeconds(),
                 ComplianceLogs = logs
             };

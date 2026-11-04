@@ -30,13 +30,30 @@ namespace EscapeFire.Interactions
         public float ExtinguishPowerPerSecond => extinguishPowerPerSecond;
         public bool IsPinPulled { get; set; } = false;
         public bool IsSpraying { get; private set; } = false;
+        public bool IsPinJammed => _pullsRemaining > 1;
+
+        private int _pullsRemaining = 1;
 
         public event Action OnSafetyPinPulled;
         public event Action OnShockHazardTriggered;
 
+        /// <summary>Anomaly: the safety pin sticks and needs <paramref name="requiredPulls"/> firm pulls.</summary>
+        public void JamSafetyPin(int requiredPulls = 2)
+        {
+            if (IsPinPulled) return;
+            _pullsRemaining = Mathf.Max(1, requiredPulls);
+        }
+
         public void PullSafetyPin()
         {
             if (IsPinPulled) return;
+            if (_pullsRemaining > 1)
+            {
+                _pullsRemaining--;
+                EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent(
+                    "Chốt an toàn bị kẹt! Giữ chắc thân bình, xoay nhẹ chốt và giật mạnh thêm lần nữa."));
+                return;
+            }
 
             IsPinPulled = true;
             if (safetyPinObject != null)

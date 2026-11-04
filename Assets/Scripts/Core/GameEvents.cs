@@ -1,3 +1,4 @@
+using EscapeFire.Analytics;
 using EscapeFire.Interactions;
 using EscapeFire.NPC;
 using EscapeFire.Scenario;
@@ -75,5 +76,32 @@ namespace EscapeFire.Core
     {
         public readonly bool WasHot;
         public DoorHeatCheckedEvent(bool wasHot) { WasHot = wasHot; }
+    }
+
+    public readonly struct CognitiveStateChangedEvent
+    {
+        public readonly CognitiveState State;
+        public readonly float CognitiveFriction;
+        public CognitiveStateChangedEvent(CognitiveState state, float cf) { State = state; CognitiveFriction = cf; }
+    }
+
+    public readonly struct DirectiveResolvedEvent
+    {
+        public readonly Directive Directive;
+        public readonly DirectiveResult Result;
+        public readonly string Source;
+        public DirectiveResolvedEvent(Directive directive, DirectiveResult result, string source)
+        {
+            Directive = directive; Result = result; Source = source;
+        }
+    }
+
+    public enum Fm200Stage { Started, Tick, Discharged }
+
+    public readonly struct Fm200CountdownEvent
+    {
+        public readonly Fm200Stage Stage;
+        public readonly float RemainingSeconds;
+        public Fm200CountdownEvent(Fm200Stage stage, float remaining) { Stage = stage; RemainingSeconds = remaining; }
     }
 }

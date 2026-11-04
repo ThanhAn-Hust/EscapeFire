@@ -20,6 +20,8 @@ namespace EscapeFire.Hazards
         public float InitialIntensity { get => initialIntensity; set => initialIntensity = value; }
         public float FireIntensity { get; private set; }
         public bool IsExtinguished => FireIntensity <= 0f;
+        /// <summary>True when the PerformanceBudgetGovernor refused this emitter (fire stays dark, no events).</summary>
+        public bool IsSuppressed { get; private set; }
 
         public event Action OnFireExtinguished;
 
@@ -28,8 +30,32 @@ namespace EscapeFire.Hazards
             ResetFire();
         }
 
+        private void OnEnable()
+        {
+            var governor = PerformanceBudgetGovernor.Instance;
+            IsSuppressed = governor != null && !governor.TryRegisterFire(this);
+            if (IsSuppressed) GoDark();
+        }
+
+        private void OnDisable()
+        {
+            if (PerformanceBudgetGovernor.Instance != null) PerformanceBudgetGovernor.Instance.UnregisterFire(this);
+        }
+
+        private void GoDark()
+        {
+            FireIntensity = 0f;
+            if (fireParticles != null) fireParticles.Stop();
+            if (fireAudioSource != null) fireAudioSource.Stop();
+        }
+
         public void ResetFire()
         {
+            if (IsSuppressed)
+            {
+                GoDark();
+                return;
+            }
             FireIntensity = initialIntensity;
             if (fireParticles != null && !fireParticles.isPlaying)
             {
@@ -62,6 +88,7 @@ namespace EscapeFire.Hazards
             {
                 if (fireParticles != null) fireParticles.Stop();
                 if (fireAudioSource != null) fireAudioSource.Stop();
+                if (PerformanceBudgetGovernor.Instance != null) PerformanceBudgetGovernor.Instance.UnregisterFire(this);
                 OnFireExtinguished?.Invoke();
                 EventBus<FireExtinguishedEvent>.Publish(new FireExtinguishedEvent(GetInstanceID()));
             }
