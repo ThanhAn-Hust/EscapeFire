@@ -18,6 +18,8 @@ namespace EscapeFire.Interactions
     {
         [SerializeField] private CircuitBreakerSwitch circuitBreaker;
         [SerializeField] private bool autoPullPinOnFirstTrigger = false;
+        [Tooltip("Hangs on its wall bracket (kinematic) until first grabbed; physics only after the learner lets go.")]
+        [SerializeField] private bool mountedOnWall = true;
 
         [Header("Haptics")]
         [SerializeField] private float sprayHapticAmplitude = 0.25f;
@@ -27,6 +29,7 @@ namespace EscapeFire.Interactions
         private FireExtinguisher _extinguisher;
         private XRGrabInteractable _grab;
         private XRBaseInputInteractor _holder;
+        private Rigidbody _body;
 
         public bool IsHeld => _grab != null && _grab.isSelected;
         public FireExtinguisher Extinguisher => _extinguisher;
@@ -35,6 +38,12 @@ namespace EscapeFire.Interactions
         {
             _extinguisher = GetComponent<FireExtinguisher>();
             _grab = GetComponent<XRGrabInteractable>();
+            _body = GetComponent<Rigidbody>();
+            if (_body != null && mountedOnWall)
+            {
+                _body.isKinematic = true; // stay on the bracket instead of dropping to the floor at Play
+                _body.interpolation = RigidbodyInterpolation.Interpolate;
+            }
             if (circuitBreaker == null) circuitBreaker = FindFirstObjectByType<CircuitBreakerSwitch>();
         }
 
@@ -70,6 +79,12 @@ namespace EscapeFire.Interactions
         {
             _extinguisher.StopSpray();
             _holder = null;
+            // XRI restores the pre-grab kinematic state on release; once taken off the wall it obeys gravity.
+            if (_body != null && mountedOnWall)
+            {
+                _body.isKinematic = false;
+                _body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            }
         }
 
         private void OnTriggerPressed(ActivateEventArgs args)
