@@ -5,7 +5,11 @@
         "EscapeFire.Runtime",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
-        "Unity.XR.Interaction.Toolkit"
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.XR.Management",
+        "Unity.XR.Management.Editor",
+        "Unity.XR.OpenXR",
+        "Unity.XR.OpenXR.Editor"
     ],
     "includePlatforms": [
         "Editor"
