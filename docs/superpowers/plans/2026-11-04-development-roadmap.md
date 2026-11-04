@@ -43,6 +43,7 @@
 **Done khi:** compile sạch, ≥ 10 EditMode test xanh (EventBus, Scoring, Oxygen, Height), scene cũ vẫn chạy.
 
 ### M1 — Vòng chơi cốt lõi chơi được end-to-end (≈ 2 tuần)
+**Trạng thái (2026-11-04):** 🟡 Code xong trên `feature/m0-foundation`: `SceneFlowManager`, `SessionResult`/`GradeRules`, `MainMenuController` (H₀ + chế độ), `AARController`, `ExtinguisherXRBinding` (grip/trigger + haptic), `EvacuationExitZone`, điện giật → thua, `GuidedModeOnly`, menu Editor `EscapeFire/M1/Build Everything`. **Còn lại:** chạy menu builder trong Unity, chơi thử, chỉnh vị trí UI/exit zone; NPC timeline + mũi tên sàn Guided; đo FPS trên Quest 2.
 **Mục tiêu:** một lượt diễn tập hoàn chỉnh trong headset/XR Device Simulator.
 - Tạo 3 scene theo `SCENE_FLOW_AND_SCREENS.md`; `SceneFlowManager` load async + fade.
 - `00_MainMenu`: hiệu chuẩn chiều cao H₀, chọn Guided/Exam.
