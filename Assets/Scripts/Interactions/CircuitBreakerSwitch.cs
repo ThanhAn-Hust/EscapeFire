@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EscapeFire.Core;
 
 namespace EscapeFire.Interactions
 {
@@ -39,6 +40,7 @@ namespace EscapeFire.Interactions
             }
 
             OnPowerStateChanged?.Invoke(IsPowerOn);
+            EventBus<PowerStateChangedEvent>.Publish(new PowerStateChangedEvent(IsPowerOn));
         }
 
         public void TogglePower()

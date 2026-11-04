@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EscapeFire.Core;
 
 namespace EscapeFire.Interactions
 {
@@ -43,6 +44,7 @@ namespace EscapeFire.Interactions
                 safetyPinObject.SetActive(false);
             }
             OnSafetyPinPulled?.Invoke();
+            EventBus<ExtinguisherPinPulledEvent>.Publish(new ExtinguisherPinPulledEvent(type));
         }
 
         public bool TrySpray(bool isElectricalPowerLive = false)
@@ -58,6 +60,7 @@ namespace EscapeFire.Interactions
             {
                 Debug.LogError("[FireExtinguisher] CRITICAL HAZARD: Water/Foam sprayed on LIVE electrical fire!");
                 OnShockHazardTriggered?.Invoke();
+                EventBus<ShockHazardEvent>.Publish(new ShockHazardEvent(type));
                 return false;
             }
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
+using EscapeFire.Core;
 
 namespace EscapeFire.Analytics
 {
@@ -11,8 +12,8 @@ namespace EscapeFire.Analytics
     {
         public static ScoringManager Instance { get; private set; }
 
-        public int TotalScore { get; private set; } = 0;
-        private readonly List<string> _actionLogs = new List<string>();
+        private readonly ScoreLedger _ledger = new ScoreLedger();
+        public int TotalScore => _ledger.Total;
         private float _sessionStartTime;
 
         private void Awake()
@@ -32,18 +33,16 @@ namespace EscapeFire.Analytics
 
         public void AddScore(int points, string reason)
         {
-            TotalScore += points;
-            string log = $"[+{points} pts] {reason} (Time: {GetElapsedSeconds():F1}s)";
-            _actionLogs.Add(log);
-            Debug.Log($"[Scoring] {log}");
+            var entry = _ledger.Add(points, reason, GetElapsedSeconds());
+            Debug.Log($"[Scoring] {ScoreLedger.Format(entry)}");
+            EventBus<ScoreChangedEvent>.Publish(new ScoreChangedEvent(entry.Delta, _ledger.Total, entry.Reason));
         }
 
         public void DeductScore(int points, string reason)
         {
-            TotalScore -= points;
-            string log = $"[-{points} pts] {reason} (Time: {GetElapsedSeconds():F1}s)";
-            _actionLogs.Add(log);
-            Debug.LogWarning($"[Scoring] {log}");
+            var entry = _ledger.Deduct(points, reason, GetElapsedSeconds());
+            Debug.LogWarning($"[Scoring] {ScoreLedger.Format(entry)}");
+            EventBus<ScoreChangedEvent>.Publish(new ScoreChangedEvent(entry.Delta, _ledger.Total, entry.Reason));
         }
 
         public float GetElapsedSeconds()
@@ -51,14 +50,22 @@ namespace EscapeFire.Analytics
             return Time.time - _sessionStartTime;
         }
 
-        public string ExportJSONReport(string studentId = "SV_2026_TEST")
+        public string ExportJSONReport(string studentId = null)
         {
+            var logs = new List<string>(_ledger.Entries.Count);
+            for (int i = 0; i < _ledger.Entries.Count; i++)
+            {
+                logs.Add(ScoreLedger.Format(_ledger.Entries[i]));
+            }
+
             var report = new
             {
-                StudentId = studentId,
+                StudentId = studentId ?? GameSession.StudentId,
+                SessionId = GameSession.SessionId,
+                Mode = GameSession.Mode.ToString(),
                 FinalScore = TotalScore,
                 TimeElapsedSeconds = GetElapsedSeconds(),
-                ComplianceLogs = _actionLogs
+                ComplianceLogs = logs
             };
 
             return JsonConvert.SerializeObject(report, Formatting.Indented);

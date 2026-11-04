@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EscapeFire.Core;
 
 namespace EscapeFire.Player
 {
@@ -39,6 +40,7 @@ namespace EscapeFire.Player
             if (CurrentHealth <= 0f)
             {
                 OnPlayerDied?.Invoke(cause);
+                EventBus<PlayerDiedEvent>.Publish(new PlayerDiedEvent(cause));
             }
         }
     }

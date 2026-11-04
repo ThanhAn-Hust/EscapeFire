@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EscapeFire.Core;
 
 namespace EscapeFire.Hazards
 {
@@ -62,6 +63,7 @@ namespace EscapeFire.Hazards
                 if (fireParticles != null) fireParticles.Stop();
                 if (fireAudioSource != null) fireAudioSource.Stop();
                 OnFireExtinguished?.Invoke();
+                EventBus<FireExtinguishedEvent>.Publish(new FireExtinguishedEvent(GetInstanceID()));
             }
         }
 

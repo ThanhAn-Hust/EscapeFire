@@ -1,4 +1,5 @@
 using UnityEngine;
+using EscapeFire.Core;
 using EscapeFire.Analytics;
 using EscapeFire.Scenario;
 
@@ -40,6 +41,8 @@ namespace EscapeFire.Interactions
                     ScoringManager.Instance.AddScore(10, "Kiểm tra nhiệt độ tay nắm cửa bằng mu bàn tay (+10đ quy trình)");
                 }
             }
+
+            EventBus<DoorHeatCheckedEvent>.Publish(new DoorHeatCheckedEvent(isDoorHot));
         }
 
         public bool CanOpenDoorSafely()

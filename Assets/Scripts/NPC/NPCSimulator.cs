@@ -1,4 +1,5 @@
 using UnityEngine;
+using EscapeFire.Core;
 using EscapeFire.Analytics;
 
 namespace EscapeFire.NPC
@@ -50,6 +51,7 @@ namespace EscapeFire.NPC
             if (role == NPCRole.HoaFaint && IsFainted && !IsRescued)
             {
                 IsRescued = true;
+                EventBus<NpcRescuedEvent>.Publish(new NpcRescuedEvent(role));
                 Debug.Log("[NPC] Hoa was successfully rescued by student!");
                 if (ScoringManager.Instance != null)
                 {

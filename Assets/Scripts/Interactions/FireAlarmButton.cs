@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EscapeFire.Core;
 using EscapeFire.Analytics;
 
 namespace EscapeFire.Interactions
@@ -41,6 +42,7 @@ namespace EscapeFire.Interactions
             }
 
             OnAlarmActivated?.Invoke();
+            EventBus<AlarmActivatedEvent>.Publish(default);
         }
 
         private void OnTriggerEnter(Collider other)
