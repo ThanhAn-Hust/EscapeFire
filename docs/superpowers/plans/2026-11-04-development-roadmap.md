@@ -65,6 +65,7 @@
 **Done khi:** test EditMode cho CF formula, validator 3 chốt; demo leo thang khi CF thấp và trấn an khi CF cao.
 
 ### M3 — Edge Server trên Laptop (≈ 2 tuần, làm trên `feature/m3-edge-server`)
+**Trạng thái (2026-11-04):** 🟡 Code xong: `Server/` (FastAPI + WebSocket `/session`, Ollama/Gemma, rule guard, Tier-1 validator, log JSONL, 17 pytest PASS, smoke test WebSocket thật OK) + Unity `EdgeDirectorClient`/`EdgeProtocol` (tạm dừng escalation cục bộ khi có server, tự fallback khi mất kết nối). **Còn lại:** đo latency LAN thật với Quest 2, chạy với Gemma thật, mở firewall 8765.
 **Mục tiêu:** AI Director vĩ mô bằng LLM theo spec 2026-10-08.
 - Thư mục `Server/` (ngoài `Assets/`): Python 3.12 + `uv`, FastAPI + WebSocket.
 - Kênh `ws://<laptop>:8765/session`: kính gửi telemetry mỗi 10s/sự kiện mốc; server trả directive JSON.

@@ -28,6 +28,9 @@ namespace EscapeFire.Interactions
         private XRGrabInteractable _grab;
         private XRBaseInputInteractor _holder;
 
+        public bool IsHeld => _grab != null && _grab.isSelected;
+        public FireExtinguisher Extinguisher => _extinguisher;
+
         private void Awake()
         {
             _extinguisher = GetComponent<FireExtinguisher>();

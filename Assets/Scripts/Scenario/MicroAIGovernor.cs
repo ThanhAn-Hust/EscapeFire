@@ -41,6 +41,9 @@ namespace EscapeFire.Scenario
 
         public int EscalationCount => _escalationCount;
 
+        /// <summary>Paused by EdgeDirectorClient while the LLM edge server is connected (it decides escalations then).</summary>
+        public bool LocalEscalationEnabled { get; set; } = true;
+
         private bool AdaptiveEnabled => adaptiveInGuidedMode || GameSession.Mode == TrainingMode.Exam;
 
         private void Awake()
@@ -74,7 +77,7 @@ namespace EscapeFire.Scenario
 
         private void Update()
         {
-            if (!AdaptiveEnabled || Time.time < _nextEvaluation) return;
+            if (!AdaptiveEnabled || !LocalEscalationEnabled || Time.time < _nextEvaluation) return;
             _nextEvaluation = Time.time + evaluationIntervalSeconds;
 
             var tracker = CognitiveFrictionTracker.Instance;

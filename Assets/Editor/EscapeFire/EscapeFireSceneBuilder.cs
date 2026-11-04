@@ -159,6 +159,8 @@ namespace EscapeFire.EditorTools
             AddIfMissing<CognitiveFrictionTracker>(director, report);
             AddIfMissing<FM200System>(director, report);
             AddIfMissing<MicroAIGovernor>(director, report);
+            AddIfMissing<EdgeDirectorClient>(director, report);
+            report.Add("SET EdgeDirectorClient.serverUrl to ws://<laptop LAN IP>:8765/session (M3 edge server).");
 
             if (Object.FindFirstObjectByType<SecondaryFireSlot>(FindObjectsInactive.Include) == null)
             {
