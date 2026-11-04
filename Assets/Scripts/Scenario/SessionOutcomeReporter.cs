@@ -41,6 +41,13 @@ namespace EscapeFire.Scenario
                 ? LabProgressiveScenarioController.Instance.FailCause
                 : string.Empty;
 
+            var collector = SessionFactsCollector.Instance;
+            var facts = collector != null ? collector.BuildFacts(won, failCause) : SessionFacts.Empty;
+            if (collector == null) { facts.Passed = won; facts.FailCause = failCause; }
+            var scorecard = AfterActionReport.BuildScorecard(facts);
+            var radar = AfterActionReport.BuildRadar(facts, scorecard);
+            string debrief = AfterActionReport.TemplateDebrief(facts, scorecard);
+
             SessionResult.Record(
                 passed: won,
                 score: scoring != null ? scoring.TotalScore : 0,
@@ -49,10 +56,19 @@ namespace EscapeFire.Scenario
                 logs: scoring != null ? scoring.GetFormattedLogs() : null,
                 reportJson: json);
 
+            SessionResult.RecordReview(facts, scorecard, radar, debrief,
+                collector != null ? collector.Positions : null,
+                collector != null ? collector.StandingInSmokeFlags : null);
+
             if (telemetryLogger != null && !string.IsNullOrEmpty(json))
             {
                 telemetryLogger.SaveTelemetryReport(json, GameSession.StudentId);
             }
+
+            string lmsJson = LmsReportBuilder.Build(GameSession.SessionId, GameSession.StudentId, GameSession.Mode.ToString(),
+                facts, scorecard, radar, debrief, scoring != null ? scoring.GetFormattedLogs() : new System.Collections.Generic.List<string>(),
+                MicroAIGovernor.Instance != null ? MicroAIGovernor.Instance.EscalationCount : 0);
+            LmsSync.Submit(GameSession.SessionId, lmsJson);
 
             if (loadAARScene) StartCoroutine(LoadAARAfterDelay());
         }

@@ -103,6 +103,13 @@ namespace EscapeFire.Core
         public VoiceCommandEvent(VoiceCommand command, string transcript) { Command = command; Transcript = transcript; }
     }
 
+    public readonly struct ExtinguisherSprayEvent
+    {
+        public readonly ExtinguisherType Type;
+        public readonly bool PowerLive;
+        public ExtinguisherSprayEvent(ExtinguisherType type, bool powerLive) { Type = type; PowerLive = powerLive; }
+    }
+
     public enum Fm200Stage { Started, Tick, Discharged }
 
     public readonly struct Fm200CountdownEvent

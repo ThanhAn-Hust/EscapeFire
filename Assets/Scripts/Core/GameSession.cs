@@ -24,6 +24,9 @@ namespace EscapeFire.Core
         public static float CalibratedHeight { get; private set; }
         public static bool IsCalibrated => CalibratedHeight > 0f;
 
+        /// <summary>HTTP base of the edge server (e.g. http://192.168.1.100:8765), empty when unknown. Set by EdgeDirectorClient.</summary>
+        public static string EdgeHttpBase { get; set; } = string.Empty;
+
         public static void Begin(TrainingMode mode, string studentId)
         {
             Mode = mode;
@@ -48,6 +51,7 @@ namespace EscapeFire.Core
             StudentId = DEFAULT_STUDENT_ID;
             SessionId = string.Empty;
             CalibratedHeight = 0f;
+            EdgeHttpBase = string.Empty;
         }
     }
 }

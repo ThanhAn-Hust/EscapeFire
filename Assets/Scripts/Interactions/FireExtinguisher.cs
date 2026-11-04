@@ -72,6 +72,8 @@ namespace EscapeFire.Interactions
                 return false;
             }
 
+            if (!IsSpraying) EventBus<ExtinguisherSprayEvent>.Publish(new ExtinguisherSprayEvent(type, isElectricalPowerLive));
+
             // DANGEROUS RULE: Water/Foam used on LIVE electrical circuit triggers electrocution!
             if (type == ExtinguisherType.WaterFoam && isElectricalPowerLive)
             {

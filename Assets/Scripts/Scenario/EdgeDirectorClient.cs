@@ -46,6 +46,8 @@ namespace EscapeFire.Scenario
         private void Start()
         {
             _startTime = Time.time;
+            GameSession.EdgeHttpBase = ToHttpBase(serverUrl);
+            if (string.IsNullOrEmpty(LmsSync.BaseUrl)) LmsSync.BaseUrl = GameSession.EdgeHttpBase; // edge server = mock LMS
             _breaker = FindFirstObjectByType<CircuitBreakerSwitch>();
             _extinguishers = FindObjectsByType<ExtinguisherXRBinding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (!Enabled) return;
@@ -150,6 +152,14 @@ namespace EscapeFire.Scenario
             if (cam == null || controller == null || controller.ServerFire == null) return "Unknown";
             float distance = Vector3.Distance(cam.transform.position, controller.ServerFire.transform.position);
             return distance <= serverZoneRadius ? "ServerZone" : "WorkstationZone";
+        }
+
+        /// <summary>ws://host:port/session → http://host:port</summary>
+        public static string ToHttpBase(string wsUrl)
+        {
+            if (!Uri.TryCreate(wsUrl, UriKind.Absolute, out var uri)) return string.Empty;
+            string scheme = uri.Scheme == "wss" ? "https" : "http";
+            return $"{scheme}://{uri.Host}:{uri.Port}";
         }
 
         private static void SetLocalEscalation(bool enabled)

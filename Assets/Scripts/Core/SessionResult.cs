@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EscapeFire.Analytics;
 
 namespace EscapeFire.Core
 {
@@ -17,6 +18,31 @@ namespace EscapeFire.Core
         public static string FailCause { get; private set; } = string.Empty;
         public static string ReportJson { get; private set; } = string.Empty;
         public static IReadOnlyList<string> Logs => _logs;
+
+        // M5 After-Action Review data
+        public static SessionFacts Facts { get; private set; } = SessionFacts.Empty;
+        public static List<ScorecardItem> Scorecard { get; private set; } = new List<ScorecardItem>();
+        public static SkillRadar Radar { get; private set; }
+        public static string Debrief { get; set; } = string.Empty;
+        public static UnityEngine.Vector3[] TrajectoryPositions { get; private set; } = new UnityEngine.Vector3[0];
+        public static bool[] TrajectoryInSmoke { get; private set; } = new bool[0];
+
+        public static void RecordReview(SessionFacts facts, List<ScorecardItem> scorecard, SkillRadar radar,
+            string debrief, IReadOnlyList<UnityEngine.Vector3> positions, IReadOnlyList<bool> inSmoke)
+        {
+            Facts = facts;
+            Scorecard = scorecard ?? new List<ScorecardItem>();
+            Radar = radar;
+            Debrief = debrief ?? string.Empty;
+            int n = positions != null && inSmoke != null ? System.Math.Min(positions.Count, inSmoke.Count) : 0;
+            TrajectoryPositions = new UnityEngine.Vector3[n];
+            TrajectoryInSmoke = new bool[n];
+            for (int i = 0; i < n; i++)
+            {
+                TrajectoryPositions[i] = positions[i];
+                TrajectoryInSmoke[i] = inSmoke[i];
+            }
+        }
 
         public static void Record(bool passed, int score, float durationSeconds, string failCause,
             IReadOnlyList<string> logs, string reportJson)
@@ -44,12 +70,18 @@ namespace EscapeFire.Core
             FailCause = string.Empty;
             ReportJson = string.Empty;
             _logs.Clear();
+            Facts = SessionFacts.Empty;
+            Scorecard = new List<ScorecardItem>();
+            Radar = default;
+            Debrief = string.Empty;
+            TrajectoryPositions = new UnityEngine.Vector3[0];
+            TrajectoryInSmoke = new bool[0];
         }
     }
 
     public static class GradeRules
     {
-        public const int EXCELLENT_MIN = 100;
+        public const int EXCELLENT_MIN = 90; // 100-point PCCC scorecard (SCENE_FLOW §2.3: 90/100 = Xuất sắc)
         public const int GOOD_MIN = 75;
         public const int PASS_MIN = 50;
 

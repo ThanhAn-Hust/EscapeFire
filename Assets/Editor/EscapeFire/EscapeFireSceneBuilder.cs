@@ -77,11 +77,28 @@ namespace EscapeFire.EditorTools
             var aar = controllerGo.AddComponent<AARController>();
 
             var headline = CreateText(canvas, "Headline", "KẾT QUẢ DIỄN TẬP", 60, new Vector2(0f, 360f), new Vector2(1300f, 100f));
-            var summary = CreateText(canvas, "Summary", "", 34, new Vector2(-330f, 110f), new Vector2(620f, 380f), TextAlignmentOptions.TopLeft);
-            var log = CreateText(canvas, "ComplianceLog", "", 24, new Vector2(330f, 110f), new Vector2(660f, 380f), TextAlignmentOptions.TopLeft);
+            var summary = CreateText(canvas, "Summary", "", 28, new Vector2(-330f, 90f), new Vector2(660f, 480f), TextAlignmentOptions.TopLeft);
+            var log = CreateText(canvas, "ComplianceLog", "", 20, new Vector2(350f, 170f), new Vector2(640f, 300f), TextAlignmentOptions.TopLeft);
+            var debrief = CreateText(canvas, "AIDebrief", "", 24, new Vector2(350f, -90f), new Vector2(640f, 200f), TextAlignmentOptions.TopLeft);
+            debrief.color = new Color(0.6f, 0.9f, 1f);
             SetPrivateField(aar, "headlineText", headline);
             SetPrivateField(aar, "summaryText", summary);
             SetPrivateField(aar, "logText", log);
+            SetPrivateField(aar, "debriefText", debrief);
+
+            // Holographic mini-map table with the replayed path (red = standing in smoke).
+            var table = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            table.name = "HoloTable";
+            table.transform.position = new Vector3(0f, 0.4f, 1.0f);
+            table.transform.localScale = new Vector3(1.4f, 0.4f, 1.4f);
+            var map = new GameObject("TrajectoryMiniMap");
+            map.transform.position = new Vector3(0f, 0.81f, 1.0f);
+            map.AddComponent<TrajectoryView>();
+
+            var radar = new GameObject("SkillRadar");
+            radar.transform.position = new Vector3(-1.5f, 1.5f, 1.8f);
+            radar.transform.rotation = Quaternion.Euler(0f, -30f, 0f);
+            radar.AddComponent<RadarChartView>();
 
             CreateButton(canvas, "LÀM LẠI BÀI TẬP", new Vector2(-260f, -300f), aar.Retry, 480f);
             CreateButton(canvas, "VỀ MENU CHÍNH", new Vector2(260f, -300f), aar.BackToMenu, 480f);
@@ -160,6 +177,7 @@ namespace EscapeFire.EditorTools
             AddIfMissing<FM200System>(director, report);
             AddIfMissing<MicroAIGovernor>(director, report);
             AddIfMissing<EdgeDirectorClient>(director, report);
+            AddIfMissing<SessionFactsCollector>(director, report);
             report.Add("SET EdgeDirectorClient.serverUrl to ws://<laptop LAN IP>:8765/session (M3 edge server).");
 
             if (Object.FindFirstObjectByType<SecondaryFireSlot>(FindObjectsInactive.Include) == null)
