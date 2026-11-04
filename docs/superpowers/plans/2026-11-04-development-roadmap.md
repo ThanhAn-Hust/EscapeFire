@@ -85,6 +85,7 @@
 **Done khi:** 5 trigger kích hoạt đúng điều kiện trong test scene, không trigger lặp trong cooldown.
 
 ### M5 — AAR & Learning Analytics (≈ 1.5 tuần)
+**Trạng thái (2026-11-04):** 🟡 Code xong: `SessionFactsCollector` (sự kiện + quỹ đạo 5Hz + giây đứng thẳng trong khói), `AfterActionReport` (scorecard 6 mục/100đ, radar 5 trục, nhận xét mẫu), `TrajectoryView` (sa bàn, đỏ = đứng trong khói), `RadarChartView`, AAR gọi `POST /aar/debrief` (LLM, fallback mẫu), `LmsSync` + `LmsOutbox` (hàng đợi offline) → `POST /api/v1/sessions/{id}/complete` (server có mock LMS). **Còn lại:** endpoint + token daotao.ai thật, xem AAR trong kính.
 - Ghi quỹ đạo + tư thế mỗi 0.2s → heatmap line 3D trên sa bàn mini-map.
 - Scorecard 6 tiêu chí (100 điểm) + radar 5 trục (`stress_resilience = 1 − avgCF`).
 - Generative AAR: server sinh nhận xét cá nhân hóa từ telemetry (có fallback template).

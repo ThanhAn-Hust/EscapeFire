@@ -11,14 +11,18 @@ import json
 import logging
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+import re
+
+from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
+from .aar import DebriefRequest, DebriefResponse, generate_debrief
 from .director import Director
 from .llm import LLMClient, OllamaClient, ScriptedLLM
 from .schema import DirectiveResultMessage, TelemetryMessage
 
 log = logging.getLogger("escapefire.edge")
+_SAFE_ID = re.compile(r"[A-Za-z0-9-]{1,64}")
 
 DEMO_OUTPUTS = [
     '{"directive": "TRIGGER_CO2_PIN_JAM", "target_object": "CO2_Extinguisher", '
@@ -38,6 +42,25 @@ def create_app(llm: LLMClient | None = None, log_dir: Path | None = Path("logs")
     @app.get("/health")
     async def health() -> dict:
         return {"status": "ok", "llm": type(director.llm).__name__}
+
+    @app.post("/aar/debrief", response_model=DebriefResponse)
+    async def aar_debrief(req: DebriefRequest) -> DebriefResponse:
+        return await generate_debrief(director.llm, req)
+
+    # Local mock of the LMS (daotao.ai) contract so demos work without the real LMS.
+    @app.post("/api/v1/sessions/{session_id}/complete")
+    async def lms_complete(session_id: str, request: Request) -> dict:
+        if not _SAFE_ID.fullmatch(session_id):
+            raise HTTPException(status_code=400, detail="invalid session id")
+        try:
+            report = await request.json()
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="invalid json")
+        if log_dir is not None:
+            lms_dir = log_dir / "lms"
+            lms_dir.mkdir(parents=True, exist_ok=True)
+            (lms_dir / f"{session_id}.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {"status": "stored", "session_id": session_id}
 
     @app.websocket("/session")
     async def session(ws: WebSocket) -> None:

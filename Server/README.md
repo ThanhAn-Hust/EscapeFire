@@ -32,6 +32,13 @@ Server listens on `0.0.0.0:8765`. In Unity set `EdgeDirectorClient.serverUrl` to
 `ws://<laptop LAN IP>:8765/session`; laptop and headset must be on the same Wi-Fi, and Windows Firewall must
 allow inbound TCP 8765. Android build: Player Settings → Internet Access = Require.
 
+## HTTP endpoints (M5)
+
+- `POST /aar/debrief` — LLM rewrites the AAR scorecard into Socratic feedback (plain text, ≤ 900 chars);
+  JSON/garbage/timeouts fall back to the headset's template debrief.
+- `POST /api/v1/sessions/{session_id}/complete` — local mock of the LMS (daotao.ai) contract; stores the report in
+  `logs/lms/{session_id}.json`. The headset queues reports offline (`persistentDataPath/lms_outbox`) and retries.
+
 ## Test
 
 ```bash
