@@ -21,17 +21,18 @@
 
 ### Lỗi cần sửa trong plan 2026-10-08 trước khi thực thi
 1. `FM200System` gọi `OxygenSystem.TakeDamage(100f)` — method không tồn tại (OxygenSystem có `DepleteOxygen`, `TakeDamage` thuộc `HealthSystem`).
-2. `FindObjectOfType` đã deprecated trong Unity 6 → dùng `FindFirstObjectByType` hoặc inject qua `[SerializeField]`.
+2. ~~`FindObjectOfType` đã deprecated trong Unity 6~~ → plan 10-08 vẫn phải đổi sang `FindFirstObjectByType` (code hiện có đã sửa ở M0).
 3. Interface ghi `ExecuteDirective(string)` nhưng code dùng `ExecuteDirective(MicroDirective)` → thống nhất enum, thêm parser string→enum cho directive từ server.
 4. `CognitiveFrictionTracker` bắn `OnHighCognitiveFrictionDetected` **mỗi frame** khi CF ≥ 0.75 → spam guidance. Cần hysteresis (vào ≥ 0.75, ra < 0.65) + cooldown.
 5. Tên directive giữa plan (`EscalateHazardSecondary`, `TriggerDoorJam`) và spec (`ESCALATE_SECONDARY_FIRE`, `TRIGGER_CO2_PIN_JAM`, `TRIGGER_ALARM_CABLE_CUT`…) không khớp → lấy **spec làm chuẩn**.
-6. Plan dùng `MicroAIGovernor` gọi `LabProgressiveScenarioController.SetAIMentorGuidance` — method chưa tồn tại (hiện chỉ có event `OnAIMentorMessage`).
+6. ~~`SetAIMentorGuidance` chưa tồn tại~~ — đã thêm ở M0.
 
 ---
 
 ## 1. Milestones
 
 ### M0 — Nền móng kỹ thuật (≈ 1 tuần)
+**Trạng thái (2026-11-04):** 🟡 Code xong trên `feature/m0-foundation` — compile sạch (Roslyn của Unity), 21/22 test chạy PASS ngoài Editor. **Còn lại:** mở Unity chạy đủ 22 EditMode test + checklist Play Mode (Task 8 plan M0), rồi merge vào `develop/server`.
 **Mục tiêu:** dự án sạch, có kiến trúc chung và test được trước khi viết thêm tính năng.
 - `EscapeFire.Core`: `EventBus` typed (struct event, Subscribe/Publish/Unsubscribe), `GameSession` (mode Guided/Exam, H₀, session id).
 - Assembly definitions: `EscapeFire.Runtime`, `EscapeFire.Editor`, `EscapeFire.Tests.EditMode`.
