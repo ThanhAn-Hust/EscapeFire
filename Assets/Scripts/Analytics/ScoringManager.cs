@@ -50,13 +50,19 @@ namespace EscapeFire.Analytics
             return Time.time - _sessionStartTime;
         }
 
-        public string ExportJSONReport(string studentId = null)
+        public List<string> GetFormattedLogs()
         {
             var logs = new List<string>(_ledger.Entries.Count);
             for (int i = 0; i < _ledger.Entries.Count; i++)
             {
                 logs.Add(ScoreLedger.Format(_ledger.Entries[i]));
             }
+            return logs;
+        }
+
+        public string ExportJSONReport(string studentId = null)
+        {
+            var logs = GetFormattedLogs();
 
             var report = new
             {

@@ -39,6 +39,9 @@ namespace EscapeFire.Scenario
         public event Action<ScenarioPhase> OnPhaseChanged;
         public event Action<string> OnAIMentorMessage;
 
+        /// <summary>Human-readable reason of the failure (empty unless Phase5_GameOverFail).</summary>
+        public string FailCause { get; private set; } = string.Empty;
+
         private float _timer = 0f;
         private bool _hasPowerBeenCut = false;
         private bool _hasFireBeenExtinguished = false;
@@ -55,6 +58,7 @@ namespace EscapeFire.Scenario
             EventBus<FireExtinguishedEvent>.Subscribe(HandleFireExtinguished);
             EventBus<OxygenDepletedEvent>.Subscribe(HandlePlayerSuffocated);
             EventBus<PlayerDiedEvent>.Subscribe(HandlePlayerDied);
+            EventBus<ShockHazardEvent>.Subscribe(HandleShockHazard);
         }
 
         private void OnDisable()
@@ -63,6 +67,7 @@ namespace EscapeFire.Scenario
             EventBus<FireExtinguishedEvent>.Unsubscribe(HandleFireExtinguished);
             EventBus<OxygenDepletedEvent>.Unsubscribe(HandlePlayerSuffocated);
             EventBus<PlayerDiedEvent>.Unsubscribe(HandlePlayerDied);
+            EventBus<ShockHazardEvent>.Unsubscribe(HandleShockHazard);
         }
 
         private void OnDestroy()
@@ -200,11 +205,27 @@ namespace EscapeFire.Scenario
 
         private void HandlePlayerSuffocated(OxygenDepletedEvent _)
         {
-            SetPhase(ScenarioPhase.Phase5_GameOverFail);
+            Fail("Ngạt khói: hết dưỡng khí do đứng thẳng trong vùng khói độc.");
         }
 
         private void HandlePlayerDied(PlayerDiedEvent e)
         {
+            Fail(string.IsNullOrEmpty(e.Cause) ? "Tử vong do tác nhân nguy hiểm." : e.Cause);
+        }
+
+        private void HandleShockHazard(ShockHazardEvent e)
+        {
+            if (ScoringManager.Instance != null)
+            {
+                ScoringManager.Instance.DeductScore(40, "Xịt chất dẫn điện vào thiết bị đang mang điện");
+            }
+            Fail("Điện giật: dùng bình nước/bọt khi Aptomat chưa ngắt.");
+        }
+
+        public void Fail(string cause)
+        {
+            if (IsFinished) return;
+            FailCause = cause ?? string.Empty;
             SetPhase(ScenarioPhase.Phase5_GameOverFail);
         }
     }
