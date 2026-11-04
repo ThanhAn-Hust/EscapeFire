@@ -100,6 +100,15 @@
 
 ---
 
+## Kiểm tra chất lượng (2026-11-04)
+| Lớp | Công cụ | Chạy |
+| :--- | :--- | :--- |
+| Phân tích tĩnh Unity | Microsoft.Unity.Analyzers 1.28 (`Assets/Scripts/Analyzers`, `Assets/Default.ruleset`) | Tự động khi Unity compile; `bash Tools/verify.sh` |
+| Logic thuần | 76 EditMode test (CF, validator, scorecard, voice parser, LMS outbox…) | `bash Tools/verify.sh` hoặc Test Runner |
+| Scene (tĩnh) | `LabSceneAudit` + test `LabSceneValidationTests` | Menu `EscapeFire/Audit Lab Scene`, Test Runner EditMode |
+| Scene (vật lý + kịch bản) | 11 PlayMode test: không vật nào rơi/trôi, NPC trên sàn, bình trên giá, oxy, khói, Minh chạy, Hoa ngất/cứu, drill PASS, điện giật FAIL, exit zone | Test Runner PlayMode / MCP `run_tests mode=PlayMode` |
+| Server | 22 pytest | `bash Tools/verify.sh` |
+
 ## 2. Thứ tự & phụ thuộc
 
 ```

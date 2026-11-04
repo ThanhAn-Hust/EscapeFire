@@ -101,10 +101,12 @@ namespace EscapeFire.EditorTools
 #if UNITY_EDITOR_WIN
             try
             {
-                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Khronos\OpenXR\1"))
-                {
-                    return key?.GetValue("ActiveRuntime") as string ?? string.Empty;
-                }
+                // Reflection keeps this compiling under any editor API profile (Registry lives in mscorlib on Mono).
+                var registry = System.Type.GetType("Microsoft.Win32.Registry, mscorlib") ??
+                               System.Type.GetType("Microsoft.Win32.Registry, Microsoft.Win32.Registry");
+                var getValue = registry?.GetMethod("GetValue", new[] { typeof(string), typeof(string), typeof(object) });
+                var value = getValue?.Invoke(null, new object[] { @"HKEY_LOCAL_MACHINE\SOFTWARE\Khronos\OpenXR\1", "ActiveRuntime", string.Empty });
+                return value as string ?? string.Empty;
             }
             catch (System.Exception)
             {

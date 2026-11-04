@@ -171,7 +171,7 @@ namespace EscapeFire.EditorTools
             var scene = EditorSceneManager.OpenScene(LabPath, OpenSceneMode.Single);
             var report = new List<string>();
 
-            var director = GameObject.Find("[AI_DIRECTOR_SYSTEM]") ?? new GameObject("[AI_DIRECTOR_SYSTEM]");
+            var director = FindOrCreate("[AI_DIRECTOR_SYSTEM]");
             AddIfMissing<PerformanceBudgetGovernor>(director, report);
             AddIfMissing<CognitiveFrictionTracker>(director, report);
             AddIfMissing<FM200System>(director, report);
@@ -221,7 +221,7 @@ namespace EscapeFire.EditorTools
             var scene = EditorSceneManager.OpenScene(LabPath, OpenSceneMode.Single);
             var report = new List<string>();
 
-            var voice = GameObject.Find("[AI_MENTOR_VOICE]") ?? new GameObject("[AI_MENTOR_VOICE]");
+            var voice = FindOrCreate("[AI_MENTOR_VOICE]");
             if (voice.GetComponent<AudioSource>() == null) voice.AddComponent<AudioSource>();
             AddIfMissing<MentorVoice>(voice, report);
             AddIfMissing<DeterministicVoiceTriggerManager>(voice, report);
@@ -259,6 +259,12 @@ namespace EscapeFire.EditorTools
         }
 
         // ------------------------------------------------------------------ helpers
+
+        private static GameObject FindOrCreate(string name)
+        {
+            var go = GameObject.Find(name);
+            return go != null ? go : new GameObject(name);
+        }
 
         private static void WireSimpleInteractable<T>(System.Func<T, UnityAction> action, List<string> report) where T : Component
         {

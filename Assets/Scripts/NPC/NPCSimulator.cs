@@ -17,6 +17,10 @@ namespace EscapeFire.NPC
     /// </summary>
     public class NPCSimulator : MonoBehaviour
     {
+        private static readonly int PANIC_RUN = Animator.StringToHash("PanicRun");
+        private static readonly int FAINT = Animator.StringToHash("Faint");
+        private static readonly int RESCUED = Animator.StringToHash("Rescued");
+
         [Header("NPC Settings")]
         [SerializeField] private NPCRole role = NPCRole.MinhPanic;
         [SerializeField] private float runSpeed = 3.5f;
@@ -66,7 +70,7 @@ namespace EscapeFire.NPC
             if (role == NPCRole.MinhPanic)
             {
                 if (chairToKnockOver != null) chairToKnockOver.transform.Rotate(Vector3.right, 75f, Space.Self);
-                if (animator != null) animator.SetTrigger("PanicRun");
+                if (animator != null) animator.SetTrigger(PANIC_RUN);
                 StartMoving(runSpeed);
                 Debug.Log("[NPC] Minh panicked and ran towards the exit door!");
             }
@@ -74,7 +78,7 @@ namespace EscapeFire.NPC
             {
                 IsFainted = true;
                 _state = State.Fainted;
-                if (animator != null) animator.SetTrigger("Faint");
+                if (animator != null) animator.SetTrigger(FAINT);
                 else LieDown();
                 Debug.Log("[NPC] Hoa fainted from smoke inhalation!");
             }
@@ -91,7 +95,7 @@ namespace EscapeFire.NPC
                 ScoringManager.Instance.AddScore(15, "Cứu hộ thành công bạn học Hoa khỏi khói độc");
             }
             visualRoot.localRotation = _standingRotation;
-            if (animator != null) animator.SetTrigger("Rescued");
+            if (animator != null) animator.SetTrigger(RESCUED);
             StartMoving(walkSpeed);
             Debug.Log("[NPC] Hoa was rescued and is walking to the exit.");
         }
@@ -129,15 +133,17 @@ namespace EscapeFire.NPC
                 gameObject.SetActive(false); // left the room through the door
                 return;
             }
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(toTarget.normalized, Vector3.up), 10f * Time.deltaTime);
-            transform.position = Vector3.MoveTowards(transform.position, target, _speed * Time.deltaTime);
+            transform.SetPositionAndRotation(
+                Vector3.MoveTowards(transform.position, target, _speed * Time.deltaTime),
+                Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(toTarget.normalized, Vector3.up), 10f * Time.deltaTime));
         }
 
         /// <summary>Procedural faint (no animation clip needed): tip the body over onto the floor around the feet.</summary>
         private void LieDown()
         {
-            visualRoot.localRotation = _standingRotation * Quaternion.Euler(-90f, 0f, 0f);
-            visualRoot.localPosition += new Vector3(0f, 0.15f, 0f);
+            visualRoot.SetLocalPositionAndRotation(
+                visualRoot.localPosition + new Vector3(0f, 0.15f, 0f),
+                _standingRotation * Quaternion.Euler(-90f, 0f, 0f));
         }
     }
 }

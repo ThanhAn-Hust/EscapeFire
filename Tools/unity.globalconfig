@@ -1,0 +1,5 @@
+is_global = true
+dotnet_analyzer_diagnostic.category-Correctness.severity = warning
+dotnet_analyzer_diagnostic.category-Performance.severity = warning
+dotnet_analyzer_diagnostic.category-Type Safety.severity = warning
+dotnet_analyzer_diagnostic.category-Readability.severity = warning

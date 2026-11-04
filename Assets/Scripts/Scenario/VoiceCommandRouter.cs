@@ -97,7 +97,7 @@ namespace EscapeFire.Scenario
 
                 case VoiceCommand.CallForHelp:
                     var controller = LabProgressiveScenarioController.Instance;
-                    controller?.SetAIMentorGuidance("Đã nhận yêu cầu cứu hộ. Lực lượng PCCC 114 đang trên đường. Tiếp tục khom người và di chuyển về lối thoát!");
+                    if (controller != null) controller.SetAIMentorGuidance("Đã nhận yêu cầu cứu hộ. Lực lượng PCCC 114 đang trên đường. Tiếp tục khom người và di chuyển về lối thoát!");
                     break;
             }
         }

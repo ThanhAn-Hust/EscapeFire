@@ -28,9 +28,21 @@ namespace EscapeFire.EditorTools
         [MenuItem("EscapeFire/Audit Lab Scene")]
         public static void Run()
         {
-            var errors = new List<string>();
-            var warnings = new List<string>();
             var scene = EditorSceneManager.GetActiveScene();
+            Collect(out var errors, out var warnings);
+            var sb = new StringBuilder($"[EscapeFire] Audit '{scene.name}': {errors.Count} error(s), {warnings.Count} warning(s)\n");
+            foreach (var e in errors) sb.AppendLine("  ERROR " + e);
+            foreach (var w in warnings) sb.AppendLine("  WARN  " + w);
+            if (errors.Count > 0) Debug.LogError(sb.ToString());
+            else if (warnings.Count > 0) Debug.LogWarning(sb.ToString());
+            else Debug.Log(sb.ToString() + "  All checks passed.");
+        }
+
+        /// <summary>Runs every check on the active scene (used by the menu and by the EditMode scene test).</summary>
+        public static void Collect(out List<string> errors, out List<string> warnings)
+        {
+            errors = new List<string>();
+            warnings = new List<string>();
 
             var floor = GameObject.Find("Floor_HighRise");
             var ceiling = GameObject.Find("Ceiling_HighRise");
@@ -120,17 +132,15 @@ namespace EscapeFire.EditorTools
             Require<SessionFactsCollector>(warnings);
             Require<MentorVoice>(warnings);
 
+            bool hasCo2 = false, hasConductive = false;
             foreach (var ext in Object.FindObjectsByType<FireExtinguisher>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
+                if (ext.Type == ExtinguisherType.CO2) hasCo2 = true;
+                if (ext.Type == ExtinguisherType.WaterFoam) hasConductive = true;
                 if (ext.GetComponent<ExtinguisherXRBinding>() == null) errors.Add($"Extinguisher '{ext.name}' cannot be grabbed/sprayed (no ExtinguisherXRBinding).");
             }
-
-            var sb = new StringBuilder($"[EscapeFire] Audit '{scene.name}': {errors.Count} error(s), {warnings.Count} warning(s)\n");
-            foreach (var e in errors) sb.AppendLine("  ERROR " + e);
-            foreach (var w in warnings) sb.AppendLine("  WARN  " + w);
-            if (errors.Count > 0) Debug.LogError(sb.ToString());
-            else if (warnings.Count > 0) Debug.LogWarning(sb.ToString());
-            else Debug.Log(sb.ToString() + "  All checks passed.");
+            if (!hasCo2) errors.Add("No CO2 extinguisher: the correct choice for an electrical fire is missing.");
+            if (!hasConductive) errors.Add("No water/foam extinguisher: the PCCC 'wrong choice' training case is missing.");
         }
 
         private static void Require<T>(List<string> list) where T : Object

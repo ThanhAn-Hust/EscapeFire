@@ -146,6 +146,18 @@ namespace EscapeFire.EditorTools
             foreach (var ext in Object.FindObjectsByType<FireExtinguisher>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 var t = ext.transform;
+                string lower = ext.name.ToLowerInvariant();
+                if (lower.Contains("water") || lower.Contains("foam"))
+                {
+                    var typeSo = new SerializedObject(ext);
+                    var typeProp = typeSo.FindProperty("type");
+                    if (typeProp.enumValueIndex != (int)ExtinguisherType.WaterFoam)
+                    {
+                        typeProp.enumValueIndex = (int)ExtinguisherType.WaterFoam;
+                        typeSo.ApplyModifiedPropertiesWithoutUndo();
+                        log.Add($"'{ext.name}' type set to WaterFoam (was CO2: the wrong-choice extinguisher was missing).");
+                    }
+                }
                 Vector3 origin = t.position;
                 RaycastHit best = default;
                 float bestDist = float.MaxValue;
@@ -340,7 +352,8 @@ namespace EscapeFire.EditorTools
         private static void EnsureWristHud(List<string> log)
         {
             if (Object.FindFirstObjectByType<VRWristHUD>(FindObjectsInactive.Include) != null) return;
-            var wrist = GameObject.Find("Left Controller") ?? GameObject.Find("LeftHand Controller");
+            var wrist = GameObject.Find("Left Controller");
+            if (wrist == null) wrist = GameObject.Find("LeftHand Controller");
             if (wrist == null)
             {
                 log.Add("WARNING: 'Left Controller' not found — wrist HUD not created.");
@@ -370,14 +383,14 @@ namespace EscapeFire.EditorTools
             var tmp = go.GetComponent<TextMeshPro>();
             tmp.fontSize = size;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.rectTransform.sizeDelta = new Vector2(0.12f, height);
             return tmp;
         }
 
         private static void EnsureDirectorExtras(List<string> log)
         {
-            var director = GameObject.Find("[AI_DIRECTOR_SYSTEM]") ?? new GameObject("[AI_DIRECTOR_SYSTEM]");
+            var director = FindOrCreate("[AI_DIRECTOR_SYSTEM]");
             if (Object.FindFirstObjectByType<FrameTimeMonitor>(FindObjectsInactive.Include) == null)
             {
                 director.AddComponent<FrameTimeMonitor>();
@@ -386,6 +399,12 @@ namespace EscapeFire.EditorTools
         }
 
         // ------------------------------------------------------------------ helpers
+
+        private static GameObject FindOrCreate(string name)
+        {
+            var go = GameObject.Find(name);
+            return go != null ? go : new GameObject(name);
+        }
 
         private static IEnumerable<Transform> AllNamed(System.Func<string, bool> predicate) =>
             Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => predicate(t.name));

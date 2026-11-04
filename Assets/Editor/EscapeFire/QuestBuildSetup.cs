@@ -67,7 +67,8 @@ namespace EscapeFire.EditorTools
 
             // URP asset used by the Android quality level.
             int androidLevel = QualityLevelFor("Android");
-            var urp = (QualitySettings.GetRenderPipelineAssetAt(androidLevel) ?? GraphicsSettings.defaultRenderPipeline) as UniversalRenderPipelineAsset;
+            var levelAsset = QualitySettings.GetRenderPipelineAssetAt(androidLevel);
+            var urp = (levelAsset != null ? levelAsset : GraphicsSettings.defaultRenderPipeline) as UniversalRenderPipelineAsset;
             if (urp != null)
             {
                 urp.msaaSampleCount = 4;

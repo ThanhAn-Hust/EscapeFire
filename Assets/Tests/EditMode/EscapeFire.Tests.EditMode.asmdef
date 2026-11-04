@@ -3,6 +3,7 @@
     "rootNamespace": "EscapeFire.Tests",
     "references": [
         "EscapeFire.Runtime",
+        "EscapeFire.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
