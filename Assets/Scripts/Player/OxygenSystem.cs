@@ -1,24 +1,31 @@
 using System;
 using UnityEngine;
+using EscapeFire.Core;
+using EscapeFire.Hazards;
 
 namespace EscapeFire.Player
 {
     /// <summary>
-    /// Manages player oxygen levels based on smoke density and crouching posture.
+    /// Manages player oxygen: depletes only while standing with the head inside the lowering smoke layer,
+    /// recovers otherwise. Logic lives in <see cref="OxygenModel"/> / <see cref="BreathingRules"/>.
     /// </summary>
     public class OxygenSystem : MonoBehaviour
     {
         [Header("Oxygen Settings")]
         [SerializeField] private float maxOxygen = 100f;
-        [SerializeField] private float depletionRateInSmoke = 10f; // Oxygen lost per second when standing in smoke
+        [SerializeField] private float depletionRateInSmoke = 10f; // Oxygen lost per second when breathing smoke
         [SerializeField] private float recoveryRate = 5f;
 
         [Header("References")]
         [SerializeField] private VRHeightDetector heightDetector;
+        [Tooltip("Smoke layer source. Auto-discovered if empty; no smoke controller = no smoke in scene.")]
+        [SerializeField] private SmokeDensityController smokeController;
+
+        private OxygenModel _model;
 
         public float MaxOxygen { get => maxOxygen; set => maxOxygen = value; }
-        public float CurrentOxygen { get; private set; }
-        public bool IsDepleted => CurrentOxygen <= 0f;
+        public float CurrentOxygen => _model != null ? _model.Current : maxOxygen;
+        public bool IsDepleted => _model != null && _model.IsDepleted;
 
         public event Action<float> OnOxygenChanged;
         public event Action OnOxygenDepleted;
@@ -29,45 +36,61 @@ namespace EscapeFire.Player
             {
                 heightDetector = GetComponent<VRHeightDetector>();
             }
+            if (smokeController == null)
+            {
+                smokeController = FindFirstObjectByType<SmokeDensityController>();
+            }
             ResetOxygen();
         }
 
         public void ResetOxygen()
         {
-            CurrentOxygen = maxOxygen;
-            OnOxygenChanged?.Invoke(CurrentOxygen);
+            _model = new OxygenModel(maxOxygen);
+            OnOxygenChanged?.Invoke(_model.Current);
         }
 
         private void Update()
         {
-            // If standing upright in smoke area (heightDetector.IsCrouching is false)
-            if (heightDetector != null && !heightDetector.IsCrouching)
+            bool breathingSmoke = smokeController != null
+                && heightDetector != null
+                && heightDetector.HeadTransform != null
+                && BreathingRules.IsBreathingSmoke(heightDetector.HeadTransform.position.y,
+                                                   smokeController.CurrentSmokeHeight,
+                                                   heightDetector.IsCrouching);
+
+            float before = _model.Current;
+            bool justDepleted = _model.Tick(Time.deltaTime, breathingSmoke, depletionRateInSmoke, recoveryRate);
+
+            if (!Mathf.Approximately(before, _model.Current))
             {
-                DepleteOxygen(depletionRateInSmoke * Time.deltaTime);
+                OnOxygenChanged?.Invoke(_model.Current);
             }
-            else if (CurrentOxygen < maxOxygen)
+            if (justDepleted)
             {
-                RecoverOxygen(recoveryRate * Time.deltaTime);
+                RaiseDepleted();
             }
         }
 
         public void DepleteOxygen(float amount)
         {
-            if (IsDepleted) return;
-
-            CurrentOxygen = Mathf.Max(0f, CurrentOxygen - amount);
-            OnOxygenChanged?.Invoke(CurrentOxygen);
-
-            if (CurrentOxygen <= 0f)
+            bool justDepleted = _model.Deplete(amount);
+            OnOxygenChanged?.Invoke(_model.Current);
+            if (justDepleted)
             {
-                OnOxygenDepleted?.Invoke();
+                RaiseDepleted();
             }
         }
 
         public void RecoverOxygen(float amount)
         {
-            CurrentOxygen = Mathf.Min(maxOxygen, CurrentOxygen + amount);
-            OnOxygenChanged?.Invoke(CurrentOxygen);
+            _model.Recover(amount);
+            OnOxygenChanged?.Invoke(_model.Current);
+        }
+
+        private void RaiseDepleted()
+        {
+            OnOxygenDepleted?.Invoke();
+            EventBus<OxygenDepletedEvent>.Publish(default);
         }
     }
 }

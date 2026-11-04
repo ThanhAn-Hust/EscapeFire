@@ -18,14 +18,15 @@ namespace EscapeFire.Hazards
 
         public float CurrentSmokeHeight { get; private set; }
 
-        private void Start()
+        private void Awake()
         {
             CurrentSmokeHeight = initialSmokeHeight;
         }
 
         private void Update()
         {
-            if (targetFire != null && !targetFire.IsExtinguished)
+            // Only lower smoke while the fire is actually burning (inactive in Phase 0/1).
+            if (targetFire != null && targetFire.isActiveAndEnabled && !targetFire.IsExtinguished)
             {
                 // Smoke lowers down as fire burns
                 CurrentSmokeHeight = Mathf.Max(minSmokeHeight, CurrentSmokeHeight - (smokeLoweringSpeed * Time.deltaTime));

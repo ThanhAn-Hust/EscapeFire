@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EscapeFire.Core;
 
 namespace EscapeFire.Player
 {
@@ -21,6 +22,10 @@ namespace EscapeFire.Player
             get => crouchThresholdHeight; 
             set => crouchThresholdHeight = value; 
         }
+
+        /// <summary>0.7 × calibrated H₀ when calibrated, otherwise the Inspector fallback.</summary>
+        public float EffectiveThreshold => CrouchRules.ComputeThreshold(GameSession.CalibratedHeight, crouchThresholdHeight);
+        public Transform HeadTransform => headTransform;
 
         public bool IsCrouching { get; private set; }
         public float CurrentHeight { get; private set; }
@@ -46,12 +51,13 @@ namespace EscapeFire.Player
         public void UpdateHeight(float height)
         {
             CurrentHeight = height;
-            bool newlyCrouching = height < crouchThresholdHeight;
+            bool newlyCrouching = height < EffectiveThreshold;
 
             if (newlyCrouching != IsCrouching)
             {
                 IsCrouching = newlyCrouching;
                 OnCrouchStateChanged?.Invoke(IsCrouching);
+                EventBus<CrouchStateChangedEvent>.Publish(new CrouchStateChangedEvent(IsCrouching, height));
             }
         }
     }

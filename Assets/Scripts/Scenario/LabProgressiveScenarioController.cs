@@ -4,6 +4,7 @@ using EscapeFire.Hazards;
 using EscapeFire.Interactions;
 using EscapeFire.Player;
 using EscapeFire.Analytics;
+using EscapeFire.Core;
 
 namespace EscapeFire.Scenario
 {
@@ -31,11 +32,8 @@ namespace EscapeFire.Scenario
 
         [Header("Scene Object References (Auto-discovered if null)")]
         [SerializeField] private FireHazard serverFire;
-        [SerializeField] private CircuitBreakerSwitch circuitBreaker;
         [SerializeField] private GameObject redEmergencyLight;
         [SerializeField] private AudioSource alarmAudioSource;
-        [SerializeField] private OxygenSystem oxygenSystem;
-        [SerializeField] private HealthSystem healthSystem;
 
         public ScenarioPhase CurrentPhase { get; private set; } = ScenarioPhase.Phase0_PeacefulPractice;
         public event Action<ScenarioPhase> OnPhaseChanged;
@@ -51,41 +49,40 @@ namespace EscapeFire.Scenario
             else { Destroy(gameObject); return; }
         }
 
+        private void OnEnable()
+        {
+            EventBus<PowerStateChangedEvent>.Subscribe(HandlePowerStateChanged);
+            EventBus<FireExtinguishedEvent>.Subscribe(HandleFireExtinguished);
+            EventBus<OxygenDepletedEvent>.Subscribe(HandlePlayerSuffocated);
+            EventBus<PlayerDiedEvent>.Subscribe(HandlePlayerDied);
+        }
+
+        private void OnDisable()
+        {
+            EventBus<PowerStateChangedEvent>.Unsubscribe(HandlePowerStateChanged);
+            EventBus<FireExtinguishedEvent>.Unsubscribe(HandleFireExtinguished);
+            EventBus<OxygenDepletedEvent>.Unsubscribe(HandlePlayerSuffocated);
+            EventBus<PlayerDiedEvent>.Unsubscribe(HandlePlayerDied);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
         private void Start()
         {
-            // Auto-discover references if not manually set in Inspector
-            if (serverFire == null) serverFire = FindObjectOfType<FireHazard>();
-            if (circuitBreaker == null) circuitBreaker = FindObjectOfType<CircuitBreakerSwitch>();
-            if (oxygenSystem == null) oxygenSystem = FindObjectOfType<OxygenSystem>();
-            if (healthSystem == null) healthSystem = FindObjectOfType<HealthSystem>();
-
-            // Auto-wire event listeners
-            if (circuitBreaker != null)
-            {
-                circuitBreaker.OnPowerStateChanged += HandlePowerStateChanged;
-                Debug.Log("[ProgressiveScenario] Connected listener to CircuitBreakerSwitch (Aptomat)");
-            }
-            if (serverFire != null)
-            {
-                serverFire.OnFireExtinguished += HandleFireExtinguished;
-                Debug.Log("[ProgressiveScenario] Connected listener to FireHazard");
-            }
-            if (oxygenSystem != null)
-            {
-                oxygenSystem.OnOxygenDepleted += HandlePlayerSuffocated;
-            }
-            if (healthSystem != null)
-            {
-                healthSystem.OnPlayerDied += HandlePlayerDied;
-            }
+            // Fire object may already be inactive in the scene, so include inactive objects.
+            if (serverFire == null) serverFire = FindFirstObjectByType<FireHazard>(FindObjectsInactive.Include);
 
             SetPhase(ScenarioPhase.Phase0_PeacefulPractice);
         }
 
+        private bool IsFinished => CurrentPhase == ScenarioPhase.Phase4_CompletedWin || CurrentPhase == ScenarioPhase.Phase5_GameOverFail;
+
         private void Update()
         {
-            if (CurrentPhase == ScenarioPhase.Phase4_CompletedWin || CurrentPhase == ScenarioPhase.Phase5_GameOverFail)
-                return;
+            if (IsFinished) return;
 
             _timer += Time.deltaTime;
 
@@ -102,6 +99,9 @@ namespace EscapeFire.Scenario
 
         public void SetPhase(ScenarioPhase newPhase)
         {
+            // Terminal phases are final: suffocating after reaching the hallway must not turn a win into a fail.
+            if (IsFinished) return;
+
             CurrentPhase = newPhase;
             Debug.Log($"[ProgressiveScenarioManager] Phase changed to: {newPhase}");
 
@@ -110,12 +110,12 @@ namespace EscapeFire.Scenario
                 case ScenarioPhase.Phase0_PeacefulPractice:
                     if (serverFire != null) serverFire.gameObject.SetActive(false);
                     if (redEmergencyLight != null) redEmergencyLight.SetActive(false);
-                    OnAIMentorMessage?.Invoke("Chào mừng sinh viên đến buổi thực hành Lab. Hãy làm quen với các thiết bị trên bàn.");
+                    SetAIMentorGuidance("Chào mừng sinh viên đến buổi thực hành Lab. Hãy làm quen với các thiết bị trên bàn.");
                     break;
 
                 case ScenarioPhase.Phase1_PowerFlickerWarning:
                     if (redEmergencyLight != null) redEmergencyLight.SetActive(true);
-                    OnAIMentorMessage?.Invoke("CẢNH BÁO: Tụ điện Tủ Server có dấu hiệu bốc khói! Hãy kiểm tra và ngắt Cầu dao Aptomat ngay!");
+                    SetAIMentorGuidance("CẢNH BÁO: Tụ điện Tủ Server có dấu hiệu bốc khói! Hãy kiểm tra và ngắt Cầu dao Aptomat ngay!");
                     if (ScoringManager.Instance != null)
                         ScoringManager.Instance.AddScore(10, "Phát hiện dấu hiệu chập điện sớm");
                     break;
@@ -130,11 +130,11 @@ namespace EscapeFire.Scenario
                     {
                         alarmAudioSource.Play();
                     }
-                    OnAIMentorMessage?.Invoke("CHÁY RỒI! Bấm chuông báo cháy, ngắt Aptomat, lấy bình CO2 xịt dập lửa và khom người né khói độc!");
+                    SetAIMentorGuidance("CHÁY RỒI! Bấm chuông báo cháy, ngắt Aptomat, lấy bình CO2 xịt dập lửa và khom người né khói độc!");
                     break;
 
                 case ScenarioPhase.Phase3_SmokeEvacuation:
-                    OnAIMentorMessage?.Invoke("Lửa đã được khống chế! Khom người di chuyển ra Cửa chính và chạy ra Lối thoát hiểm khẩn cấp!");
+                    SetAIMentorGuidance("Lửa đã được khống chế! Khom người di chuyển ra Cửa chính và chạy ra Lối thoát hiểm khẩn cấp!");
                     break;
 
                 case ScenarioPhase.Phase4_CompletedWin:
@@ -144,20 +144,29 @@ namespace EscapeFire.Scenario
                         string jsonReport = ScoringManager.Instance.ExportJSONReport();
                         Debug.Log($"[WIN] Telemetry Report:\n{jsonReport}");
                     }
-                    OnAIMentorMessage?.Invoke("XUẤT SẮC! Bạn đã hoàn thành xuất sắc diễn tập PCCC và thoát hiểm an toàn!");
+                    SetAIMentorGuidance("XUẤT SẮC! Bạn đã hoàn thành xuất sắc diễn tập PCCC và thoát hiểm an toàn!");
                     break;
 
                 case ScenarioPhase.Phase5_GameOverFail:
-                    OnAIMentorMessage?.Invoke("THẤT BẠI: Bạn đã vi phạm quy tắc an toàn hoặc hít quá nhiều khói độc. Hãy thử lại!");
+                    SetAIMentorGuidance("THẤT BẠI: Bạn đã vi phạm quy tắc an toàn hoặc hít quá nhiều khói độc. Hãy thử lại!");
                     break;
             }
 
             OnPhaseChanged?.Invoke(CurrentPhase);
+            EventBus<PhaseChangedEvent>.Publish(new PhaseChangedEvent(CurrentPhase));
         }
 
-        private void HandlePowerStateChanged(bool isPowerOn)
+        /// <summary>Single entry point for AI Mentor guidance (scenario phases, MicroAIGovernor, voice triggers).</summary>
+        public void SetAIMentorGuidance(string message)
         {
-            if (!isPowerOn && !_hasPowerBeenCut)
+            if (string.IsNullOrEmpty(message)) return;
+            OnAIMentorMessage?.Invoke(message);
+            EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent(message));
+        }
+
+        private void HandlePowerStateChanged(PowerStateChangedEvent e)
+        {
+            if (!e.IsPowerOn && !_hasPowerBeenCut)
             {
                 _hasPowerBeenCut = true;
                 Debug.Log("[ProgressiveScenario] Aptomat Power Cut Off Detected!");
@@ -168,8 +177,11 @@ namespace EscapeFire.Scenario
             }
         }
 
-        private void HandleFireExtinguished()
+        private void HandleFireExtinguished(FireExtinguishedEvent e)
         {
+            // Only the main server fire drives the scenario; secondary fires (M2) are ignored here.
+            if (serverFire != null && e.FireInstanceId != serverFire.GetInstanceID()) return;
+
             if (!_hasFireBeenExtinguished)
             {
                 _hasFireBeenExtinguished = true;
@@ -183,18 +195,15 @@ namespace EscapeFire.Scenario
 
         public void TriggerHallwayEvacuationWin()
         {
-            if (CurrentPhase != ScenarioPhase.Phase4_CompletedWin && CurrentPhase != ScenarioPhase.Phase5_GameOverFail)
-            {
-                SetPhase(ScenarioPhase.Phase4_CompletedWin);
-            }
+            SetPhase(ScenarioPhase.Phase4_CompletedWin);
         }
 
-        private void HandlePlayerSuffocated()
+        private void HandlePlayerSuffocated(OxygenDepletedEvent _)
         {
             SetPhase(ScenarioPhase.Phase5_GameOverFail);
         }
 
-        private void HandlePlayerDied(string cause)
+        private void HandlePlayerDied(PlayerDiedEvent e)
         {
             SetPhase(ScenarioPhase.Phase5_GameOverFail);
         }

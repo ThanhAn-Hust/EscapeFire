@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
+using EscapeFire.Core;
 using EscapeFire.Player;
-using EscapeFire.Scenario;
 
 namespace EscapeFire.UI
 {
@@ -24,15 +24,16 @@ namespace EscapeFire.UI
 
         private void Start()
         {
-            if (oxygenSystem == null) oxygenSystem = FindObjectOfType<OxygenSystem>();
-            if (healthSystem == null) healthSystem = FindObjectOfType<HealthSystem>();
-            if (heightDetector == null) heightDetector = FindObjectOfType<VRHeightDetector>();
-
-            if (LabProgressiveScenarioController.Instance != null)
-            {
-                LabProgressiveScenarioController.Instance.OnAIMentorMessage += UpdateAIMentorText;
-            }
+            if (oxygenSystem == null) oxygenSystem = FindFirstObjectByType<OxygenSystem>();
+            if (healthSystem == null) healthSystem = FindFirstObjectByType<HealthSystem>();
+            if (heightDetector == null) heightDetector = FindFirstObjectByType<VRHeightDetector>();
         }
+
+        private void OnEnable() => EventBus<MentorMessageEvent>.Subscribe(HandleMentorMessage);
+
+        private void OnDisable() => EventBus<MentorMessageEvent>.Unsubscribe(HandleMentorMessage);
+
+        private void HandleMentorMessage(MentorMessageEvent e) => UpdateAIMentorText(e.Message);
 
         private void Update()
         {
