@@ -34,9 +34,11 @@ DEMO_OUTPUTS = [
 ]
 
 
-def create_app(llm: LLMClient | None = None, log_dir: Path | None = Path("logs")) -> FastAPI:
+def create_app(llm: LLMClient | None = None, log_dir: Path | None = Path("logs"),
+               min_observation_s: float | None = None) -> FastAPI:
     app = FastAPI(title="EscapeFire Edge AI Director")
-    director = Director(llm or OllamaClient(), log_dir=log_dir)
+    director = Director(llm or OllamaClient(), log_dir=log_dir,
+                        **({} if min_observation_s is None else {"min_observation_s": min_observation_s}))
     app.state.director = director
 
     @app.get("/health")
@@ -102,11 +104,13 @@ def main() -> None:
     parser.add_argument("--host", default="0.0.0.0", help="0.0.0.0 so the Quest 2 can reach it over LAN")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--fake-llm", action="store_true", help="use scripted directives instead of Ollama")
+    parser.add_argument("--min-observation", type=float, default=None,
+                        help="seconds of emergency to observe before any escalation (default 15)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
     llm: LLMClient = ScriptedLLM(DEMO_OUTPUTS) if args.fake_llm else OllamaClient()
-    uvicorn.run(create_app(llm), host=args.host, port=args.port)
+    uvicorn.run(create_app(llm, min_observation_s=args.min_observation), host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

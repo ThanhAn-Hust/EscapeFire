@@ -32,6 +32,8 @@ PCCC_RULES: dict[str, str] = {
 
 PANIC_THRESHOLD = 0.75
 CALM_THRESHOLD = 0.25
+# A low CF right after the fire starts only means the learner has not acted yet: observe first.
+MIN_OBSERVATION_SECONDS = 15.0
 
 
 class TelemetryMessage(BaseModel):
@@ -43,6 +45,7 @@ class TelemetryMessage(BaseModel):
     held_item: str = "None"
     current_zone: str = "Unknown"
     phase: str = ""
+    emergency_elapsed: float = Field(default=0, ge=0)  # seconds since the fire started
     prior_challenges: list[str] = Field(default_factory=list)
 
 

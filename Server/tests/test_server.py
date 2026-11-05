@@ -17,7 +17,7 @@ GOOD = ('{"directive": "ESCALATE_SECONDARY_FIRE", "target_object": "ChemicalTray
 
 def calm(**overrides) -> TelemetryMessage:
     base = dict(session_id="s1", time_elapsed=60, cognitive_friction_cf=0.1,
-                phase="Phase2_ServerExplosionFire", prior_challenges=[])
+                phase="Phase2_ServerExplosionFire", emergency_elapsed=30, prior_challenges=[])
     base.update(overrides)
     return TelemetryMessage(**base)
 
@@ -77,6 +77,12 @@ def test_outside_emergency_never_calls_llm():
     llm = ScriptedLLM([GOOD])
     d = run(Director(llm, log_dir=None).decide(calm(phase="Phase0_PeacefulPractice")))
     assert d.directive == MAINTAIN and llm.calls == 0
+
+
+def test_no_escalation_during_initial_observation_window():
+    llm = ScriptedLLM([GOOD])
+    d = run(Director(llm, log_dir=None).decide(calm(emergency_elapsed=3)))
+    assert d.directive == MAINTAIN and d.source == "rule" and llm.calls == 0
 
 
 def test_calm_learner_gets_validated_llm_directive():

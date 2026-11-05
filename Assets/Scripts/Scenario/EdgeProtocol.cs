@@ -15,6 +15,7 @@ namespace EscapeFire.Scenario
         [JsonProperty("held_item")] public string HeldItem = "None";
         [JsonProperty("current_zone")] public string CurrentZone = "Unknown";
         [JsonProperty("phase")] public string Phase = "";
+        [JsonProperty("emergency_elapsed")] public float EmergencyElapsed;
         [JsonProperty("prior_challenges")] public List<string> PriorChallenges = new List<string>();
     }
 

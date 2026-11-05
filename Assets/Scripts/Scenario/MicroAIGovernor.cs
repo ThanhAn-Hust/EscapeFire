@@ -22,6 +22,10 @@ namespace EscapeFire.Scenario
         [SerializeField] private float escalationCooldownSeconds = 45f;
         [SerializeField] private float calmingCooldownSeconds = 20f;
         [SerializeField] private SecondaryFireSlot[] secondaryFireSlots;
+        [Tooltip("Upper bound of AI-added challenges per drill (local + edge) so the learner is never overwhelmed.")]
+        [SerializeField] private int maxEscalationsPerSession = 3;
+        [Tooltip("Low CF right after the fire starts only means the learner has not acted yet: observe before escalating.")]
+        [SerializeField] private float minObservationSeconds = 15f;
 
         private static readonly Directive[] ESCALATION_ORDER =
         {
@@ -38,6 +42,7 @@ namespace EscapeFire.Scenario
         private float _lastCalming = float.NegativeInfinity;
         private bool _pinJamApplied;
         private int _escalationCount;
+        private readonly System.Collections.Generic.HashSet<Directive> _applied = new System.Collections.Generic.HashSet<Directive>();
 
         public int EscalationCount => _escalationCount;
 
@@ -71,9 +76,24 @@ namespace EscapeFire.Scenario
             if (Instance == this) Instance = null;
         }
 
-        private void OnEnable() => EventBus<CognitiveStateChangedEvent>.Subscribe(OnCognitiveStateChanged);
+        private float _emergencyStart = -1f;
 
-        private void OnDisable() => EventBus<CognitiveStateChangedEvent>.Unsubscribe(OnCognitiveStateChanged);
+        private void OnEnable()
+        {
+            EventBus<CognitiveStateChangedEvent>.Subscribe(OnCognitiveStateChanged);
+            EventBus<PhaseChangedEvent>.Subscribe(OnPhaseChanged);
+        }
+
+        private void OnDisable()
+        {
+            EventBus<CognitiveStateChangedEvent>.Unsubscribe(OnCognitiveStateChanged);
+            EventBus<PhaseChangedEvent>.Unsubscribe(OnPhaseChanged);
+        }
+
+        private void OnPhaseChanged(PhaseChangedEvent e)
+        {
+            if (e.Phase == ScenarioPhase.Phase2_ServerExplosionFire && _emergencyStart < 0f) _emergencyStart = Time.time;
+        }
 
         private void Update()
         {
@@ -84,8 +104,12 @@ namespace EscapeFire.Scenario
             if (tracker == null || tracker.State != CognitiveState.Calm) return;
             if (Time.time - _lastEscalation < escalationCooldownSeconds) return;
 
+            if (_escalationCount >= maxEscalationsPerSession) return;
+            if (_emergencyStart < 0f || Time.time - _emergencyStart < minObservationSeconds) return;
+
             for (int i = 0; i < ESCALATION_ORDER.Length; i++)
             {
+                if (_applied.Contains(ESCALATION_ORDER[i])) continue; // each challenge type once per drill
                 if (TryExecute(ESCALATION_ORDER[i], "local") == DirectiveResult.Accepted)
                 {
                     _lastEscalation = Time.time;
@@ -111,7 +135,11 @@ namespace EscapeFire.Scenario
             if (result == DirectiveResult.Accepted && directive != Directive.MaintainCurrentPace)
             {
                 if (!Apply(directive)) result = DirectiveResult.RejectedBudgetOverflow;
-                else _escalationCount++;
+                else
+                {
+                    _escalationCount++;
+                    _applied.Add(directive);
+                }
             }
 
             var cf = CognitiveFrictionTracker.Instance;

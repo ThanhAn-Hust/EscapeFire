@@ -9,15 +9,18 @@ from pathlib import Path
 
 from .llm import LLMClient
 from .prompt import SYSTEM_PROMPT, build_user_prompt
-from .schema import CALM_THRESHOLD, MAINTAIN, PANIC_THRESHOLD, DirectiveMessage, TelemetryMessage
+from .schema import (CALM_THRESHOLD, MAINTAIN, MIN_OBSERVATION_SECONDS, PANIC_THRESHOLD, DirectiveMessage,
+                     TelemetryMessage)
 from .validator import validate_llm_output
 
 EMERGENCY_PHASES = ("Phase2_ServerExplosionFire", "Phase3_SmokeEvacuation")
 
 
 class Director:
-    def __init__(self, llm: LLMClient, timeout_s: float = 6.0, log_dir: Path | None = None) -> None:
+    def __init__(self, llm: LLMClient, timeout_s: float = 6.0, log_dir: Path | None = None,
+                 min_observation_s: float = MIN_OBSERVATION_SECONDS) -> None:
         self.llm = llm
+        self.min_observation_s = min_observation_s
         self.timeout_s = timeout_s
         self.log_dir = log_dir
         if log_dir is not None:
@@ -35,6 +38,10 @@ class Director:
             return self._finish(telemetry, started, DirectiveMessage(
                 directive=MAINTAIN, source="rule",
                 pedagogical_reason="Chưa ở giai đoạn sự cố."), raw=None, error="")
+        if telemetry.emergency_elapsed < self.min_observation_s:
+            return self._finish(telemetry, started, DirectiveMessage(
+                directive=MAINTAIN, source="rule",
+                pedagogical_reason="Đang quan sát phản ứng ban đầu của người học."), raw=None, error="")
         if telemetry.cognitive_friction_cf > CALM_THRESHOLD:
             return self._finish(telemetry, started, DirectiveMessage(
                 directive=MAINTAIN, source="rule",
