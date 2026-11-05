@@ -29,6 +29,8 @@ namespace EscapeFire.EditorTools
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel32;
             PlayerSettings.Android.forceInternetPermission = true; // edge server + LMS over LAN
+            // The edge AI server / mock LMS run on the instructor laptop over plain http:// on the LAN.
+            PlayerSettings.insecureHttpOption = InsecureHttpOption.AlwaysAllowed;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { GraphicsDeviceType.Vulkan });
             PlayerSettings.colorSpace = ColorSpace.Linear;
