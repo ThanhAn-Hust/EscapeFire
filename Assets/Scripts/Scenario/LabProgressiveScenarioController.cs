@@ -51,6 +51,10 @@ namespace EscapeFire.Scenario
         {
             if (Instance == null) Instance = this;
             else { Destroy(gameObject); return; }
+
+            // Resolved in Awake (not Start) so SmokeDensityController / FM200System can read ServerFire in their Start.
+            // Include inactive objects: the fire is hidden until phase 2.
+            if (serverFire == null) serverFire = FindFirstObjectByType<FireHazard>(FindObjectsInactive.Include);
         }
 
         private void OnEnable()
@@ -78,9 +82,6 @@ namespace EscapeFire.Scenario
 
         private void Start()
         {
-            // Fire object may already be inactive in the scene, so include inactive objects.
-            if (serverFire == null) serverFire = FindFirstObjectByType<FireHazard>(FindObjectsInactive.Include);
-
             SetPhase(ScenarioPhase.Phase0_PeacefulPractice);
         }
 

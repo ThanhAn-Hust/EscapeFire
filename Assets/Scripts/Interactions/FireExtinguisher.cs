@@ -77,7 +77,7 @@ namespace EscapeFire.Interactions
             // DANGEROUS RULE: Water/Foam used on LIVE electrical circuit triggers electrocution!
             if (type == ExtinguisherType.WaterFoam && isElectricalPowerLive)
             {
-                Debug.LogError("[FireExtinguisher] CRITICAL HAZARD: Water/Foam sprayed on LIVE electrical fire!");
+                Debug.LogWarning("[FireExtinguisher] CRITICAL HAZARD: Water/Foam sprayed on LIVE electrical fire!");
                 OnShockHazardTriggered?.Invoke();
                 EventBus<ShockHazardEvent>.Publish(new ShockHazardEvent(type));
                 return false;

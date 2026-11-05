@@ -18,6 +18,14 @@ namespace EscapeFire.Hazards
 
         public float CurrentSmokeHeight { get; private set; }
 
+        private void Start()
+        {
+            if (targetFire == null && Scenario.LabProgressiveScenarioController.Instance != null)
+            {
+                targetFire = Scenario.LabProgressiveScenarioController.Instance.ServerFire;
+            }
+        }
+
         private void Awake()
         {
             CurrentSmokeHeight = initialSmokeHeight;
