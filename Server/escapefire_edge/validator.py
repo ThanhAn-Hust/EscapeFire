@@ -10,7 +10,7 @@ import json
 import re
 from dataclasses import dataclass
 
-from .schema import ALLOWED_DIRECTIVES, MAINTAIN, PCCC_RULES
+from .schema import ALLOWED_DIRECTIVES, DIRECTIVE_TIERS, MAINTAIN, PCCC_RULES, allowed_tier
 
 _JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
 MAX_REASON_CHARS = 300
@@ -50,7 +50,7 @@ def _cites_known_rule(reference: str) -> bool:
     return any(key.upper() in ref or ref in key.upper() for key in PCCC_RULES)
 
 
-def validate_llm_output(raw: str) -> Tier1Result:
+def validate_llm_output(raw: str, prior_challenges: list[str] | tuple[str, ...] = ()) -> Tier1Result:
     if not raw or not raw.strip():
         return _reject("empty_output")
 
@@ -61,6 +61,9 @@ def validate_llm_output(raw: str) -> Tier1Result:
     directive = str(data.get("directive", "")).strip().upper()
     if directive not in ALLOWED_DIRECTIVES:
         return _reject(f"directive_not_whitelisted:{directive or '<missing>'}")
+
+    if directive != MAINTAIN and DIRECTIVE_TIERS.get(directive, 0) > allowed_tier(len(prior_challenges)):
+        return _reject(f"tier_too_high:{directive}")
 
     reference = str(data.get("pccc_rule_reference", "")).strip()
     if directive != MAINTAIN and not _cites_known_rule(reference):

@@ -24,9 +24,11 @@ from .schema import DirectiveResultMessage, TelemetryMessage
 log = logging.getLogger("escapefire.edge")
 _SAFE_ID = re.compile(r"[A-Za-z0-9-]{1,64}")
 
-DEMO_OUTPUTS = [
+DEMO_OUTPUTS = [  # one challenge per tier, in order (scripted stand-in for the LLM)
     '{"directive": "TRIGGER_CO2_PIN_JAM", "target_object": "CO2_Extinguisher", '
     '"pccc_rule_reference": "TCVN 3890", "pedagogical_reason": "Rèn phản xạ xử lý thiết bị kẹt."}',
+    '{"directive": "TRIGGER_BLACKOUT", "target_object": "LabLighting", '
+    '"pccc_rule_reference": "NFPA 101", "pedagogical_reason": "Định hướng theo đèn khẩn cấp và biển EXIT."}',
     '{"directive": "ESCALATE_SECONDARY_FIRE", "target_object": "ChemicalTray", '
     '"pccc_rule_reference": "LIFE SAFETY INVARIANT", "pedagogical_reason": "Kiểm tra khả năng đánh giá lại tình huống."}',
     '{"directive": "ESCALATE_FM200_COUNTDOWN", "target_object": "ServerRoom", '

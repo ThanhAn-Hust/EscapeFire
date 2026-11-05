@@ -32,6 +32,28 @@ namespace EscapeFire.Interactions
         public bool IsSpraying { get; private set; } = false;
         public bool IsPinJammed => _pullsRemaining > 1;
 
+        /// <summary>Seconds of extinguishing agent left (infinite unless the low-pressure anomaly is active).</summary>
+        public float RemainingAgentSeconds { get; private set; } = float.PositiveInfinity;
+        public bool IsEmpty => RemainingAgentSeconds <= 0f;
+        public bool HasLowPressure => !float.IsPositiveInfinity(RemainingAgentSeconds);
+
+        /// <summary>Anomaly TRIGGER_EXTINGUISHER_LOW_PRESSURE: the gauge is in the red, only a few seconds of agent.</summary>
+        public void SetLowPressure(float secondsOfAgent)
+        {
+            RemainingAgentSeconds = Mathf.Max(0.5f, secondsOfAgent);
+        }
+
+        private void Update()
+        {
+            if (!IsSpraying || !HasLowPressure) return;
+            RemainingAgentSeconds -= Time.deltaTime;
+            if (RemainingAgentSeconds > 0f) return;
+            RemainingAgentSeconds = 0f;
+            StopSpray();
+            EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent(
+                "Bình đã hết áp! Còn bình nào an toàn cho cháy điện không, hay đã đến lúc sơ tán?"));
+        }
+
         private int _pullsRemaining = 1;
 
         public event Action OnSafetyPinPulled;
@@ -66,6 +88,7 @@ namespace EscapeFire.Interactions
 
         public bool TrySpray(bool isElectricalPowerLive = false)
         {
+            if (IsEmpty) return false;
             if (!IsPinPulled)
             {
                 Debug.LogWarning("[FireExtinguisher] Cannot spray: Safety pin is still attached!");

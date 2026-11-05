@@ -17,6 +17,26 @@ namespace EscapeFire.Hazards
         [SerializeField] private Transform smokeVolumeTransform;
 
         public float CurrentSmokeHeight { get; private set; }
+        public bool HasSurged { get; private set; }
+
+        /// <summary>True while the layer is high enough for a sudden drop to matter.</summary>
+        public bool CanSurge => !HasSurged && CurrentSmokeHeight - minSmokeHeight > 0.9f;
+
+        /// <summary>Anomaly TRIGGER_SMOKE_SURGE: thick smoke suddenly rolls down and keeps lowering faster.</summary>
+        public bool Surge(float drop = 0.8f, float speedMultiplier = 2f)
+        {
+            if (!CanSurge) return false;
+            HasSurged = true;
+            CurrentSmokeHeight = Mathf.Max(minSmokeHeight, CurrentSmokeHeight - drop);
+            smokeLoweringSpeed *= speedMultiplier;
+            if (smokeVolumeTransform != null)
+            {
+                Vector3 pos = smokeVolumeTransform.position;
+                pos.y = CurrentSmokeHeight;
+                smokeVolumeTransform.position = pos;
+            }
+            return true;
+        }
 
         private void Start()
         {

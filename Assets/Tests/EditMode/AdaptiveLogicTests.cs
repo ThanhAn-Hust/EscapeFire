@@ -81,7 +81,11 @@ namespace EscapeFire.Tests
             EmergencyActive = true,
             ActiveFires = 1,
             MaxFires = 4,
-            HasSafeSecondarySlot = true
+            HasSafeSecondarySlot = true,
+            ChallengesSoFar = 3,          // all tiers unlocked for rule-specific tests
+            SmokeCanSurge = true,
+            HasCo2Extinguisher = true,
+            FireBurning = true
         };
 
         [TestCase("ESCALATE_SECONDARY_FIRE", Directive.EscalateSecondaryFire)]
@@ -146,6 +150,58 @@ namespace EscapeFire.Tests
         {
             var ctx = Ok(); ctx.AlarmAlreadyRaised = true;
             Assert.AreEqual(DirectiveResult.RejectedAlarmAlreadyRaised, DirectiveValidator.Validate(Directive.TriggerAlarmCableCut, ctx));
+        }
+
+        [TestCase(0, Directive.TriggerCo2PinJam, DirectiveResult.Accepted)]
+        [TestCase(0, Directive.TriggerSmokeSurge, DirectiveResult.Accepted)]
+        [TestCase(0, Directive.TriggerBlackout, DirectiveResult.RejectedTierTooHigh)]
+        [TestCase(0, Directive.EscalateFm200Countdown, DirectiveResult.RejectedTierTooHigh)]
+        [TestCase(1, Directive.TriggerBlackout, DirectiveResult.Accepted)]
+        [TestCase(1, Directive.EscalateSecondaryFire, DirectiveResult.RejectedTierTooHigh)]
+        [TestCase(2, Directive.TriggerExtinguisherLowPressure, DirectiveResult.Accepted)]
+        [TestCase(2, Directive.EscalateFm200Countdown, DirectiveResult.RejectedTierTooHigh)]
+        [TestCase(3, Directive.EscalateFm200Countdown, DirectiveResult.Accepted)]
+        public void Tiers_UnlockOneLevelPerChallenge(int challengesSoFar, Directive d, DirectiveResult expected)
+        {
+            var ctx = Ok(); ctx.ChallengesSoFar = challengesSoFar;
+            Assert.AreEqual(expected, DirectiveValidator.Validate(d, ctx));
+        }
+
+        [Test]
+        public void SmokeSurge_NeedsHighSmokeAndOnlyOnce()
+        {
+            var ctx = Ok(); ctx.SmokeCanSurge = false;
+            Assert.AreEqual(DirectiveResult.RejectedPrerequisiteMissing, DirectiveValidator.Validate(Directive.TriggerSmokeSurge, ctx));
+            ctx = Ok(); ctx.SmokeSurgeApplied = true;
+            Assert.AreEqual(DirectiveResult.RejectedAlreadyActive, DirectiveValidator.Validate(Directive.TriggerSmokeSurge, ctx));
+        }
+
+        [Test]
+        public void Blackout_PointlessWhenPowerAlreadyCut()
+        {
+            var ctx = Ok(); ctx.PowerAlreadyCut = true;
+            Assert.AreEqual(DirectiveResult.RejectedPrerequisiteMissing, DirectiveValidator.Validate(Directive.TriggerBlackout, ctx));
+            ctx = Ok(); ctx.BlackoutActive = true;
+            Assert.AreEqual(DirectiveResult.RejectedAlreadyActive, DirectiveValidator.Validate(Directive.TriggerBlackout, ctx));
+        }
+
+        [Test]
+        public void LowPressure_NeedsCo2AndBurningFire()
+        {
+            var ctx = Ok(); ctx.FireBurning = false;
+            Assert.AreEqual(DirectiveResult.RejectedPrerequisiteMissing, DirectiveValidator.Validate(Directive.TriggerExtinguisherLowPressure, ctx));
+            ctx = Ok(); ctx.LowPressureApplied = true;
+            Assert.AreEqual(DirectiveResult.RejectedAlreadyActive, DirectiveValidator.Validate(Directive.TriggerExtinguisherLowPressure, ctx));
+        }
+
+        [TestCase("TRIGGER_SMOKE_SURGE", Directive.TriggerSmokeSurge)]
+        [TestCase("TRIGGER_BLACKOUT", Directive.TriggerBlackout)]
+        [TestCase("TRIGGER_EXTINGUISHER_LOW_PRESSURE", Directive.TriggerExtinguisherLowPressure)]
+        public void TryParse_NewCodes(string code, Directive expected)
+        {
+            Assert.IsTrue(DirectiveCodes.TryParse(code, out var d));
+            Assert.AreEqual(expected, d);
+            Assert.AreEqual(code, DirectiveCodes.ToCode(d));
         }
 
         [Test]

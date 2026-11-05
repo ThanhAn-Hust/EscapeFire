@@ -11,7 +11,7 @@ from escapefire_edge.prompt import SYSTEM_PROMPT, build_user_prompt
 from escapefire_edge.schema import ALLOWED_DIRECTIVES, MAINTAIN, TelemetryMessage
 from escapefire_edge.validator import validate_llm_output
 
-GOOD = ('{"directive": "ESCALATE_SECONDARY_FIRE", "target_object": "ChemicalTray", '
+GOOD = ('{"directive": "TRIGGER_SMOKE_SURGE", "target_object": "ChemicalTray", '
         '"pccc_rule_reference": "LIFE SAFETY INVARIANT", "pedagogical_reason": "test"}')
 
 
@@ -26,7 +26,7 @@ def calm(**overrides) -> TelemetryMessage:
 
 def test_valid_output_passes():
     r = validate_llm_output(GOOD)
-    assert r.ok and r.directive == "ESCALATE_SECONDARY_FIRE"
+    assert r.ok and r.directive == "TRIGGER_SMOKE_SURGE"
 
 
 def test_json_inside_fences_and_chatter_is_extracted():
@@ -38,14 +38,30 @@ def test_json_inside_fences_and_chatter_is_extracted():
     ("", "empty_output"),
     ("not json at all", "invalid_json"),
     ('{"directive": "SET_PLAYER_ON_FIRE", "pccc_rule_reference": "NFPA 101"}', "directive_not_whitelisted"),
-    ('{"directive": "ESCALATE_FM200_COUNTDOWN", "pccc_rule_reference": "made up rule"}', "missing_or_unknown_pccc_rule"),
-    ('{"directive": "ESCALATE_FM200_COUNTDOWN", "pccc_rule_reference": "A"}', "missing_or_unknown_pccc_rule"),
+    ('{"directive": "TRIGGER_CO2_PIN_JAM", "pccc_rule_reference": "made up rule"}', "missing_or_unknown_pccc_rule"),
+    ('{"directive": "TRIGGER_CO2_PIN_JAM", "pccc_rule_reference": "A"}', "missing_or_unknown_pccc_rule"),
 ])
 def test_invalid_outputs_fall_back_to_maintain(raw, error):
     r = validate_llm_output(raw)
     assert not r.ok
     assert r.directive == MAINTAIN
     assert r.error.startswith(error)
+
+
+def test_tier_gating_blocks_jumping_straight_to_fm200():
+    fm200 = ('{"directive": "ESCALATE_FM200_COUNTDOWN", "pccc_rule_reference": "NFPA 2001 / TCVN 7161"}')
+    assert validate_llm_output(fm200, []).error.startswith("tier_too_high")
+    assert validate_llm_output(fm200, ["TRIGGER_CO2_PIN_JAM", "TRIGGER_BLACKOUT", "TRIGGER_SMOKE_SURGE"]).ok
+
+
+def test_new_scenarios_are_whitelisted():
+    for code in ("TRIGGER_SMOKE_SURGE", "TRIGGER_BLACKOUT", "TRIGGER_EXTINGUISHER_LOW_PRESSURE"):
+        assert code in ALLOWED_DIRECTIVES
+
+
+def test_prompt_lists_tier_catalog_and_allowed_level():
+    assert "[Cấp 4] ESCALATE_FM200_COUNTDOWN" in SYSTEM_PROMPT
+    assert "Cấp độ tối đa được phép cho thử thách tiếp theo: 2" in build_user_prompt(calm(prior_challenges=["TRIGGER_CO2_PIN_JAM"]))
 
 
 def test_maintain_does_not_need_rule():
@@ -87,11 +103,12 @@ def test_no_escalation_during_initial_observation_window():
 
 def test_calm_learner_gets_validated_llm_directive():
     d = run(Director(ScriptedLLM([GOOD]), log_dir=None).decide(calm()))
-    assert d.directive == "ESCALATE_SECONDARY_FIRE" and d.source == "llm"
+    assert d.directive == "TRIGGER_SMOKE_SURGE" and d.source == "llm"
 
 
 def test_repeated_challenge_rejected():
-    d = run(Director(ScriptedLLM([GOOD]), log_dir=None).decide(calm(prior_challenges=["ESCALATE_SECONDARY_FIRE"])))
+    d = run(Director(ScriptedLLM([GOOD]), log_dir=None).decide(
+        calm(prior_challenges=["TRIGGER_CO2_PIN_JAM", "TRIGGER_BLACKOUT", "TRIGGER_SMOKE_SURGE"])))
     assert d.directive == MAINTAIN and d.source == "fallback"
 
 
@@ -120,7 +137,7 @@ def test_decisions_are_logged(tmp_path):
     run(Director(ScriptedLLM([GOOD]), log_dir=tmp_path).decide(calm()))
     lines = next(tmp_path.glob("director_*.jsonl")).read_text(encoding="utf-8").splitlines()
     record = json.loads(lines[0])
-    assert record["decision"]["directive"] == "ESCALATE_SECONDARY_FIRE"
+    assert record["decision"]["directive"] == "TRIGGER_SMOKE_SURGE"
     assert record["raw_llm_output"] == GOOD
 
 
@@ -132,9 +149,9 @@ def test_websocket_roundtrip(tmp_path):
     with client.websocket_connect("/session") as ws:
         ws.send_text(calm().model_dump_json())
         reply = ws.receive_json()
-        assert reply["type"] == "directive" and reply["directive"] == "ESCALATE_SECONDARY_FIRE"
+        assert reply["type"] == "directive" and reply["directive"] == "TRIGGER_SMOKE_SURGE"
 
-        ws.send_text(json.dumps({"type": "directive_result", "directive": "ESCALATE_SECONDARY_FIRE",
+        ws.send_text(json.dumps({"type": "directive_result", "directive": "TRIGGER_SMOKE_SURGE",
                                  "result": "Accepted"}))
         ws.send_text("garbage")
         assert ws.receive_json()["error"] == "invalid_json"

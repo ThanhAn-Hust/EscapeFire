@@ -18,7 +18,36 @@ ALLOWED_DIRECTIVES: tuple[str, ...] = (
     "TRIGGER_CO2_PIN_JAM",
     "TRIGGER_ALARM_CABLE_CUT",
     "ESCALATE_FM200_COUNTDOWN",
+    "TRIGGER_SMOKE_SURGE",
+    "TRIGGER_BLACKOUT",
+    "TRIGGER_EXTINGUISHER_LOW_PRESSURE",
 )
+
+# Progressive difficulty (must match Unity DirectiveTiers): the n-th challenge may only use tiers 1..n.
+DIRECTIVE_TIERS: dict[str, int] = {
+    "TRIGGER_CO2_PIN_JAM": 1,
+    "TRIGGER_SMOKE_SURGE": 1,
+    "TRIGGER_ALARM_CABLE_CUT": 2,
+    "TRIGGER_BLACKOUT": 2,
+    "ESCALATE_SECONDARY_FIRE": 3,
+    "TRIGGER_EXTINGUISHER_LOW_PRESSURE": 3,
+    "ESCALATE_FM200_COUNTDOWN": 4,
+}
+MAX_TIER = 4
+
+DIRECTIVE_DESCRIPTIONS: dict[str, str] = {
+    "TRIGGER_CO2_PIN_JAM": "Chốt bình CO2 kẹt, phải giật 2 lần (phản xạ xử lý thiết bị)",
+    "TRIGGER_SMOKE_SURGE": "Khói đen đặc đột ngột tràn xuống 0.8 m (phản xạ hạ thấp người)",
+    "TRIGGER_ALARM_CABLE_CUT": "Cáp chuông báo cháy đứt, phải báo động bằng giọng nói",
+    "TRIGGER_BLACKOUT": "Mất điện chiếu sáng, chỉ còn đèn khẩn cấp và biển EXIT (định hướng trong tối)",
+    "ESCALATE_SECONDARY_FIRE": "Cháy lan sang bàn kỹ thuật / khay hóa chất (đánh giá lại tình huống)",
+    "TRIGGER_EXTINGUISHER_LOW_PRESSURE": "Bình CO2 yếu áp, chỉ còn vài giây phun (quyết định dập tiếp hay sơ tán)",
+    "ESCALATE_FM200_COUNTDOWN": "Còi xả khí FM-200 đếm ngược 30 s (bắt buộc sơ tán)",
+}
+
+
+def allowed_tier(challenges_so_far: int) -> int:
+    return min(challenges_so_far + 1, MAX_TIER)
 MAINTAIN = "MAINTAIN_CURRENT_PACE"
 
 # Ground-truth PCCC rules the LLM must cite (spec §2.1 knowledge base).

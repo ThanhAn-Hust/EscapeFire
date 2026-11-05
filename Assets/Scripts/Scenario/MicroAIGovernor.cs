@@ -23,16 +23,20 @@ namespace EscapeFire.Scenario
         [SerializeField] private float calmingCooldownSeconds = 20f;
         [SerializeField] private SecondaryFireSlot[] secondaryFireSlots;
         [Tooltip("Upper bound of AI-added challenges per drill (local + edge) so the learner is never overwhelmed.")]
-        [SerializeField] private int maxEscalationsPerSession = 3;
+        [SerializeField] private int maxEscalationsPerSession = 4;
         [Tooltip("Low CF right after the fire starts only means the learner has not acted yet: observe before escalating.")]
         [SerializeField] private float minObservationSeconds = 15f;
 
+        /// <summary>Candidate challenges, easiest first. Selection is tier-gated (see DirectiveTiers).</summary>
         private static readonly Directive[] ESCALATION_ORDER =
         {
-            Directive.TriggerCo2PinJam,
-            Directive.TriggerAlarmCableCut,
-            Directive.EscalateSecondaryFire,
-            Directive.EscalateFm200Countdown
+            Directive.TriggerCo2PinJam,                 // tier 1
+            Directive.TriggerSmokeSurge,                // tier 1
+            Directive.TriggerAlarmCableCut,             // tier 2
+            Directive.TriggerBlackout,                  // tier 2
+            Directive.EscalateSecondaryFire,            // tier 3
+            Directive.TriggerExtinguisherLowPressure,   // tier 3
+            Directive.EscalateFm200Countdown            // tier 4
         };
 
         private FireExtinguisher[] _extinguishers;
@@ -61,8 +65,16 @@ namespace EscapeFire.Scenario
             Instance = this;
         }
 
+        private SmokeDensityController _smoke;
+        private BlackoutController _blackout;
+        private CircuitBreakerSwitch _breaker;
+
         private void Start()
         {
+            _smoke = FindFirstObjectByType<SmokeDensityController>();
+            _breaker = FindFirstObjectByType<CircuitBreakerSwitch>();
+            _blackout = FindFirstObjectByType<BlackoutController>();
+            if (_blackout == null) _blackout = gameObject.AddComponent<BlackoutController>();
             _extinguishers = FindObjectsByType<FireExtinguisher>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _alarms = FindObjectsByType<FireAlarmButton>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (secondaryFireSlots == null || secondaryFireSlots.Length == 0)
@@ -107,13 +119,21 @@ namespace EscapeFire.Scenario
             if (_escalationCount >= maxEscalationsPerSession) return;
             if (_emergencyStart < 0f || Time.time - _emergencyStart < minObservationSeconds) return;
 
-            for (int i = 0; i < ESCALATION_ORDER.Length; i++)
+            // Prefer the hardest tier currently allowed, then fall back to easier unused ones.
+            // Within a tier the starting candidate is random, so every drill plays out differently.
+            int allowed = DirectiveTiers.AllowedTier(_escalationCount);
+            int offset = Random.Range(0, ESCALATION_ORDER.Length);
+            for (int tier = allowed; tier >= 1; tier--)
             {
-                if (_applied.Contains(ESCALATION_ORDER[i])) continue; // each challenge type once per drill
-                if (TryExecute(ESCALATION_ORDER[i], "local") == DirectiveResult.Accepted)
+                for (int k = 0; k < ESCALATION_ORDER.Length; k++)
                 {
-                    _lastEscalation = Time.time;
-                    return;
+                    var d = ESCALATION_ORDER[(k + offset) % ESCALATION_ORDER.Length];
+                    if (DirectiveTiers.TierOf(d) != tier || _applied.Contains(d)) continue; // each type once per drill
+                    if (TryExecute(d, "local") == DirectiveResult.Accepted)
+                    {
+                        _lastEscalation = Time.time;
+                        return;
+                    }
                 }
             }
         }
@@ -172,8 +192,17 @@ namespace EscapeFire.Scenario
                 ActiveFires = budget != null ? budget.ActiveFires : 0,
                 MaxFires = budget != null ? PerformanceBudgetGovernor.MAX_FIRE_EMITTERS : int.MaxValue,
                 PinJamAlreadyApplied = _pinJamApplied,
-                Fm200Active = fm200 == null || fm200.IsCountdownActive || fm200.HasDischarged
+                Fm200Active = fm200 == null || fm200.IsCountdownActive || fm200.HasDischarged,
+                ChallengesSoFar = _escalationCount,
+                SmokeCanSurge = _smoke != null && _smoke.CanSurge,
+                SmokeSurgeApplied = _smoke != null && _smoke.HasSurged,
+                BlackoutActive = _blackout != null && _blackout.IsBlackout,
+                PowerAlreadyCut = _breaker != null && !_breaker.IsPowerOn
             };
+
+            var controller = LabProgressiveScenarioController.Instance;
+            var fire = controller != null ? controller.ServerFire : null;
+            ctx.FireBurning = fire != null && fire.isActiveAndEnabled && !fire.IsExtinguished;
 
             for (int i = 0; secondaryFireSlots != null && i < secondaryFireSlots.Length; i++)
             {
@@ -189,8 +218,13 @@ namespace EscapeFire.Scenario
             {
                 if (_extinguishers[i] == null) continue;
                 if (_extinguishers[i].IsPinPulled) ctx.AnyExtinguisherUnpinned = true;
-                if (_extinguishers[i].Type == ExtinguisherType.CO2) anyCo2 = true;
+                if (_extinguishers[i].Type == ExtinguisherType.CO2)
+                {
+                    anyCo2 = true;
+                    if (_extinguishers[i].HasLowPressure) ctx.LowPressureApplied = true;
+                }
             }
+            ctx.HasCo2Extinguisher = anyCo2;
             if (!anyCo2) ctx.PinJamAlreadyApplied = true; // nothing to jam
 
             bool anyAlarm = false;
@@ -243,6 +277,27 @@ namespace EscapeFire.Scenario
                     if (FM200System.Instance == null) return false;
                     FM200System.Instance.TriggerCountdown();
                     return true;
+
+                case Directive.TriggerSmokeSurge:
+                    if (_smoke == null || !_smoke.Surge()) return false;
+                    Mentor("Khói đen đặc đột ngột tràn xuống! Tầm nhìn giảm mạnh — tư thế của bạn lúc này nên thế nào?");
+                    return true;
+
+                case Directive.TriggerBlackout:
+                    if (_blackout == null || !_blackout.Trigger()) return false;
+                    Mentor("Mất điện chiếu sáng! Chỉ còn đèn khẩn cấp. Hãy tìm biển EXIT màu xanh và lần theo mép tường.");
+                    return true;
+
+                case Directive.TriggerExtinguisherLowPressure:
+                    bool applied = false;
+                    for (int i = 0; i < _extinguishers.Length; i++)
+                    {
+                        if (_extinguishers[i] == null || _extinguishers[i].Type != ExtinguisherType.CO2) continue;
+                        _extinguishers[i].SetLowPressure(4f);
+                        applied = true;
+                    }
+                    if (applied) Mentor("Kim đồng hồ áp suất bình CO2 đang ở vạch đỏ — chỉ còn vài giây phun. Bạn sẽ dùng nó thế nào?");
+                    return applied;
 
                 default:
                     return true;
