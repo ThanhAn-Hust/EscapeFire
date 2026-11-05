@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # EscapeFire verify: compile + Unity analyzers + pure-logic tests + edge server tests + static scene audit.
-# Usage: bash Tools/verify.sh   (Unity Editor does NOT need to be open; Library/ must exist from one Unity import)
+# Usage: bash Tools/verify.sh           fast checks, no Unity license needed
+#        bash Tools/verify.sh --unity   + real Unity batchmode: scene audit, EditMode + PlayMode tests, snapshots
+#        (close the Unity Editor first; requires being signed in to Unity Hub)
 # Compile-check every EscapeFire assembly with Unity's bundled Roslyn + Microsoft.Unity.Analyzers (no Unity license needed).
 set -u
 FAIL=0
@@ -40,10 +42,38 @@ echo "== edge server tests"
 (cd "$P/Server" && uv run pytest -q -p no:warnings 2>&1 | tail -1) || FAIL=1
 echo "== static scene audit (BasicScene placeholders / physics risks)"
 PYTHONIOENCODING=utf-8 python "$D/scene_static_audit.py" "$P/Assets/Scenes/BasicScene.unity" all > "$OUT/scene_audit.txt"
-if grep -qE "builtin:10208|Rigidbody\(dyn\)|MB:MISSING" "$OUT/scene_audit.txt"; then
+PATTERN="Rigidbody\(dyn\)|MB:MISSING"
+# Capsule NPC meshes are fine once the PolygonOffice character (Person_Visual) is attached and the capsule renderer is off.
+grep -q "Person_Visual" "$P/Assets/Scenes/BasicScene.unity" || PATTERN="builtin:10208|$PATTERN"
+if grep -qE "$PATTERN" "$OUT/scene_audit.txt"; then
   echo "TODO in Unity: run EscapeFire > Setup All (still capsule NPCs / free-falling bodies / missing scripts):"
-  grep -E "builtin:10208|Rigidbody\(dyn\)|MB:MISSING" "$OUT/scene_audit.txt"
+  grep -E "$PATTERN" "$OUT/scene_audit.txt"
 else
-  echo "OK: no capsule NPCs, no free-falling rigidbodies, no missing scripts"
+  echo "OK: NPCs use real characters, no free-falling rigidbodies, no missing scripts"
+fi
+
+if [ "${1:-}" = "--unity" ]; then
+  UNITY="${UNITY_EXE:-/c/Program Files/Unity/Hub/Editor/6000.3.15f1/Editor/Unity.exe}"
+  WP="$(cygpath -w "$P" 2>/dev/null || echo "$P")"
+  LOGS="$P/Logs/verify"; mkdir -p "$LOGS"; WL="$(cygpath -w "$LOGS" 2>/dev/null || echo "$LOGS")"
+  echo "== Unity: lab scene audit"
+  "$UNITY" -batchmode -nographics -quit -projectPath "$WP" -executeMethod EscapeFire.EditorTools.LabSceneAudit.RunOnLab -logFile "$WL/audit.log"
+  grep -E "\[EscapeFire\] Audit|  ERROR |  WARN  " "$LOGS/audit.log" | sort -u
+  grep -q "Audit 'BasicScene': 0 error" "$LOGS/audit.log" || FAIL=1
+  for MODE in EditMode PlayMode; do
+    echo "== Unity: $MODE tests"
+    "$UNITY" -batchmode -nographics -projectPath "$WP" -runTests -testPlatform $MODE -assemblyNames "EscapeFire.Tests.$MODE"       -testResults "$WL/$MODE-results.xml" -logFile "$WL/$MODE.log" || FAIL=1
+    python - "$LOGS/$MODE-results.xml" <<'PYEOF'
+import sys, xml.etree.ElementTree as ET
+r = ET.parse(sys.argv[1]).getroot()
+print({k: r.get(k) for k in ("total", "passed", "failed")})
+for tc in r.iter("test-case"):
+    if tc.get("result") != "Passed":
+        m = tc.find(".//message")
+        print("FAIL", tc.get("fullname"), (m.text or "")[:400] if m is not None else "")
+PYEOF
+  done
+  echo "== Unity: snapshots -> Logs/Snapshots"
+  "$UNITY" -batchmode -quit -projectPath "$WP" -executeMethod EscapeFire.EditorTools.SceneSnapshots.CaptureLab -logFile "$WL/snap.log" || FAIL=1
 fi
 exit $FAIL

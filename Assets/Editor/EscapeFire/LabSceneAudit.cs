@@ -38,6 +38,13 @@ namespace EscapeFire.EditorTools
             else Debug.Log(sb.ToString() + "  All checks passed.");
         }
 
+        /// <summary>Opens the lab scene and audits it (batchmode: -executeMethod EscapeFire.EditorTools.LabSceneAudit.RunOnLab).</summary>
+        public static void RunOnLab()
+        {
+            EditorSceneManager.OpenScene($"Assets/Scenes/{EscapeFire.Core.SceneNames.LAB}.unity", OpenSceneMode.Single);
+            Run();
+        }
+
         /// <summary>Runs every check on the active scene (used by the menu and by the EditMode scene test).</summary>
         public static void Collect(out List<string> errors, out List<string> warnings)
         {
@@ -112,6 +119,14 @@ namespace EscapeFire.EditorTools
                     warnings.Add($"NPC '{npc.name}' feet at y={npc.transform.position.y:F2}, floor at {room.max.y:F2}.");
                 if (npc.Role == NPCRole.HoaFaint && npc.GetComponent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>() == null)
                     errors.Add($"NPC '{npc.name}' cannot be rescued (no XR interactable).");
+
+                // Body must not clip through furniture (people standing inside chairs/desks look broken in VR).
+                Vector3 feet = npc.transform.position;
+                foreach (var c in Physics.OverlapCapsule(feet + Vector3.up * 0.35f, feet + Vector3.up * 1.45f, 0.22f, ~0, QueryTriggerInteraction.Ignore))
+                {
+                    if (c.transform.IsChildOf(npc.transform) || c.name.Contains("Floor") || c.name == "Plane") continue;
+                    errors.Add($"NPC '{npc.name}' intersects '{PathOf(c.transform)}'.");
+                }
             }
 
             // Required systems

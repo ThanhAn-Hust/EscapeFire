@@ -242,6 +242,7 @@ namespace EscapeFire.EditorTools
             BuildEverything();
             AddAdaptiveDirector();
             AddVoiceCoach();
+            SimulatorSetup.Configure(); // keyboard/mouse testing without a headset
             LabSceneDresser.DressLab(); // real assets, grounding, smoke, HUD + runs the scene audit
             EditorSceneManager.OpenScene(MenuPath);
         }

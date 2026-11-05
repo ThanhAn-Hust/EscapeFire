@@ -51,6 +51,8 @@ namespace EscapeFire.EditorTools
             var scene = EditorSceneManager.OpenScene(LAB, OpenSceneMode.Single);
             var log = new List<string>();
 
+            FixPolygonOfficeMaterials(log);
+            EnsureLighting(log);
             DressDesks(log);
             DressFireAlarm(log);
             MountExtinguishers(log);
@@ -81,7 +83,7 @@ namespace EscapeFire.EditorTools
         private static void DressDesks(List<string> log)
         {
             int desks = 0;
-            foreach (var desk in AllNamed(n => n.StartsWith("Desk_")))
+            foreach (var desk in AllNamed(IsDeskName))
             {
                 if (desk.Find("Desk" + VISUAL) != null) continue;
                 var deskRenderer = desk.GetComponent<Renderer>();
@@ -125,8 +127,24 @@ namespace EscapeFire.EditorTools
 
         private static void DressFireAlarm(List<string> log)
         {
+            var door = GameObject.Find("Main_Exit_Door_Double");
             foreach (var alarm in Object.FindObjectsByType<FireAlarmButton>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
+                // Spec: the alarm sits beside the exit door (opposite the CO2 station), never on the door leaf.
+                if (door != null && door.TryGetComponent<Renderer>(out var doorRenderer))
+                {
+                    Bounds d = doorRenderer.bounds;
+                    Vector3 p = alarm.transform.position;
+                    if (p.x > d.min.x - 0.15f && p.x < d.max.x + 0.15f)
+                    {
+                        var co2 = Object.FindObjectsByType<FireExtinguisher>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+                            .FirstOrDefault(e => e.Type == ExtinguisherType.CO2);
+                        bool co2OnLeft = co2 == null || co2.transform.position.x < d.center.x;
+                        float x = co2OnLeft ? d.max.x + 0.35f : d.min.x - 0.35f;
+                        alarm.transform.position = new Vector3(x, FLOOR_Y + 1.4f, p.z);
+                        log.Add($"Moved fire alarm off the exit door to x={x:F2} (beside the door, opposite the CO2 station).");
+                    }
+                }
                 if (alarm.transform.Find("Alarm" + VISUAL) != null) continue;
                 if (!alarm.TryGetComponent<Renderer>(out var r)) continue;
                 var model = InstantiateFitted(ALARM, "Alarm" + VISUAL, alarm.transform, r.bounds, alignLongAxis: false);
@@ -159,11 +177,24 @@ namespace EscapeFire.EditorTools
                     }
                 }
                 Vector3 origin = t.position;
+                bool decoy = ext.Type == ExtinguisherType.WaterFoam ||
+                             new SerializedObject(ext).FindProperty("type").enumValueIndex == (int)ExtinguisherType.WaterFoam;
+                if (decoy)
+                {
+                    // Water/foam decoy hangs on the solid east wall, 4 m from the live electrical panel:
+                    // plausible in a real lab and it exercises Socratic trigger #1 (water near live panel).
+                    origin = new Vector3(0f, 1.2f, WATER_DECOY_Z);
+                    dirs = new[] { Vector3.right };
+                }
+                else
+                {
+                    dirs = new[] { Vector3.left, Vector3.right, Vector3.forward, Vector3.back };
+                }
                 RaycastHit best = default;
                 float bestDist = float.MaxValue;
                 foreach (var d in dirs)
                 {
-                    foreach (var hit in Physics.RaycastAll(origin, d, 4f, ~0, QueryTriggerInteraction.Ignore))
+                    foreach (var hit in Physics.RaycastAll(origin, d, decoy ? 20f : 4f, ~0, QueryTriggerInteraction.Ignore))
                     {
                         if (hit.transform.IsChildOf(t) || hit.collider.attachedRigidbody != null) continue;
                         if (!IsWall(hit.collider)) continue;
@@ -189,10 +220,91 @@ namespace EscapeFire.EditorTools
             }
         }
 
+        /// <summary>Solid walls only: never hang equipment on the glass panorama.</summary>
         private static bool IsWall(Collider c)
         {
             string n = c.name.ToLowerInvariant();
-            return n.Contains("wall") || n.Contains("panorama");
+            return n.Contains("wall") && !n.Contains("glass") && !n.Contains("panorama");
+        }
+
+        private const float WATER_DECOY_Z = -2f;
+
+        // ------------------------------------------------------------------ materials, lighting, NPC pose
+
+        /// <summary>PolygonOffice materials lost their atlas textures (all white). Re-link Material_XX_Y → Texture_XX_Y.</summary>
+        private static void FixPolygonOfficeMaterials(List<string> log)
+        {
+            int fixedCount = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Material", new[] { "Assets/PolygonOffice/Materials" }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (mat == null || !mat.HasProperty("_BaseMap") || mat.GetTexture("_BaseMap") != null) continue;
+
+                string name = System.IO.Path.GetFileNameWithoutExtension(path);
+                string texName = name.Contains("_Material_Screen_")
+                    ? name.Replace("_Material_Screen_", "_Texture_Sceen_")
+                    : name.Replace("_Material_", "_Texture_");
+                var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/PolygonOffice/Textures/{texName}.png");
+                if (tex == null) continue;
+
+                mat.SetTexture("_BaseMap", tex);
+                if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+                EditorUtility.SetDirty(mat);
+                fixedCount++;
+            }
+            AssetDatabase.SaveAssets();
+            if (fixedCount > 0) log.Add($"Re-linked atlas textures on {fixedCount} PolygonOffice material(s) (were rendering white).");
+        }
+
+        /// <summary>The south wall (exit door, alarm, CO2) rendered black: give the room readable ambient light (cheap on Quest).</summary>
+        private static void EnsureLighting(List<string> log)
+        {
+            if (RenderSettings.ambientMode == AmbientMode.Trilight && RenderSettings.ambientSkyColor.grayscale > 0.4f) return;
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.62f, 0.64f, 0.68f);
+            RenderSettings.ambientEquatorColor = new Color(0.50f, 0.50f, 0.52f);
+            RenderSettings.ambientGroundColor = new Color(0.30f, 0.29f, 0.28f);
+            RenderSettings.ambientIntensity = 1f;
+            log.Add("Lighting: trilight ambient so every wall (exit door, alarm, extinguishers) is readable.");
+        }
+
+        /// <summary>Synty characters import in T-pose and the pack has no animations: set a relaxed standing pose via humanoid muscles.</summary>
+        private static void ApplyStandingPose(GameObject model, List<string> log)
+        {
+            var animator = model.GetComponentInChildren<Animator>();
+            if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
+            {
+                log.Add($"WARNING: '{model.name}' has no humanoid avatar; pose unchanged.");
+                return;
+            }
+
+            var handler = new HumanPoseHandler(animator.avatar, animator.transform);
+            var pose = new HumanPose();
+            handler.GetHumanPose(ref pose);
+            SetMuscle(ref pose, "Left Arm Down-Up", -0.75f);
+            SetMuscle(ref pose, "Right Arm Down-Up", -0.75f);
+            SetMuscle(ref pose, "Left Arm Front-Back", 0.15f);
+            SetMuscle(ref pose, "Right Arm Front-Back", 0.15f);
+            SetMuscle(ref pose, "Left Forearm Stretch", 0.85f);
+            SetMuscle(ref pose, "Right Forearm Stretch", 0.85f);
+            SetMuscle(ref pose, "Left Shoulder Down-Up", -0.2f);
+            SetMuscle(ref pose, "Right Shoulder Down-Up", -0.2f);
+            Vector3 rootPos = animator.transform.position;
+            Quaternion rootRot = animator.transform.rotation;
+            handler.SetHumanPose(ref pose);
+            animator.transform.SetPositionAndRotation(rootPos, rootRot); // muscles only, keep placement
+            handler.Dispose();
+
+            animator.enabled = false; // no controller in this pack; keep the authored pose at runtime
+            EditorUtility.SetDirty(model);
+        }
+
+        private static void SetMuscle(ref HumanPose pose, string muscle, float value)
+        {
+            int index = System.Array.IndexOf(HumanTrait.MuscleName, muscle);
+            if (index >= 0 && index < pose.muscles.Length) pose.muscles[index] = value;
         }
 
         // ------------------------------------------------------------------ NPCs
@@ -239,7 +351,11 @@ namespace EscapeFire.EditorTools
                         visual = model.transform;
                     }
                 }
-                if (visual != null) so.FindProperty("visualRoot").objectReferenceValue = visual;
+                if (visual != null)
+                {
+                    so.FindProperty("visualRoot").objectReferenceValue = visual;
+                    ApplyStandingPose(visual.gameObject, log);
+                }
 
                 if (!isHoa)
                 {
@@ -280,7 +396,7 @@ namespace EscapeFire.EditorTools
             var door = GameObject.Find("Main_Exit_Door_Double");
             Vector3 exit = door != null ? door.transform.position : new Vector3(0f, 0f, -7f);
 
-            var desks = AllNamed(n => n.StartsWith("Desk_"))
+            var desks = AllNamed(IsDeskName)
                 .OrderByDescending(d => Vector3.Distance(d.position, exit))
                 .ToList();
             for (int i = 0; i < slots.Length && i < desks.Count; i++)
@@ -405,6 +521,9 @@ namespace EscapeFire.EditorTools
             var go = GameObject.Find(name);
             return go != null ? go : new GameObject(name);
         }
+
+        /// <summary>Grey-box desks are named Desk_1..Desk_12; excludes generated children like Desk_Visual.</summary>
+        private static bool IsDeskName(string n) => n.StartsWith("Desk_") && n.Length > 5 && char.IsDigit(n[5]);
 
         private static IEnumerable<Transform> AllNamed(System.Func<string, bool> predicate) =>
             Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Where(t => predicate(t.name));
