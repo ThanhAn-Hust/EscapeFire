@@ -46,19 +46,46 @@ namespace EscapeFire.Scenario
         private void Start()
         {
             _startTime = Time.time;
+            // Even when adaptive play is off (Guided), the edge server still serves the AI debrief and mock LMS.
             GameSession.EdgeHttpBase = ToHttpBase(serverUrl);
-            if (string.IsNullOrEmpty(LmsSync.BaseUrl)) LmsSync.BaseUrl = GameSession.EdgeHttpBase; // edge server = mock LMS
+            if (!LmsSync.UseCustomEndpoint) LmsSync.BaseUrl = GameSession.EdgeHttpBase;
             _breaker = FindFirstObjectByType<CircuitBreakerSwitch>();
             _extinguishers = FindObjectsByType<ExtinguisherXRBinding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (!Enabled) return;
-
-            _cts = new CancellationTokenSource();
-            _ = Task.Run(() => ConnectionLoop(serverUrl, _cts.Token));
+            Connect(serverUrl);
         }
 
-        private void OnEnable() => EventBus<DirectiveResolvedEvent>.Subscribe(OnDirectiveResolved);
+        /// <summary>(Re)connects to an edge server, e.g. from a settings menu or a test. Drops any previous connection.</summary>
+        public void Connect(string url)
+        {
+            _cts?.Cancel();
+            _cts?.Dispose();
+            serverUrl = url;
+            GameSession.EdgeHttpBase = ToHttpBase(url);
+            if (!LmsSync.UseCustomEndpoint) LmsSync.BaseUrl = GameSession.EdgeHttpBase; // edge server doubles as mock LMS
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
+            _ = Task.Run(() => ConnectionLoop(url, token));
+        }
 
-        private void OnDisable() => EventBus<DirectiveResolvedEvent>.Unsubscribe(OnDirectiveResolved);
+        private float _emergencyStart = -1f;
+
+        private void OnEnable()
+        {
+            EventBus<DirectiveResolvedEvent>.Subscribe(OnDirectiveResolved);
+            EventBus<PhaseChangedEvent>.Subscribe(OnPhaseChanged);
+        }
+
+        private void OnDisable()
+        {
+            EventBus<DirectiveResolvedEvent>.Unsubscribe(OnDirectiveResolved);
+            EventBus<PhaseChangedEvent>.Unsubscribe(OnPhaseChanged);
+        }
+
+        private void OnPhaseChanged(PhaseChangedEvent e)
+        {
+            if (e.Phase == ScenarioPhase.Phase2_ServerExplosionFire && _emergencyStart < 0f) _emergencyStart = Time.time;
+        }
 
         private void OnDestroy()
         {
@@ -124,7 +151,8 @@ namespace EscapeFire.Scenario
                 IsPowerCut = _breaker != null && !_breaker.IsPowerOn,
                 HeldItem = DescribeHeldItem(),
                 CurrentZone = DescribeZone(controller),
-                Phase = controller != null ? controller.CurrentPhase.ToString() : ""
+                Phase = controller != null ? controller.CurrentPhase.ToString() : "",
+                EmergencyElapsed = _emergencyStart >= 0f ? Time.time - _emergencyStart : 0f
             };
             payload.PriorChallenges.AddRange(_priorChallenges);
             return payload;

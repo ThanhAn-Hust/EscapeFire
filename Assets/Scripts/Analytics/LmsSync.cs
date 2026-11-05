@@ -22,7 +22,15 @@ namespace EscapeFire.Analytics
         public static string BearerToken { get; set; } = string.Empty;
         public static int TimeoutSeconds { get; set; } = 8;
 
-        private static LmsOutbox Outbox => new LmsOutbox(Path.Combine(Application.persistentDataPath, "lms_outbox"));
+        /// <summary>Sub-folder of persistentDataPath for queued reports. Tests switch this so they never pollute real data.</summary>
+        public static string OutboxFolder { get; set; } = "lms_outbox";
+
+        /// <summary>True when BaseUrl was set by a real LMS config; otherwise it follows the edge server (mock LMS).</summary>
+        public static bool UseCustomEndpoint { get; set; }
+
+        public static string OutboxPath => Path.Combine(Application.persistentDataPath, OutboxFolder);
+
+        private static LmsOutbox Outbox => new LmsOutbox(OutboxPath);
 
         public static int PendingCount => Outbox.PendingCount;
 
@@ -31,6 +39,9 @@ namespace EscapeFire.Analytics
         {
             _runner = null;
             _flushing = false;
+            OutboxFolder = "lms_outbox";
+            UseCustomEndpoint = false;
+            BaseUrl = string.Empty;
         }
 
         public static void Submit(string sessionId, string reportJson)
