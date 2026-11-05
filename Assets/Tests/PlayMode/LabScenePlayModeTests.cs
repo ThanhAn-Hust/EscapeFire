@@ -39,6 +39,8 @@ namespace EscapeFire.Tests.PlayMode
             GameSession.Reset();
             GameSession.Begin(TrainingMode.Guided, "PLAYMODE_TEST"); // no adaptive escalations during tests
             SessionResult.Reset();
+            EscapeFire.Analytics.LmsSync.OutboxFolder = "lms_outbox_tests";
+            EscapeFire.Analytics.TelemetryLogger.FolderOverride = "TelemetryReports_tests";
             yield return SceneManager.LoadSceneAsync(SceneNames.LAB, LoadSceneMode.Single);
             yield return null;
 
