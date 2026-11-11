@@ -57,6 +57,19 @@ namespace EscapeFire.EditorTools
             SetupExtinguishers(log);
             SetupBreakerPanel(log);
             SetupExitDoor(log);
+            SetupEscort(log);
+        }
+
+        /// <summary>B.1-10: a weak victim is helped up by the arm and supported out, not rescued with a laser.</summary>
+        private static void SetupEscort(List<string> log)
+        {
+            foreach (var npc in Object.FindObjectsByType<NPCSimulator>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (npc.Role != NPCRole.HoaFaint) continue;
+                foreach (var si in npc.GetComponents<XRSimpleInteractable>()) si.enabled = false;
+                if (npc.GetComponent<EscapeFire.NPC.EscortGrip>() == null) npc.gameObject.AddComponent<EscapeFire.NPC.EscortGrip>();
+                log.Add($"escort grip on {npc.name} (ray rescue removed)");
+            }
         }
 
         // ------------------------------------------------------------------ V0.7 exit door

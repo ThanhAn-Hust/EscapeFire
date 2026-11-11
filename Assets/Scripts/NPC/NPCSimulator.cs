@@ -150,9 +150,24 @@ namespace EscapeFire.NPC
         /// <summary>Who to follow after being rescued (e.g. the learner's head or a demo camera).</summary>
         public void SetEscortTarget(Transform target) => escortTarget = target;
 
+        /// <summary>Supporting hand (EscortGrip): null = let go, she stops where she is.</summary>
+        public void SetEscortTarget(Transform target, float distance)
+        {
+            escortTarget = target;
+            escortDistance = distance;
+            _heldByHand = true;
+        }
+
+        private bool _heldByHand;
+
         private void FollowEscort()
         {
-            if (escortTarget == null) { StartMoving(walkSpeed); return; }
+            if (escortTarget == null)
+            {
+                if (_heldByHand) return; // let go: she waits, bent low, for the rescuer to take her arm again
+                StartMoving(walkSpeed);
+                return;
+            }
             // Once the rescuer is through the exit, walk out on her own the last metres.
             if (exitDoorTarget != null && HorizontalDistance(escortTarget.position, exitDoorTarget.position) < 1.5f)
             {
