@@ -161,9 +161,11 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return null;
         }
 
+        /// <summary>Waits real game time, but always at least two frames: queued input reaches XRI one frame later.</summary>
         public IEnumerator Wait(float seconds)
         {
-            for (float t = 0f; t < seconds; t += Time.deltaTime) yield return null;
+            int frames = 0;
+            for (float t = 0f; t < seconds || frames < 2; t += Time.deltaTime, frames++) yield return null;
         }
 
         /// <summary>Re-applies the device state every frame so nothing (e.g. a late simulator) overrides it.</summary>
