@@ -19,6 +19,21 @@ namespace EscapeFire.Hazards
         public bool IsBurning => _fire != null && _fire.isActiveAndEnabled && !_fire.IsExtinguished;
         public bool IsAvailable => !blocksExit && !IsBurning;
 
+        /// <summary>
+        /// The template FireHazard sits on the server-rack root, so a clone carries the whole rack. Keep only the
+        /// flame particles visible and drop the clone's colliders so no phantom rack appears on the desk.
+        /// </summary>
+        public static void HideEverythingButFlames(FireHazard fire)
+        {
+            if (fire == null) return;
+            fire.ResolveParticles();
+            var flames = fire.Particles != null ? fire.Particles.transform : null;
+            foreach (var r in fire.GetComponentsInChildren<Renderer>(true))
+                if (flames == null || !r.transform.IsChildOf(flames)) r.enabled = false;
+            foreach (var c in fire.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+            if (flames != null) flames.localPosition = new Vector3(0f, flames.localPosition.y > 0.3f ? 0.3f : flames.localPosition.y, 0f);
+        }
+
         public bool Ignite(FireHazard template)
         {
             if (!IsAvailable) return false;
@@ -28,6 +43,7 @@ namespace EscapeFire.Hazards
                 var go = Instantiate(template.gameObject, transform.position, transform.rotation, transform);
                 go.name = $"SecondaryFire_{name}";
                 _fire = go.GetComponent<FireHazard>();
+                HideEverythingButFlames(_fire);
                 go.SetActive(false);
             }
             _fire.gameObject.SetActive(true);

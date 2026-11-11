@@ -5048,11 +5048,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 412832, guid: 817bb79c7c90c5346a9f1c046bb8ef2e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.2
+      value: 0.8976087
       objectReference: {fileID: 0}
     - target: {fileID: 412832, guid: 817bb79c7c90c5346a9f1c046bb8ef2e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.6323166
       objectReference: {fileID: 0}
     - target: {fileID: 412832, guid: 817bb79c7c90c5346a9f1c046bb8ef2e, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5090,6 +5090,11 @@ PrefabInstance:
 --- !u!4 &623168628 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 412832, guid: 817bb79c7c90c5346a9f1c046bb8ef2e, type: 3}
+  m_PrefabInstance: {fileID: 623168627}
+  m_PrefabAsset: {fileID: 0}
+--- !u!198 &623168629 stripped
+ParticleSystem:
+  m_CorrespondingSourceObject: {fileID: 19860524, guid: 817bb79c7c90c5346a9f1c046bb8ef2e, type: 3}
   m_PrefabInstance: {fileID: 623168627}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &627570309
@@ -5952,6 +5957,8 @@ MonoBehaviour:
   escalationCooldownSeconds: 45
   calmingCooldownSeconds: 20
   secondaryFireSlots: []
+  maxEscalationsPerSession: 4
+  minObservationSeconds: 15
 --- !u!114 &820892366
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9591,7 +9598,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EscapeFire.Hazards.FireHazard
   initialIntensity: 100
   spreadRate: 2
-  fireParticles: {fileID: 0}
+  fireParticles: {fileID: 623168629}
   fireAudioSource: {fileID: 0}
 --- !u!4 &1321060146
 Transform:

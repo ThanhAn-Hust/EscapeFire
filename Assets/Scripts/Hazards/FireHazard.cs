@@ -20,6 +20,7 @@ namespace EscapeFire.Hazards
         public float InitialIntensity { get => initialIntensity; set => initialIntensity = value; }
         public float FireIntensity { get; private set; }
         public bool IsExtinguished => FireIntensity <= 0f;
+        public ParticleSystem Particles => fireParticles;
         /// <summary>True when the PerformanceBudgetGovernor refused this emitter (fire stays dark, no events).</summary>
         public bool IsSuppressed { get; private set; }
 
@@ -27,6 +28,7 @@ namespace EscapeFire.Hazards
 
         private void Awake()
         {
+            ResolveParticles();
             ResetFire();
         }
 
@@ -49,6 +51,15 @@ namespace EscapeFire.Hazards
             if (fireAudioSource != null) fireAudioSource.Stop();
         }
 
+        /// <summary>
+        /// The lab scene leaves <see cref="fireParticles"/> unassigned on the server rack; fall back to the first
+        /// (root) flame system under this object, including the inactive one the scene keeps hidden until phase 2.
+        /// </summary>
+        public void ResolveParticles()
+        {
+            if (fireParticles == null) fireParticles = GetComponentInChildren<ParticleSystem>(true);
+        }
+
         public void ResetFire()
         {
             if (IsSuppressed)
@@ -57,9 +68,11 @@ namespace EscapeFire.Hazards
                 return;
             }
             FireIntensity = initialIntensity;
-            if (fireParticles != null && !fireParticles.isPlaying)
+            if (fireParticles != null)
             {
-                fireParticles.Play();
+                // The scene keeps the flame object switched off until the fire starts; Play() alone does nothing then.
+                if (!fireParticles.gameObject.activeSelf) fireParticles.gameObject.SetActive(true);
+                if (!fireParticles.isPlaying) fireParticles.Play();
             }
             if (fireAudioSource != null && !fireAudioSource.isPlaying)
             {

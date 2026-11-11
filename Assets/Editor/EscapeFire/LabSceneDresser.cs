@@ -52,6 +52,8 @@ namespace EscapeFire.EditorTools
             var log = new List<string>();
 
             FixPolygonOfficeMaterials(log);
+            FixFireParticleMaterials(log);
+            PlaceServerFlames(log);
             EnsureLighting(log);
             DressDesks(log);
             DressFireAlarm(log);
@@ -230,6 +232,101 @@ namespace EscapeFire.EditorTools
         private const float WATER_DECOY_Z = -2f;
 
         // ------------------------------------------------------------------ materials, lighting, NPC pose
+
+        [MenuItem("EscapeFire/M6/Fix Fire & Smoke Visuals")]
+        public static void FixFireVisualsMenu()
+        {
+            var scene = EditorSceneManager.OpenScene(LAB, OpenSceneMode.Single);
+            var log = new List<string>();
+            FixFireParticleMaterials(log);
+            PlaceServerFlames(log);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[EscapeFire] " + (log.Count > 0 ? string.Join("; ", log) : "Fire visuals already OK."));
+        }
+
+        /// <summary>
+        /// Real Fire &amp; Smoke materials were converted to URP Particles/Unlit but kept their texture in _MainTex and an
+        /// Opaque surface, so flames rendered as solid squares. Move the texture to _BaseMap and make them transparent.
+        /// Flames and smoke are alpha-blended (additive washes out against the bright lab walls); glows stay additive.
+        /// </summary>
+        private static void FixFireParticleMaterials(List<string> log)
+        {
+            int fixedCount = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Material", new[] { "Assets/Real Fire & Smoke/Materials" }))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (mat == null || mat.shader == null || mat.shader.name != "Universal Render Pipeline/Particles/Unlit") continue;
+                bool additive = mat.name.ToLowerInvariant().Contains("glow");
+                var legacy = SavedTexture(mat, "_MainTex"); // not a URP particle property, only in the saved data
+                bool needsTexture = mat.GetTexture("_BaseMap") == null && legacy != null;
+                bool ok = !needsTexture && mat.GetFloat("_Surface") > 0.5f && Mathf.Approximately(mat.GetFloat("_Blend"), additive ? 2f : 0f);
+                if (ok) continue;
+
+                if (needsTexture) mat.SetTexture("_BaseMap", legacy);
+                mat.SetFloat("_Surface", 1f);
+                mat.SetFloat("_Blend", additive ? 2f : 0f); // 2 = Additive, 0 = Alpha
+                mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+                mat.SetFloat("_DstBlend", (float)(additive ? BlendMode.One : BlendMode.OneMinusSrcAlpha));
+                if (mat.HasProperty("_SrcBlendAlpha")) mat.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+                if (mat.HasProperty("_DstBlendAlpha")) mat.SetFloat("_DstBlendAlpha", (float)(additive ? BlendMode.One : BlendMode.OneMinusSrcAlpha));
+                mat.SetFloat("_ZWrite", 0f);
+                mat.SetOverrideTag("RenderType", "Transparent");
+                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                mat.DisableKeyword("_ALPHATEST_ON");
+                mat.renderQueue = (int)RenderQueue.Transparent;
+                EditorUtility.SetDirty(mat);
+                fixedCount++;
+            }
+            AssetDatabase.SaveAssets();
+            if (fixedCount > 0) log.Add($"Fixed {fixedCount} fire/smoke particle material(s) (texture on _BaseMap, transparent).");
+        }
+
+        /// <summary>Reads a texture slot from the material's serialized data, even if the current shader lacks it.</summary>
+        private static Texture SavedTexture(Material mat, string slot)
+        {
+            var envs = new SerializedObject(mat).FindProperty("m_SavedProperties.m_TexEnvs");
+            for (int i = 0; envs != null && i < envs.arraySize; i++)
+            {
+                var entry = envs.GetArrayElementAtIndex(i);
+                if (entry.FindPropertyRelative("first").stringValue == slot)
+                    return entry.FindPropertyRelative("second.m_Texture").objectReferenceValue as Texture;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The flame system sat behind / on top of the server rack, hidden from the learner. Put it on the rack's
+        /// room-facing side at chest height and wire it into FireHazard.fireParticles (was unassigned).
+        /// </summary>
+        private static void PlaceServerFlames(List<string> log)
+        {
+            var rack = GameObject.Find("[ZONE_A_SERVER_RACK]");
+            var fire = rack != null ? rack.GetComponent<FireHazard>() : null;
+            if (fire == null) return;
+            var flames = fire.GetComponentInChildren<ParticleSystem>(true);
+            if (flames == null) return;
+
+            var bounds = new Bounds(rack.transform.position, Vector3.zero);
+            bool any = false;
+            foreach (var r in rack.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r is ParticleSystemRenderer) continue;
+                if (!any) { bounds = r.bounds; any = true; } else bounds.Encapsulate(r.bounds);
+            }
+            // The rack stands against the north wall, so its front faces the room (-Z).
+            var target = new Vector3(bounds.center.x, bounds.min.y + 0.9f, bounds.min.z - 0.1f);
+            bool moved = (flames.transform.position - target).sqrMagnitude > 0.0001f;
+            flames.transform.position = target;
+
+            var so = new SerializedObject(fire);
+            var prop = so.FindProperty("fireParticles");
+            bool wired = prop.objectReferenceValue != flames;
+            prop.objectReferenceValue = flames;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            if (moved || wired) log.Add($"Server flames placed at {target} on the rack front and wired to FireHazard.");
+        }
 
         /// <summary>PolygonOffice materials lost their atlas textures (all white). Re-link Material_XX_Y → Texture_XX_Y.</summary>
         private static void FixPolygonOfficeMaterials(List<string> log)
