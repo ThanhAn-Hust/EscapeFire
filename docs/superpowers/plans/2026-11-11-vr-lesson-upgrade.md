@@ -467,3 +467,20 @@ Yêu cầu cứng:
 5. Sau mỗi phase: bash Tools/verify.sh --unity (đóng Unity Editor trước), chụp ảnh bằng PlayMode test (batchmode không -nographics),
    tự xem ảnh, commit + push. Không quay video trừ khi được yêu cầu. Không merge.
 ```
+
+---
+
+## G. Trạng thái thực hiện (cập nhật liên tục)
+
+| Mốc | Trạng thái | Commit | Ghi chú / còn lại |
+| :-: | :--- | :--- | :--- |
+| V0 | ✅ xong (2026-11-12) | `2b84642`…`1efdfc3` | Harness `XRInputDriver`; tay người + co ngón; near-only; tư thế→tốc độ; nút báo cháy ấn ngón 9 mm; bình: giá treo, chốt 2 tay, loa + ống, cò analog, đo PASS; tủ điện cửa + cần gạt 70°; cửa: mu bàn tay ≥1 s, xoay tay nắm rồi đẩy; dìu Hoa bằng nách; cả ván chỉ bằng input VR (100/100). Còn: hand tracking (chỉ tay cầm), kiểm tra "cầm vào loa lạnh", xem nhãn bình, video demo qua XR (V6) |
+| V1 | ✅ xong (2026-11-12) | `d4ddea6`, `d737e78` | 12 luật có nguồn (`PcccRules.json`, `docs/pccc_ground_truth.md`), test không luật mồ côi; sửa kịch bản (điểm miễn phí, gợi ý ở Sát hạch, chấm PASS theo số đo, bình 12 s); AAR hiện nguồn; font tiếng Việt; phòng bài giảng 5 trạm (`01_Lesson`); lộ trình Bài giảng → Có hướng dẫn → Sát hạch. Còn: HUD cổ tay chồng chữ (V6), khói hành lang bài giảng là khối tối (V6) |
+| V2 | ⏳ | | |
+| V3 | ⏳ | | |
+| V4 | ⏳ | | |
+| V5 | ⏳ | | |
+| V6 | ⏳ | | |
+
+Lệnh hay dùng: `bash Tools/verify.sh --unity` (toàn bộ), `bash Tools/run_playmode.sh "<filter>" <log>` (chạy chọn lọc, có GPU, ảnh ở `Logs/Demo/<giờ>_xr`).
+Dựng cảnh: `EscapeFire > V0 > Setup Realistic Rig (Lab)`, `EscapeFire > V1 > Build Lesson Room`, `EscapeFire > V1 > Setup Vietnamese Font`.
