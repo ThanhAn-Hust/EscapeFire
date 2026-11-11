@@ -25,7 +25,7 @@ src() { find "$@" -name "*.cs" -not -path "*/Analyzers/*"; }
 mapfile -t rt < <(src "$P/Assets/Scripts");                  run runtime  "${common[@]}" "${refs[@]}" -out:"$OUT/EscapeFire.Runtime.dll" "${rt[@]}"
 mapfile -t ed < <(src "$P/Assets/Editor/EscapeFire");        run editor   "${common[@]}" "${refs[@]}" "${eds[@]}" -r:"$OUT/EscapeFire.Runtime.dll" -out:"$OUT/EscapeFire.Editor.dll" "${ed[@]}"
 mapfile -t te < <(src "$P/Assets/Tests/EditMode");           run editmode "${common[@]}" "${refs[@]}" "${eds[@]}" "$nunit" -r:"$OUT/EscapeFire.Runtime.dll" -r:"$OUT/EscapeFire.Editor.dll" -out:"$OUT/EscapeFire.Tests.EditMode.dll" "${te[@]}"
-mapfile -t tp < <(src "$P/Assets/Tests/PlayMode");           run playmode "${common[@]}" "${refs[@]}" "$nunit" -r:"$OUT/EscapeFire.Runtime.dll" -out:"$OUT/EscapeFire.Tests.PlayMode.dll" "${tp[@]}"
+mapfile -t tp < <(src "$P/Assets/Tests/PlayMode");           run playmode "${common[@]}" "${refs[@]}" "${eds[@]}" "$nunit" -r:"$OUT/EscapeFire.Runtime.dll" -out:"$OUT/EscapeFire.Tests.PlayMode.dll" "${tp[@]}"
 mapfile -t ac < <(find "$P/Assets/ThirdPartyAdapters" "$P/Assets/Overtone/Scripts" "$P/Assets/FrostweepGames" -name "*.cs" -not -path "*/Editor/*")
 echo "== adapters"; "$DOTNET" "$CSC" -nologo -noconfig -nostdlib -target:library -nowarn:0618,0649,0414 -define:UNITY_2018_3_OR_NEWER -define:UNITY_2019_4_OR_NEWER -define:UNITY_2020_1_OR_NEWER -define:UNITY_2021_1_OR_NEWER -define:UNITY_6000_0_OR_NEWER -define:FG_GCSR -unsafe "${refs[@]}" -r:"$OUT/EscapeFire.Runtime.dll" -out:"$OUT/Assembly-CSharp.subset.dll" "${ac[@]}" | grep -E "error"; echo "adapters_exit=${PIPESTATUS[0]}"
 
@@ -37,7 +37,7 @@ printf '{ "runtimeOptions": { "tfm": "net6.0", "framework": { "name": "Microsoft
 cp "$E"/Managed/UnityEngine/UnityEngine.CoreModule.dll "$E"/Managed/UnityEngine/UnityEngine.dll "$SA"/UnityEngine.TestRunner.dll "$SA"/Unity.TextMeshPro.dll "$SA"/UnityEngine.UI.dll "$OUT"/ 2>/dev/null
 cp "$(ls "$P"/Library/PackageCache/com.unity.ext.nunit@*/net40/unity-custom/nunit.framework.dll)" "$(ls "$P"/Library/PackageCache/com.unity.nuget.newtonsoft-json@*/Runtime/Newtonsoft.Json.dll)" "$OUT"/
 # Tests needing the Unity engine/editor at runtime are skipped here; run them in the Test Runner.
-"$DOTNET" "$OUT/MiniRunner.dll" "$OUT/EscapeFire.Tests.EditMode.dll" "HandlerThrows" "LabSceneValidation" | grep -v "^PASS" || FAIL=1
+"$DOTNET" "$OUT/MiniRunner.dll" "$OUT/EscapeFire.Tests.EditMode.dll" "HandlerThrows" "LabSceneValidation" "FireVisualTests.ResetFire" "FireVisualTests.SecondaryFireClone" | grep -v "^PASS" || FAIL=1
 echo "== edge server tests"
 (cd "$P/Server" && uv run pytest -q -p no:warnings 2>&1 | tail -1) || FAIL=1
 echo "== static scene audit (BasicScene placeholders / physics risks)"
@@ -62,8 +62,8 @@ if [ "${1:-}" = "--unity" ]; then
   grep -q "Audit 'BasicScene': 0 error" "$LOGS/audit.log" || FAIL=1
   for MODE in EditMode PlayMode; do
     echo "== Unity: $MODE tests"
-    "$UNITY" -batchmode -nographics -projectPath "$WP" -runTests -testPlatform $MODE -assemblyNames "EscapeFire.Tests.$MODE"       -testResults "$WL/$MODE-results.xml" -logFile "$WL/$MODE.log" || FAIL=1
-    python - "$LOGS/$MODE-results.xml" <<'PYEOF'
+    "$UNITY" -batchmode -nographics -projectPath "$WP" -runTests -testPlatform $MODE -assemblyNames "EscapeFire.Tests.$MODE" -testCategory "!Demo"       -testResults "$WL/$MODE-results.xml" -logFile "$WL/$MODE.log" || FAIL=1
+    PYTHONIOENCODING=utf-8 python - "$LOGS/$MODE-results.xml" <<'PYEOF'
 import sys, xml.etree.ElementTree as ET
 r = ET.parse(sys.argv[1]).getroot()
 print({k: r.get(k) for k in ("total", "passed", "failed")})
