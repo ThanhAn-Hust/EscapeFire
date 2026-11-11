@@ -185,9 +185,23 @@ namespace EscapeFire.NPC
             {
                 float speed = Mathf.Lerp(walkSpeed, walkSpeed * 1.6f, Mathf.Clamp01((dist - escortDistance) / 2f));
                 transform.position = Vector3.MoveTowards(transform.position, target - toTarget / dist * escortDistance, speed * Time.deltaTime);
+                SnapToGround();
             }
             if (dist > 0.05f)
                 transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(toTarget / dist, Vector3.up), 8f * Time.deltaTime);
+        }
+
+        /// <summary>Keeps the feet on the floor / stairs below (corridor, landings, ramps) instead of walking on air.</summary>
+        private void SnapToGround()
+        {
+            Vector3 p = transform.position;
+            float best = float.NegativeInfinity;
+            foreach (var hit in Physics.RaycastAll(p + Vector3.up * 1.2f, Vector3.down, 3f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform)) continue;
+                if (hit.point.y > best) best = hit.point.y;
+            }
+            if (!float.IsNegativeInfinity(best)) transform.position = new Vector3(p.x, best, p.z);
         }
 
         private static float HorizontalDistance(Vector3 a, Vector3 b)

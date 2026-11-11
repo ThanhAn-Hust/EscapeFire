@@ -88,6 +88,28 @@ namespace EscapeFire.Tests.PlayMode.XR
             Flush();
         }
 
+        /// <summary>
+        /// Head at a fixed spot of the play area (tracking space), looking along a world yaw — for thumbstick locomotion,
+        /// where the rig (not the head) moves through the building.
+        /// </summary>
+        public void SetHeadTracking(Vector3 trackingPos, float worldYaw, float pitch = 0f)
+        {
+            Quaternion world = Quaternion.Euler(pitch, worldYaw, 0f);
+            Quaternion r = Quaternion.Inverse(TrackingSpace.rotation) * world;
+            _hs.devicePosition = _hs.centerEyePosition = _hs.leftEyePosition = _hs.rightEyePosition = trackingPos;
+            _hs.deviceRotation = _hs.centerEyeRotation = _hs.leftEyeRotation = _hs.rightEyeRotation = r;
+            Flush();
+        }
+
+        /// <summary>Hand at a tracking-space position (moves with the rig).</summary>
+        public void SetHandTracking(Hand hand, Vector3 trackingPos, Quaternion worldRot)
+        {
+            Quaternion r = Quaternion.Inverse(TrackingSpace.rotation) * worldRot;
+            if (hand == Hand.Left) { _ls.devicePosition = trackingPos; _ls.deviceRotation = r; }
+            else { _rs.devicePosition = trackingPos; _rs.deviceRotation = r; }
+            Flush();
+        }
+
         public void LookAt(Vector3 eyeWorld, Vector3 target) => SetHead(eyeWorld, Quaternion.LookRotation(target - eyeWorld));
 
         public void SetHand(Hand hand, Vector3 worldPos, Quaternion worldRot)

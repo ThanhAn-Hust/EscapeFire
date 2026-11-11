@@ -195,17 +195,98 @@ namespace EscapeFire.Tests.PlayMode.XR
             Shot("11_door_open");
             Assert.IsTrue(exitDoor.IsOpen, "door opened: handle turned, leaf pushed");
 
-            // ---- 8. through the door into the hallway (Hoa follows)
+            // ---- 8. through the door into the floor-3 corridor (Hoa follows out of the lab), walk up to stairwell A
             yield return WalkTo(0.7f, new Vector3(0.3f, 0f, doorPt.z + 0.4f), new Vector3(0.3f, 0f, -8.2f), new Vector3(0.2f, 0f, -10f));
+            yield return SetEyeHeight(1.6f);
             yield return Xr.Wait(0.5f);
             Look(new Vector3(0f, 1f, -5f));
             yield return Xr.Wait(0.2f);
-            Shot("12_safe_in_the_hallway");
-            Assert.AreEqual(ScenarioPhase.Phase4_CompletedWin, c.CurrentPhase, "walking out into the hallway wins the drill");
+            Shot("12_out_in_the_corridor");
+            Assert.AreNotEqual(ScenarioPhase.Phase4_CompletedWin, c.CurrentPhase, "the corridor is not safe yet: the drill ends at the assembly point");
             Assert.IsTrue(!hoa.gameObject.activeInHierarchy || hoa.transform.position.z < exitDoor.transform.position.z,
                 $"Hoa came out through the open door with the rescuer (at {hoa.transform.position})");
+
+            // ---- 9. stairs, not the lift: push the fire door's bar, then thumbstick down two storeys (gravity on the flights)
+            yield return Release(Hand.Right); // let go of Hoa's arm (she walks on with the others)
+            var building = GameObject.Find("[BUILDING_V2]").transform;
+            var fireDoor = building.Find("StairwellA/FireDoor_F3").GetComponent<PushBarDoor>();
+            yield return WalkTo(1.0f, new Vector3(0.2f, 0f, -12.4f));
+            yield return PushBar(fireDoor);
+            Shot("13_fire_door_pushed");
+            Assert.IsTrue(fireDoor.IsOpen, "fire door opened with the push bar");
+            Vector3 W(float x, float z) => new Vector3(-x, 0f, -13.2f - z); // stairwell A local -> world
+            yield return StickWalk(W(0f, 0.7f), W(-0.65f, 1.2f), W(-0.65f, 2.2f));
+            yield return TurnHead(W(-0.65f, 4.2f) + Vector3.down * 2.5f);
+            Shot("14_going_down_the_stairs");
+            yield return StickWalk(W(-0.65f, 4.2f), W(0f, 4.75f), W(0.65f, 4.2f), W(0.65f, 1.2f), W(0f, 0.6f), W(-0.65f, 1.2f), W(-0.65f, 4.2f), W(0f, 4.75f), W(0.65f, 4.2f), W(0.65f, 1.2f), W(0.6f, 0.7f));
+            Assert.AreEqual(-8f, Xr.Origin.transform.position.y, 0.35f, "walked down two storeys");
+            Assert.IsFalse(ElevatorTrap.ElevatorUsedThisSession, "never touched the lift");
+
+            // ---- 10. out through the ground-floor exit to the assembly point
+            var groundExit = building.Find("StairwellA/ExitDoor_Ground").GetComponent<PushBarDoor>();
+            yield return PushBar(groundExit);
+            Assert.IsTrue(groundExit.IsOpen, "ground exit pushed open");
+            yield return StickWalk(W(2.4f, 0.7f), new Vector3(-6f, 0f, -18f), new Vector3(-7f, 0f, -22.5f));
+            yield return TurnHead(new Vector3(-2f, -5f, -14f));
+            Shot("15_safe_at_the_assembly_point");
+            Assert.AreEqual(ScenarioPhase.Phase4_CompletedWin, c.CurrentPhase, "reaching the assembly point wins the drill");
             Debug.Log($"[FullDrill] hoa at {hoa.transform.position} active={hoa.gameObject.activeInHierarchy} supported={grip.IsSupported} rescued={hoa.IsRescued}");
-            Debug.Log($"[FullDrill] passed={SessionResult.Passed} score={(SessionResult.Scorecard.Count > 0 ? AfterActionReport.Total(SessionResult.Scorecard) : -1)}");
+            Debug.Log($"[FullDrill] passed={SessionResult.Passed} score={(SessionResult.Scorecard.Count > 0 ? AfterActionReport.Total(SessionResult.Scorecard) : -1)} handrail={Handrail.SecondsTouched:F1}s");
+        }
+
+        /// <summary>
+        /// Thumbstick locomotion (left stick, head-relative): the head stays where it is in the play area and turns
+        /// towards each waypoint; the rig moves (XRI move provider + gravity). Hands stay in front of the body.
+        /// </summary>
+        private IEnumerator StickWalk(params Vector3[] waypoints)
+        {
+            Vector3 track = Xr.TrackingSpace.InverseTransformPoint(Xr.HeadPosition);
+            foreach (var wp in waypoints)
+            {
+                float t = 0f;
+                while (true)
+                {
+                    Vector3 head = Xr.Camera.transform.position;
+                    Vector3 d = wp - head; d.y = 0f;
+                    if (d.magnitude < 0.25f) break;
+                    t += Time.deltaTime;
+                    Assert.Less(t, 20f, $"stuck walking to {wp} (head at {head})");
+                    float yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+                    Quaternion q = Quaternion.Euler(0f, yaw, 0f);
+                    Xr.SetHeadTracking(track, yaw);
+                    Xr.SetHandTracking(Hand.Left, track + Xr.TrackingSpace.InverseTransformDirection(q * new Vector3(-0.2f, -0.5f, 0.25f)), q);
+                    Xr.SetHandTracking(Hand.Right, track + Xr.TrackingSpace.InverseTransformDirection(q * new Vector3(0.2f, -0.5f, 0.25f)), q);
+                    Xr.Thumbstick(Hand.Left, new Vector2(0f, 1f));
+                    yield return null;
+                }
+            }
+            Xr.Thumbstick(Hand.Left, Vector2.zero);
+            yield return Xr.Wait(0.2f);
+            _eye = Xr.HeadPosition;
+            _eyeHeight = _eye.y - Xr.Origin.transform.position.y;
+        }
+
+        /// <summary>Turns the head (yaw + pitch) towards a point without moving it in the play area.</summary>
+        private IEnumerator TurnHead(Vector3 target)
+        {
+            Vector3 d = target - Xr.HeadPosition;
+            Xr.SetHeadTracking(Xr.TrackingSpace.InverseTransformPoint(Xr.HeadPosition), Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg,
+                -Mathf.Atan2(d.y, new Vector2(d.x, d.z).magnitude) * Mathf.Rad2Deg);
+            yield return Xr.Wait(0.4f);
+        }
+
+        /// <summary>Right palm pushes a fire door's bar 4 cm in and holds a moment.</summary>
+        private IEnumerator PushBar(PushBarDoor door)
+        {
+            Collider bar = null;
+            foreach (var col in door.GetComponentsInChildren<Collider>(true)) if (col.name == "PushBar") bar = col;
+            Vector3 push = door.transform.forward;
+            Vector3 face = bar.bounds.center - push * 0.03f;
+            Quaternion rot = Quaternion.LookRotation(push);
+            Xr.LookAt(Xr.HeadPosition, bar.bounds.center);
+            yield return Xr.MoveHand(Hand.Right, face - push * 0.15f, rot, 0.3f);
+            yield return Xr.MoveHand(Hand.Right, face + push * 0.04f, rot, 0.3f);
+            yield return Xr.Wait(0.6f);
         }
 
         private static float DoorMax(HingeGrab h) =>

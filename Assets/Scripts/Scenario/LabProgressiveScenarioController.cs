@@ -14,7 +14,7 @@ namespace EscapeFire.Scenario
         Phase1_PowerFlickerWarning,   // Electrical spark warning (Red light flickering)
         Phase2_ServerExplosionFire,   // Fire erupts, Fire Alarm sounds, Smoke lowers
         Phase3_SmokeEvacuation,       // Fire extinguished or smoke dense, player evacuates to hallway
-        Phase4_CompletedWin,          // Reached Emergency Staircase in Hallway -> WIN!
+        Phase4_CompletedWin,          // Walked down the stairs to the assembly point -> WIN!
         Phase5_GameOverFail           // Suffocated or electrocuted -> FAIL
     }
 
@@ -145,13 +145,13 @@ namespace EscapeFire.Scenario
                     break;
 
                 case ScenarioPhase.Phase3_SmokeEvacuation:
-                    SetAIMentorGuidance("Lửa đã được khống chế! Khom người di chuyển ra Cửa chính và chạy ra Lối thoát hiểm khẩn cấp!");
+                    SetAIMentorGuidance("Lửa đã được khống chế! Khom người ra Cửa chính, đi THANG BỘ (không dùng thang máy) xuống điểm tập kết!");
                     break;
 
                 case ScenarioPhase.Phase4_CompletedWin:
                     if (ScoringManager.Instance != null)
                     {
-                        ScoringManager.Instance.AddScore(30, "Thoát hiểm an toàn ra hành lang PCCC");
+                        ScoringManager.Instance.AddScore(30, "Thoát nạn bằng thang bộ, tới điểm tập kết an toàn");
                         string jsonReport = ScoringManager.Instance.ExportJSONReport();
                         Debug.Log($"[WIN] Telemetry Report:\n{jsonReport}");
                     }

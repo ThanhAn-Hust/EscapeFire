@@ -72,14 +72,6 @@ namespace EscapeFire.Hazards
             CurrentSmokeHeight = initialSmokeHeight;
         }
 
-        private void OnDestroy()
-        {
-            if (!_visualsBuilt) return;
-            RenderSettings.fog = _fogWas;
-            RenderSettings.fogColor = _fogColorWas;
-            RenderSettings.fogDensity = _fogDensityWas;
-            RenderSettings.fogMode = _fogModeWas;
-        }
 
         private bool Burning => targetFire != null && targetFire.isActiveAndEnabled && !targetFire.IsExtinguished;
 
@@ -199,12 +191,15 @@ namespace EscapeFire.Hazards
 
             Transform eye = viewer;
             if (eye == null && Camera.main != null) eye = Camera.main.transform;
-            bool headInSmoke = eye != null && eye.position.y > CurrentSmokeHeight;
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = Color.Lerp(new Color(0.35f, 0.35f, 0.36f), smokeColor, k);
-            float target = 0.02f + 0.07f * k + (headInSmoke ? 0.18f : 0f);
-            RenderSettings.fogDensity = Mathf.MoveTowards(RenderSettings.fogDensity, target, 0.15f * Time.deltaTime);
+            if (eye == null) return;
+            // Only while the head is inside this room (corridor / stairs have their own SmokeZone).
+            if (smokeVolumeTransform != null && smokeVolumeTransform.TryGetComponent<Renderer>(out var room))
+            {
+                Bounds rb = room.bounds;
+                if (eye.position.x < rb.min.x || eye.position.x > rb.max.x || eye.position.z < rb.min.z || eye.position.z > rb.max.z) return;
+            }
+            bool headInSmoke = eye.position.y > CurrentSmokeHeight;
+            SmokeFog.Request(0.02f + 0.07f * k + (headInSmoke ? 0.18f : 0f), Color.Lerp(new Color(0.35f, 0.35f, 0.36f), smokeColor, k));
         }
 
         private static void SetRate(ParticleSystem ps, float rate)
