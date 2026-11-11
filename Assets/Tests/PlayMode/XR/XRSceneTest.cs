@@ -87,6 +87,35 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return Xr.MoveHand(hand, start, rot, 0.2f);
         }
 
+        /// <summary>Moves a gripping hand along an arc around a hinge (opening a door, pulling a lever).</summary>
+        protected IEnumerator ArcMove(Hand hand, Vector3 pivot, Vector3 axis, float degrees, float seconds)
+        {
+            Vector3 start = Xr.HandPosition(hand);
+            Quaternion rot = Xr.HandRotation(hand);
+            for (float t = 0f; t < seconds; t += Time.deltaTime)
+            {
+                Quaternion q = Quaternion.AngleAxis(degrees * Mathf.SmoothStep(0f, 1f, t / seconds), axis);
+                Xr.SetHand(hand, pivot + q * (start - pivot), q * rot);
+                yield return null;
+            }
+            Quaternion end = Quaternion.AngleAxis(degrees, axis);
+            Xr.SetHand(hand, pivot + end * (start - pivot), end * rot);
+            yield return Xr.Wait(0.1f);
+        }
+
+        protected IEnumerator GripAt(Hand hand, Vector3 point, float seconds = 0.4f)
+        {
+            yield return Xr.MoveHand(hand, point, Xr.HandRotation(hand), seconds);
+            Xr.Grip(hand, true);
+            yield return Xr.Wait(0.15f);
+        }
+
+        protected IEnumerator Release(Hand hand)
+        {
+            Xr.Grip(hand, false);
+            yield return Xr.Wait(0.15f);
+        }
+
         protected static Vector3 Flat(Vector3 v) { v.y = 0f; return v.sqrMagnitude < 1e-6f ? Vector3.forward : v.normalized; }
 
         /// <summary>Saves what the learner sees right now (rig camera) as a PNG.</summary>

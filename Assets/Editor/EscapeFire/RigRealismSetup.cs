@@ -55,6 +55,91 @@ namespace EscapeFire.EditorTools
             AddNearOnlyFilters(log);
             SetupCallPoints(log);
             SetupExtinguishers(log);
+            SetupBreakerPanel(log);
+        }
+
+        // ------------------------------------------------------------------ V0.6 breaker panel
+
+        /// <summary>
+        /// B.1-3: a hinged metal panel door in front of the breakers, and a real lever behind it: ON tilted up,
+        /// OFF tilted down, 70 deg travel; pulled past 85 % it latches OFF. Released earlier it springs back.
+        /// The old "select = toggle" shortcut is removed.
+        /// </summary>
+        private static void SetupBreakerPanel(List<string> log)
+        {
+            var breaker = Object.FindFirstObjectByType<CircuitBreakerSwitch>(FindObjectsInactive.Include);
+            if (breaker == null) return;
+            Transform zone = breaker.transform;
+            var oldHandle = zone.Find("Aptomat_Switch_Handle");
+            bool any = false;
+            Bounds b = new Bounds(zone.position, Vector3.one * 0.4f);
+            foreach (var r in zone.GetComponentsInChildren<Renderer>(true))
+            {
+                if (oldHandle != null && r.transform.IsChildOf(oldHandle)) continue;
+                if (r.transform.name.StartsWith("EF_")) continue;
+                if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds);
+            }
+            Vector3 intoWall = IntoWall(zone.position);
+            Vector3 outOfWall = -intoWall;
+            Vector3 along = Vector3.Cross(Vector3.up, intoWall).normalized; // horizontal, parallel to the wall
+            float frontOffset = Vector3.Dot(b.center - zone.position, outOfWall) + Mathf.Abs(Vector3.Dot(b.extents, outOfWall));
+            Vector3 front = zone.position + outOfWall * frontOffset; // panel face, in front of the zone pivot
+            front.y = b.center.y;
+            float width = Mathf.Abs(Vector3.Dot(b.size, along)), height = b.size.y;
+
+            if (oldHandle != null)
+            {
+                foreach (var r in oldHandle.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+                foreach (var c in oldHandle.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+            }
+            foreach (var si in zone.GetComponents<XRSimpleInteractable>()) si.enabled = false;
+
+            var metal = Mat("EF_PanelDoor", new Color(0.62f, 0.64f, 0.66f), 0.5f, 0.6f);
+            var black = Mat("EF_LeverBlack", new Color(0.05f, 0.05f, 0.05f), 0.4f);
+            var red = Mat("EF_LeverRed", new Color(0.75f, 0.08f, 0.06f), 0.4f);
+
+            // Panel door: hinge on one vertical edge, swings out into the room.
+            var doorHinge = Child(zone, "EF_PanelDoorHinge");
+            doorHinge.position = front + outOfWall * 0.04f - along * (width * 0.5f);
+            doorHinge.rotation = Quaternion.LookRotation(along, Vector3.up);
+            ClearChildren(doorHinge);
+            Prim(PrimitiveType.Cube, "EF_PanelDoorLeaf", doorHinge, new Vector3(0f, 0f, width * 0.5f), Quaternion.identity, new Vector3(0.012f, height * 1.02f, width * 1.02f), metal);
+            Prim(PrimitiveType.Cube, "EF_PanelDoorKnob", doorHinge, new Vector3(-0.02f, 0f, width * 0.9f), Quaternion.identity, new Vector3(0.03f, 0.06f, 0.02f), black);
+            var doorGrab = Child(doorHinge, "GrabPoint");
+            doorGrab.localPosition = new Vector3(-0.03f, 0f, width * 0.9f);
+            var door = doorHinge.GetComponent<HingeGrab>();
+            if (door == null) door = doorHinge.gameObject.AddComponent<HingeGrab>();
+            // Positive rotation about up turns the free edge (local +Z) out of the wall?
+            float openSign = Mathf.Sign(Vector3.Dot(Quaternion.AngleAxis(90f, Vector3.up) * along, outOfWall));
+            door.Configure(Vector3.up, 0f, 110f * openSign, doorGrab, false, 0f);
+            EditorUtility.SetDirty(door);
+
+            // Lever behind the door: arm sticks out of the panel, tilted up (ON); rotates about the along-wall axis.
+            var leverPivot = Child(zone, "EF_BreakerLever");
+            leverPivot.position = front + outOfWall * 0.015f;
+            leverPivot.rotation = Quaternion.LookRotation(outOfWall, Vector3.up);
+            leverPivot.localRotation = leverPivot.localRotation * Quaternion.identity;
+            ClearChildren(leverPivot);
+            var arm = Child(leverPivot, "Arm");
+            arm.localPosition = Vector3.zero;
+            arm.localRotation = Quaternion.Euler(-35f, 0f, 0f); // tilted up = ON
+            Prim(PrimitiveType.Cube, "EF_LeverBody", arm, new Vector3(0f, 0f, 0.035f), Quaternion.identity, new Vector3(0.025f, 0.02f, 0.07f), black);
+            Prim(PrimitiveType.Cube, "EF_LeverTip", arm, new Vector3(0f, 0f, 0.07f), Quaternion.identity, new Vector3(0.03f, 0.025f, 0.02f), red);
+            var tip = Child(arm, "GrabPoint");
+            tip.localPosition = new Vector3(0f, 0f, 0.07f);
+            var lever = leverPivot.GetComponent<HingeGrab>();
+            if (lever == null) lever = leverPivot.gameObject.AddComponent<HingeGrab>();
+            // Pitching the pivot about its local X turns the arm from up (ON) to down (OFF): +70 deg.
+            lever.Configure(Vector3.right, 0f, 70f, tip, true, 0.85f, door, 60f);
+            UnityEditor.Events.UnityEventTools.RemovePersistentListener(lever.OnLatched, breaker.LeverPulledOff);
+            UnityEditor.Events.UnityEventTools.AddVoidPersistentListener(lever.OnLatched, breaker.LeverPulledOff);
+            EditorUtility.SetDirty(lever);
+
+            var so = new SerializedObject(breaker);
+            so.FindProperty("lever").objectReferenceValue = lever;
+            so.FindProperty("switchHandle").objectReferenceValue = null;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            log.Add("breaker panel: hinged door + 70 deg lever (latch OFF at 85 %), select shortcut removed");
         }
 
         // ------------------------------------------------------------------ V0.4 / V0.5 extinguishers
