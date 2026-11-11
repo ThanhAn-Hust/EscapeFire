@@ -30,6 +30,28 @@ namespace EscapeFire.Interactions
             controller.TriggerHallwayEvacuationWin();
         }
 
+        private Collider _zone;
+        private Transform _head;
+
+        /// <summary>
+        /// Walking out for real (room-scale) moves only the tracked head, which has no collider: also win when the
+        /// learner's head is inside the zone.
+        /// </summary>
+        private void Update()
+        {
+            if (_zone == null) _zone = GetComponent<Collider>();
+            if (_head == null)
+            {
+                var origin = FindFirstObjectByType<Unity.XR.CoreUtils.XROrigin>();
+                if (origin != null && origin.Camera != null) _head = origin.Camera.transform;
+                if (_head == null) return;
+            }
+            var controller = LabProgressiveScenarioController.Instance;
+            if (controller == null || (requireEmergency && controller.CurrentPhase < ScenarioPhase.Phase2_ServerExplosionFire)) return;
+            if (controller.CurrentPhase >= ScenarioPhase.Phase4_CompletedWin) return;
+            if (_zone.bounds.Contains(_head.position)) controller.TriggerHallwayEvacuationWin();
+        }
+
         private static bool IsPlayer(Collider other)
         {
             if (other.CompareTag("Player") || other.CompareTag("MainCamera")) return true;

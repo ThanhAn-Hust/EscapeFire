@@ -159,6 +159,7 @@ namespace EscapeFire.NPC
         }
 
         private bool _heldByHand;
+        private EscapeFire.Interactions.ExitDoor _exitDoor;
 
         private void FollowEscort()
         {
@@ -169,7 +170,9 @@ namespace EscapeFire.NPC
                 return;
             }
             // Once the rescuer is through the exit, walk out on her own the last metres.
-            if (exitDoorTarget != null && HorizontalDistance(escortTarget.position, exitDoorTarget.position) < 1.5f)
+            if (_exitDoor == null) _exitDoor = FindFirstObjectByType<EscapeFire.Interactions.ExitDoor>();
+            bool doorOpen = _exitDoor == null || _exitDoor.IsOpen;
+            if (doorOpen && exitDoorTarget != null && HorizontalDistance(escortTarget.position, exitDoorTarget.position) < 1.5f)
             {
                 StartMoving(walkSpeed);
                 return;

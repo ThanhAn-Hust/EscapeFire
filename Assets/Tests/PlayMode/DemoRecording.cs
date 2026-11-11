@@ -34,6 +34,9 @@ namespace EscapeFire.Tests.PlayMode
     /// Explicit: never runs with the normal suite. Run:
     ///   Unity -batchmode -projectPath . -runTests -testPlatform PlayMode -testFilter DemoRecording
     /// </summary>
+    // NOTE (V0.9): this recorder drives the game by calling its methods directly (autopilot), so it shows logic and
+    // visuals but NOT real VR hand interaction. For VR-faithful material use V0FullDrillTests (simulated XR input only);
+    // V6 moves the video recording onto that path.
     [Explicit("Needs the real edge server + Ollama; records video. Run on demand.")]
     [Category("Demo")]
     public class DemoRecording
