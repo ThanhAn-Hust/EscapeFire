@@ -54,6 +54,7 @@ namespace EscapeFire.EditorTools
             FixPolygonOfficeMaterials(log);
             FixFireParticleMaterials(log);
             PlaceServerFlames(log);
+            FixRoomShell(log);
             EnsureLighting(log);
             DressDesks(log);
             DressFireAlarm(log);
@@ -232,6 +233,168 @@ namespace EscapeFire.EditorTools
         private const float WATER_DECOY_Z = -2f;
 
         // ------------------------------------------------------------------ materials, lighting, NPC pose
+
+        [MenuItem("EscapeFire/M6/Fix Room Shell & Exit Door")]
+        public static void FixRoomShellMenu()
+        {
+            var scene = EditorSceneManager.OpenScene(LAB, OpenSceneMode.Single);
+            var log = new List<string>();
+            FixRoomShell(log);
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[EscapeFire] " + (log.Count > 0 ? string.Join("; ", log) : "Room shell already OK."));
+        }
+
+        private const string SHELL_MAT_DIR = "Assets/Settings/";
+
+        /// <summary>
+        /// Reviewer feedback (2026-11-11): the exit was a grey box you walked through, the west "glass panorama" was
+        /// invisible (only sky), and the hallway had no ceiling. Build hinged door leaves (with an opening cut into
+        /// the south wall), a parapet + mullions + tinted glass on the west wall, and a hallway ceiling.
+        /// </summary>
+        private static void FixRoomShell(List<string> log)
+        {
+            var wallMat = GameObject.Find("Wall_North") is GameObject wn && wn.TryGetComponent<Renderer>(out var wr) ? wr.sharedMaterial : null;
+            BuildExitDoor(log, wallMat);
+            DressGlassWall(log, wallMat);
+            EnsureHallwayCeiling(log, wallMat);
+        }
+
+        private static Material ShellMaterial(string name, Color color, bool transparent, float smoothness = 0.3f, float metallic = 0f)
+        {
+            string path = SHELL_MAT_DIR + name + ".mat";
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                AssetDatabase.CreateAsset(mat, path);
+            }
+            mat.SetColor("_BaseColor", color);
+            mat.SetFloat("_Smoothness", smoothness);
+            mat.SetFloat("_Metallic", metallic);
+            if (transparent) EscapeFire.Core.RuntimeVisuals.MakeTransparent(mat);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static GameObject Block(string name, Transform parent, Vector3 center, Vector3 size, Material mat, bool collider = true)
+        {
+            var existing = parent != null ? parent.Find(name) : null;
+            var go = existing != null ? existing.gameObject : GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.SetPositionAndRotation(center, Quaternion.identity);
+            go.transform.localScale = size;
+            if (!collider && go.TryGetComponent<Collider>(out var c)) Object.DestroyImmediate(c);
+            if (mat != null) go.GetComponent<Renderer>().sharedMaterial = mat;
+            return go;
+        }
+
+        private static void BuildExitDoor(List<string> log, Material wallMat)
+        {
+            var doorGo = GameObject.Find("Main_Exit_Door_Double");
+            if (doorGo == null || !doorGo.TryGetComponent<Renderer>(out var doorRenderer)) return;
+            Bounds d = doorRenderer.bounds;
+
+            // Lab exit leads to the safe hallway: the handle is cool (the old "hot" value was a scene default).
+            var checker = doorGo.GetComponent<DoorHeatChecker>();
+            if (checker != null)
+            {
+                var so = new SerializedObject(checker);
+                so.FindProperty("isDoorHot").boolValue = false;
+                so.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // Cut an opening into the south wall if it is one solid slab across the door.
+            var wall = GameObject.Find("Wall_South");
+            if (wall != null && wall.TryGetComponent<Renderer>(out var wallR) && wallR.enabled)
+            {
+                Bounds w = wallR.bounds;
+                if (w.min.x < d.min.x && w.max.x > d.max.x)
+                {
+                    var parent = wall.transform.parent;
+                    var m = wallR.sharedMaterial;
+                    float z = w.center.z, t = w.size.z, top = d.max.y + 0.02f;
+                    Block("Wall_South_Left", parent, new Vector3((w.min.x + d.min.x) / 2f, w.center.y, z), new Vector3(d.min.x - w.min.x, w.size.y, t), m);
+                    Block("Wall_South_Right", parent, new Vector3((d.max.x + w.max.x) / 2f, w.center.y, z), new Vector3(w.max.x - d.max.x, w.size.y, t), m);
+                    Block("Wall_South_Lintel", parent, new Vector3(d.center.x, (top + w.max.y) / 2f, z), new Vector3(d.size.x, w.max.y - top, t), m);
+                    wallR.enabled = false;
+                    if (wall.TryGetComponent<Collider>(out var wc)) wc.enabled = false;
+                    log.Add("Cut a door opening into Wall_South.");
+                }
+            }
+
+            var root = doorGo.transform.parent;
+            var leafMat = ShellMaterial("EF_ExitDoorLeaf", new Color(0.32f, 0.36f, 0.40f), false, 0.45f, 0.3f);
+            var handleMat = ShellMaterial("EF_ExitDoorHandle", new Color(0.8f, 0.8f, 0.78f), false, 0.8f, 1f);
+            var glassMat = ShellMaterial("EF_WindowGlass", new Color(0.62f, 0.78f, 0.86f, 0.28f), true, 0.95f);
+            float half = d.size.x / 2f, thick = Mathf.Min(0.06f, d.size.z), h = d.size.y;
+
+            Transform Hinge(string name, float x, float dir)
+            {
+                var existing = root.Find(name);
+                var hinge = existing != null ? existing : new GameObject(name).transform;
+                hinge.SetParent(root, false);
+                hinge.SetPositionAndRotation(new Vector3(x, d.min.y, d.center.z), Quaternion.identity);
+                hinge.localScale = Vector3.one;
+                Block("Leaf", hinge, new Vector3(x + dir * (half - 0.01f) / 2f, d.min.y + h / 2f, d.center.z), new Vector3(half - 0.02f, h, thick), leafMat, false);
+                Block("Window", hinge, new Vector3(x + dir * half * 0.5f, d.min.y + h * 0.72f, d.center.z), new Vector3(half * 0.45f, h * 0.25f, thick + 0.01f), glassMat, false);
+                // Handle on both faces near the centre line of the double door.
+                Block("Handle_In", hinge, new Vector3(x + dir * (half - 0.12f), d.min.y + 1.0f, d.center.z + thick / 2f + 0.04f), new Vector3(0.03f, 0.2f, 0.04f), handleMat, false);
+                Block("Handle_Out", hinge, new Vector3(x + dir * (half - 0.12f), d.min.y + 1.0f, d.center.z - thick / 2f - 0.04f), new Vector3(0.03f, 0.2f, 0.04f), handleMat, false);
+                return hinge;
+            }
+
+            var left = Hinge("ExitDoor_HingeLeft", d.min.x, 1f);
+            var right = Hinge("ExitDoor_HingeRight", d.max.x, -1f);
+            doorRenderer.enabled = false; // the grey box stays only as the closed-door collider + heat-check trigger
+            var exitDoor = doorGo.GetComponent<ExitDoor>();
+            if (exitDoor == null) exitDoor = doorGo.AddComponent<ExitDoor>();
+            exitDoor.Configure(left, right, doorGo.GetComponent<Collider>());
+            EditorUtility.SetDirty(exitDoor);
+            log.Add("Exit door: two hinged leaves with handles and windows (opens outward), handle set to cool.");
+        }
+
+        private static void DressGlassWall(List<string> log, Material wallMat)
+        {
+            var glass = GameObject.Find("Wall_West_GlassPanorama");
+            if (glass == null || !glass.TryGetComponent<Renderer>(out var gr)) return;
+            Bounds g = gr.bounds;
+            var parent = glass.transform.parent;
+            gr.sharedMaterial = ShellMaterial("EF_WindowGlass", new Color(0.62f, 0.78f, 0.86f, 0.28f), true, 0.95f);
+            var frameMat = ShellMaterial("EF_WindowFrame", new Color(0.22f, 0.23f, 0.25f), false, 0.5f, 0.6f);
+            float x = g.center.x, depth = Mathf.Max(0.2f, g.size.x + 0.1f), sill = 1.0f;
+            Block("Glass_Parapet", parent, new Vector3(x, g.min.y + sill / 2f, g.center.z), new Vector3(depth, sill, g.size.z), wallMat);
+            Block("Glass_Sill", parent, new Vector3(x, g.min.y + sill, g.center.z), new Vector3(depth + 0.06f, 0.06f, g.size.z), frameMat, false);
+            Block("Glass_Head", parent, new Vector3(x, g.max.y - 0.05f, g.center.z), new Vector3(depth, 0.1f, g.size.z), frameMat, false);
+            int bays = Mathf.Max(2, Mathf.RoundToInt(g.size.z / 2f));
+            for (int i = 0; i <= bays; i++)
+            {
+                float z = g.min.z + g.size.z * i / bays;
+                float height = g.max.y - (g.min.y + sill);
+                Block($"Glass_Mullion_{i:00}", parent, new Vector3(x, g.min.y + sill + height / 2f, z), new Vector3(depth, height, 0.08f), frameMat, false);
+            }
+            log.Add($"West glass wall: parapet, sill, {bays + 1} mullions and tinted glass (was invisible).");
+        }
+
+        private static void EnsureHallwayCeiling(List<string> log, Material wallMat)
+        {
+            var floor = GameObject.Find("Hallway_Floor");
+            var wallL = GameObject.Find("Hallway_Wall_Left");
+            if (floor == null || wallL == null || !floor.TryGetComponent<Renderer>(out var fr) || !wallL.TryGetComponent<Renderer>(out var wlr)) return;
+            Bounds f = fr.bounds;
+            float top = wlr.bounds.max.y;
+            Block("Hallway_Ceiling", floor.transform.parent, new Vector3(f.center.x, top + 0.05f, f.center.z), new Vector3(f.size.x, 0.1f, f.size.z), wallMat);
+            // The far end was open around the green emergency door: close it with a wall just behind the door.
+            var endDoor = GameObject.Find("Emergency_Stairs_Final_Exit_Door");
+            if (endDoor != null && endDoor.TryGetComponent<Renderer>(out var er))
+            {
+                Bounds e = er.bounds;
+                Block("Hallway_End_Wall", floor.transform.parent, new Vector3(f.center.x, (f.max.y + top) / 2f, e.min.z - 0.1f),
+                      new Vector3(f.size.x + 0.4f, top - f.max.y, 0.2f), wallMat);
+            }
+            log.Add("Hallway ceiling and end wall added (sky was visible).");
+        }
 
         [MenuItem("EscapeFire/M6/Fix Fire & Smoke Visuals")]
         public static void FixFireVisualsMenu()

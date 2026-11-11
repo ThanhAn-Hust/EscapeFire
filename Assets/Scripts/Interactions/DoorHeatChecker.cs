@@ -12,7 +12,8 @@ namespace EscapeFire.Interactions
     public class DoorHeatChecker : MonoBehaviour
     {
         [Header("Door Heat Settings")]
-        [SerializeField] private bool isDoorHot = true;
+        [Tooltip("The lab exit leads to a safe hallway, so its handle is cool. Set true for a door with fire behind it.")]
+        [SerializeField] private bool isDoorHot = false;
         [SerializeField] private float heatCheckDistance = 0.25f;
 
         [Header("Visuals & Audio")]
@@ -29,6 +30,11 @@ namespace EscapeFire.Interactions
             HasCheckedHeat = true;
             Debug.Log("[DoorHeatChecker] Player checked door handle heat with back of hand!");
 
+            // Checking is the correct procedure whatever the result (NFPA 101), so it always earns the points.
+            if (ScoringManager.Instance != null)
+            {
+                ScoringManager.Instance.AddScore(10, "Kiểm tra nhiệt độ tay nắm cửa bằng mu bàn tay (+10đ quy trình)");
+            }
             if (isDoorHot)
             {
                 Debug.LogWarning("[DoorHeatChecker] WARNING: Door handle is extremely HOT!");
@@ -36,14 +42,18 @@ namespace EscapeFire.Interactions
                 {
                     audioSource.PlayOneShot(hotWarningSound);
                 }
-
-                if (ScoringManager.Instance != null)
-                {
-                    ScoringManager.Instance.AddScore(10, "Kiểm tra nhiệt độ tay nắm cửa bằng mu bàn tay (+10đ quy trình)");
-                }
             }
 
             EventBus<DoorHeatCheckedEvent>.Publish(new DoorHeatCheckedEvent(isDoorHot));
+        }
+
+        /// <summary>Opens the exit door (after the heat check; an unchecked hot door costs points first).</summary>
+        public void OpenDoor()
+        {
+            CanOpenDoorSafely();
+            var door = GetComponentInParent<ExitDoor>();
+            if (door == null) door = GetComponentInChildren<ExitDoor>();
+            if (door != null) door.Open();
         }
 
         public bool CanOpenDoorSafely()
@@ -63,7 +73,9 @@ namespace EscapeFire.Interactions
         {
             if (other.name.Contains("Hand") || other.name.Contains("Controller") || other.CompareTag("Player"))
             {
-                CheckDoorHeatWithHand();
+                // First touch: back of the hand on the handle. Touching again once it is known to be cool opens the door.
+                if (!HasCheckedHeat) CheckDoorHeatWithHand();
+                else if (!isDoorHot) OpenDoor();
             }
         }
     }

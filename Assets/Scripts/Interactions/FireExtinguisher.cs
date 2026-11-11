@@ -27,6 +27,67 @@ namespace EscapeFire.Interactions
         [SerializeField] private AudioSource sprayAudioSource;
 
         public ExtinguisherType Type => type;
+        /// <summary>Nozzle transform (the jet points along its forward axis); aim it at the base of the fire.</summary>
+        public Transform Nozzle => sprayParticles != null ? sprayParticles.transform : transform;
+
+        private void Awake()
+        {
+            if (sprayParticles == null) sprayParticles = BuildSprayJet();
+        }
+
+        /// <summary>
+        /// No spray effect was assigned in the lab scene, so pulling the trigger showed nothing. Build a jet at the top
+        /// of the bottle: CO2 = white freezing cloud, water/foam = pale blue mist.
+        /// </summary>
+        private ParticleSystem BuildSprayJet()
+        {
+            var renderers = GetComponentsInChildren<Renderer>();
+            Bounds b = renderers.Length > 0 ? renderers[0].bounds : new Bounds(transform.position, Vector3.one * 0.4f);
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+
+            var go = new GameObject("SprayJet");
+            go.transform.SetParent(transform, false);
+            go.transform.SetPositionAndRotation(new Vector3(b.center.x, b.max.y - 0.05f, b.center.z) + transform.forward * 0.12f, transform.rotation);
+            var ps = go.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.playOnAwake = false;
+            main.loop = true;
+            main.duration = 1f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.55f, 0.9f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(7f, 10f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.16f);
+            main.startColor = type == ExtinguisherType.CO2 ? new Color(0.95f, 0.97f, 1f, 0.85f) : new Color(0.75f, 0.88f, 1f, 0.8f);
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 700;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 260f;
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 7f;
+            shape.radius = 0.02f;
+
+            var size = ps.sizeOverLifetime;
+            size.enabled = true;
+            size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.4f, 1f, 4f));
+            var color = ps.colorOverLifetime;
+            color.enabled = true;
+            var grad = new Gradient();
+            grad.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                         new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0.6f, 0.5f), new GradientAlphaKey(0f, 1f) });
+            color.color = grad;
+            var limit = ps.limitVelocityOverLifetime;
+            limit.enabled = true;
+            limit.limit = 2.5f;
+            limit.dampen = 0.08f;
+
+            var pr = go.GetComponent<ParticleSystemRenderer>();
+            pr.sharedMaterial = RuntimeVisuals.ParticleMaterial(Color.white);
+            pr.renderMode = ParticleSystemRenderMode.Billboard;
+            return ps;
+        }
         public float ExtinguishPowerPerSecond => extinguishPowerPerSecond;
         public bool IsPinPulled { get; set; } = false;
         public bool IsSpraying { get; private set; } = false;

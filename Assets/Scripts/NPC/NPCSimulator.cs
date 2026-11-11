@@ -12,7 +12,9 @@ namespace EscapeFire.NPC
     /// - Before the fire both NPCs stay put (working at their desks).
     /// - Minh: when the fire erupts he panics, knocks his chair over and runs along the floor to the exit, then leaves.
     /// - Hoa: faints from smoke a few seconds into the fire (lies on the floor) — optional rescue objective.
-    ///   When rescued (select / poke her) she gets up and walks out of the room.
+    ///   When rescued (select / poke her) she gets up, bent low, and follows the rescuer out (escort), instead of
+    ///   leaving on her own. Without an escort target she walks to the exit by herself.
+    /// Legs/arms move with <see cref="ProceduralWalk"/> (no walk clips in the project).
     /// Movement is purely horizontal so NPCs never float or sink; the root pivot must be at the feet.
     /// </summary>
     public class NPCSimulator : MonoBehaviour
@@ -35,12 +37,18 @@ namespace EscapeFire.NPC
         [Tooltip("Visual root rotated when fainting. Defaults to this transform.")]
         [SerializeField] private Transform visualRoot;
 
-        private enum State { Idle, Waiting, Moving, Fainted, Gone }
+        [Tooltip("Who Hoa follows after the rescue. Defaults to the main camera (the learner's head).")]
+        [SerializeField] private Transform escortTarget;
+        [SerializeField] private float escortDistance = 1.1f;
+
+        private enum State { Idle, Waiting, Moving, Fainted, Following, Gone }
+        private ProceduralWalk _walk;
 
         private State _state = State.Idle;
         private float _timer;
         private float _speed;
         private Quaternion _standingRotation;
+        private Vector3 _standingLocalPosition;
 
         public NPCRole Role => role;
         public bool IsRescued { get; private set; }
@@ -50,6 +58,9 @@ namespace EscapeFire.NPC
         {
             if (visualRoot == null) visualRoot = transform;
             _standingRotation = visualRoot.localRotation;
+            _standingLocalPosition = visualRoot.localPosition;
+            _walk = GetComponent<ProceduralWalk>();
+            if (_walk == null) _walk = gameObject.AddComponent<ProceduralWalk>();
         }
 
         private void OnEnable() => EventBus<PhaseChangedEvent>.Subscribe(OnPhaseChanged);
@@ -94,10 +105,20 @@ namespace EscapeFire.NPC
             {
                 ScoringManager.Instance.AddScore(15, "Cứu hộ thành công bạn học Hoa khỏi khói độc");
             }
-            visualRoot.localRotation = _standingRotation;
+            visualRoot.SetLocalPositionAndRotation(_standingLocalPosition, _standingRotation);
             if (animator != null) animator.SetTrigger(RESCUED);
-            StartMoving(walkSpeed);
-            Debug.Log("[NPC] Hoa was rescued and is walking to the exit.");
+            if (escortTarget == null && Camera.main != null) escortTarget = Camera.main.transform;
+            if (escortTarget != null)
+            {
+                _state = State.Following;
+                _walk.Hunch = 0.6f; // stays low under the smoke while being led out
+                Debug.Log("[NPC] Hoa was rescued and follows the learner out.");
+            }
+            else
+            {
+                StartMoving(walkSpeed);
+                Debug.Log("[NPC] Hoa was rescued and is walking to the exit.");
+            }
         }
 
         private void Update()
@@ -112,6 +133,10 @@ namespace EscapeFire.NPC
                 case State.Moving:
                     MoveTowardsExit();
                     break;
+
+                case State.Following:
+                    FollowEscort();
+                    break;
             }
         }
 
@@ -120,6 +145,37 @@ namespace EscapeFire.NPC
             _speed = speed;
             _state = exitDoorTarget != null ? State.Moving : State.Idle;
             if (exitDoorTarget == null) Debug.LogWarning($"[NPC] {name}: exitDoorTarget not set, cannot leave the room.");
+        }
+
+        /// <summary>Who to follow after being rescued (e.g. the learner's head or a demo camera).</summary>
+        public void SetEscortTarget(Transform target) => escortTarget = target;
+
+        private void FollowEscort()
+        {
+            if (escortTarget == null) { StartMoving(walkSpeed); return; }
+            // Once the rescuer is through the exit, walk out on her own the last metres.
+            if (exitDoorTarget != null && HorizontalDistance(escortTarget.position, exitDoorTarget.position) < 1.5f)
+            {
+                StartMoving(walkSpeed);
+                return;
+            }
+            Vector3 target = escortTarget.position;
+            target.y = transform.position.y;
+            Vector3 toTarget = target - transform.position;
+            float dist = toTarget.magnitude;
+            if (dist > escortDistance)
+            {
+                float speed = Mathf.Lerp(walkSpeed, walkSpeed * 1.6f, Mathf.Clamp01((dist - escortDistance) / 2f));
+                transform.position = Vector3.MoveTowards(transform.position, target - toTarget / dist * escortDistance, speed * Time.deltaTime);
+            }
+            if (dist > 0.05f)
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(toTarget / dist, Vector3.up), 8f * Time.deltaTime);
+        }
+
+        private static float HorizontalDistance(Vector3 a, Vector3 b)
+        {
+            a.y = 0f; b.y = 0f;
+            return Vector3.Distance(a, b);
         }
 
         private void MoveTowardsExit()

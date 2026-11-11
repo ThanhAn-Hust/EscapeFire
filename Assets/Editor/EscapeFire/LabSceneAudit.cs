@@ -22,7 +22,7 @@ namespace EscapeFire.EditorTools
     {
         private static readonly string[] PLACEHOLDER_ALLOWED =
         {
-            "wall", "floor", "ceiling", "hallway", "door", "skyline", "skyscraper", "smokevolume", "plane", "panorama"
+            "wall", "floor", "ceiling", "hallway", "door", "skyline", "skyscraper", "smokevolume", "plane", "panorama", "glass_"
         };
 
         [MenuItem("EscapeFire/Audit Lab Scene")]
