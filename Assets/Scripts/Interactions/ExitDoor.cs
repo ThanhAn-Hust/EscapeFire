@@ -18,6 +18,26 @@ namespace EscapeFire.Interactions
 
         public bool IsOpen { get; private set; }
 
+        private HingeGrab _leftGrab, _rightGrab;
+
+        private void Start()
+        {
+            if (leftHinge != null) _leftGrab = leftHinge.GetComponent<HingeGrab>();
+            if (rightHinge != null) _rightGrab = rightHinge.GetComponent<HingeGrab>();
+        }
+
+        /// <summary>Opened by hand (handle turned, leaf pushed): once a leaf is past 30 deg you can walk through.</summary>
+        private void Update()
+        {
+            if (IsOpen) return;
+            bool pushed = (_leftGrab != null && Mathf.Abs(_leftGrab.Angle) > 30f) || (_rightGrab != null && Mathf.Abs(_rightGrab.Angle) > 30f);
+            if (!pushed) return;
+            IsOpen = true;
+            if (blockingCollider != null) blockingCollider.enabled = false;
+            var checker = GetComponent<DoorHeatChecker>();
+            if (checker != null) checker.CanOpenDoorSafely();
+        }
+
         public void Configure(Transform left, Transform right, Collider blocker)
         {
             leftHinge = left;

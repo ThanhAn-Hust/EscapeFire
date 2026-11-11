@@ -56,6 +56,53 @@ namespace EscapeFire.EditorTools
             SetupCallPoints(log);
             SetupExtinguishers(log);
             SetupBreakerPanel(log);
+            SetupExitDoor(log);
+        }
+
+        // ------------------------------------------------------------------ V0.7 exit door
+
+        /// <summary>
+        /// B.1-8 / B.1-9: the heat check is done with the back of the hand (DoorHeatChecker), no ray select;
+        /// each leaf has a lever handle that must be turned down before the leaf can be pushed open.
+        /// </summary>
+        private static void SetupExitDoor(List<string> log)
+        {
+            var door = Object.FindFirstObjectByType<ExitDoor>(FindObjectsInactive.Include);
+            if (door == null) return;
+            foreach (var si in door.GetComponents<XRSimpleInteractable>()) si.enabled = false;
+            var root = door.transform.parent;
+            var black = Mat("EF_ExitDoorHandle", new Color(0.8f, 0.8f, 0.78f), 0.8f, 1f);
+            int n = 0;
+            foreach (var hingeName in new[] { "ExitDoor_HingeLeft", "ExitDoor_HingeRight" })
+            {
+                var hinge = root != null ? root.Find(hingeName) : null;
+                if (hinge == null) continue;
+                bool left = hingeName.EndsWith("Left");
+                var oldIn = hinge.Find("Handle_In");
+                Vector3 handlePos = oldIn != null ? oldIn.position : hinge.position + Vector3.up;
+                if (oldIn != null) oldIn.gameObject.SetActive(false);
+                var pivot = Child(hinge, "EF_HandlePivotIn");
+                pivot.position = handlePos;
+                pivot.localRotation = Quaternion.identity;
+                ClearChildren(pivot);
+                float toHinge = left ? -1f : 1f; // lever points back towards the hinge, like a real lever handle
+                Prim(PrimitiveType.Cube, "EF_HandleRose", pivot, Vector3.zero, Quaternion.identity, new Vector3(0.05f, 0.05f, 0.015f), black);
+                Prim(PrimitiveType.Cube, "EF_HandleLever", pivot, new Vector3(toHinge * 0.06f, 0f, 0.025f), Quaternion.identity, new Vector3(0.12f, 0.022f, 0.022f), black);
+                var grip = Child(pivot, "GrabPoint");
+                grip.localPosition = new Vector3(toHinge * 0.08f, 0f, 0.03f);
+                var handle = pivot.GetComponent<HingeGrab>();
+                if (handle == null) handle = pivot.gameObject.AddComponent<HingeGrab>();
+                // Pushing the lever down rotates it about the door normal; sign so that "down" is positive travel.
+                handle.Configure(Vector3.forward, 0f, 45f * (left ? 1f : -1f), grip, true, 0f);
+                EditorUtility.SetDirty(handle);
+
+                var leaf = hinge.GetComponent<HingeGrab>();
+                if (leaf == null) leaf = hinge.gameObject.AddComponent<HingeGrab>();
+                leaf.Configure(Vector3.up, 0f, 100f * (left ? 1f : -1f), grip, false, 0f, handle, 25f);
+                EditorUtility.SetDirty(leaf);
+                n++;
+            }
+            log.Add($"exit door: back-of-hand heat check, {n} leaves with lever handles (turn, then push)");
         }
 
         // ------------------------------------------------------------------ V0.6 breaker panel
