@@ -30,6 +30,7 @@ namespace EscapeFire.Scenario
         private readonly ConcurrentQueue<string> _inbox = new ConcurrentQueue<string>();
         private readonly ConcurrentQueue<string> _outbox = new ConcurrentQueue<string>();
         private readonly List<string> _priorChallenges = new List<string>();
+        private int _acceptedChallenges;
         private CancellationTokenSource _cts;
         private volatile bool _connected;
         private bool _wasConnected;
@@ -134,10 +135,24 @@ namespace EscapeFire.Scenario
 
         private void OnDirectiveResolved(DirectiveResolvedEvent e)
         {
-            if (e.Result != DirectiveResult.Accepted || e.Directive == Directive.MaintainCurrentPace) return;
+            if (e.Directive == Directive.MaintainCurrentPace || !CountsAsUsed(e.Result)) return;
             string code = DirectiveCodes.ToCode(e.Directive);
-            if (!_priorChallenges.Contains(code)) _priorChallenges.Add(code);
+            if (_priorChallenges.Contains(code)) return;
+            _priorChallenges.Add(code);
+            if (e.Result == DirectiveResult.Accepted) _acceptedChallenges++;
         }
+
+        /// <summary>
+        /// Accepted challenges, and ones the headset can never accept in this drill (alarm already raised, pin already
+        /// out, already active, prerequisite gone), are reported as used so the LLM stops proposing them again.
+        /// Transient rejections (panicking learner, FPS budget, wrong phase) stay retryable.
+        /// </summary>
+        public static bool CountsAsUsed(DirectiveResult result) =>
+            result == DirectiveResult.Accepted ||
+            result == DirectiveResult.RejectedAlarmAlreadyRaised ||
+            result == DirectiveResult.RejectedAlreadyUnpinned ||
+            result == DirectiveResult.RejectedAlreadyActive ||
+            result == DirectiveResult.RejectedPrerequisiteMissing;
 
         private TelemetryPayload BuildTelemetry()
         {
@@ -155,6 +170,7 @@ namespace EscapeFire.Scenario
                 EmergencyElapsed = _emergencyStart >= 0f ? Time.time - _emergencyStart : 0f
             };
             payload.PriorChallenges.AddRange(_priorChallenges);
+            payload.AcceptedChallenges = _acceptedChallenges;
             return payload;
         }
 

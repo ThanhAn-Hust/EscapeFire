@@ -11,6 +11,7 @@ namespace EscapeFire.Tests
         {
             var payload = new TelemetryPayload { SessionId = "abc", TimeElapsed = 12f, CognitiveFriction = 1.7f, IsPowerCut = true };
             payload.PriorChallenges.Add("TRIGGER_CO2_PIN_JAM");
+            payload.AcceptedChallenges = 1;
 
             var obj = JObject.Parse(EdgeProtocol.SerializeTelemetry(payload));
 
@@ -19,6 +20,7 @@ namespace EscapeFire.Tests
             Assert.AreEqual(1f, (float)obj["cognitive_friction_cf"], 1e-5f);
             Assert.IsTrue((bool)obj["is_power_cut"]);
             Assert.AreEqual("TRIGGER_CO2_PIN_JAM", (string)obj["prior_challenges"][0]);
+            Assert.AreEqual(1, (int)obj["accepted_challenges"]);
         }
 
         [Test]

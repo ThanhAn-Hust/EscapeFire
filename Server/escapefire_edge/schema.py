@@ -75,7 +75,13 @@ class TelemetryMessage(BaseModel):
     current_zone: str = "Unknown"
     phase: str = ""
     emergency_elapsed: float = Field(default=0, ge=0)  # seconds since the fire started
-    prior_challenges: list[str] = Field(default_factory=list)
+    prior_challenges: list[str] = Field(default_factory=list)  # applied + permanently refused (never propose again)
+    accepted_challenges: int | None = Field(default=None, ge=0)  # actually applied on the headset (drives the tier)
+
+    @property
+    def challenges_given(self) -> int:
+        """Difficulty tier counts challenges the learner really faced; older clients only send prior_challenges."""
+        return self.accepted_challenges if self.accepted_challenges is not None else len(self.prior_challenges)
 
 
 class DirectiveMessage(BaseModel):

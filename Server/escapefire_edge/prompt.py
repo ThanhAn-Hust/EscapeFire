@@ -28,8 +28,17 @@ DANH MỤC THỬ THÁCH THEO CẤP ĐỘ:
 {{"directive": "<DIRECTIVE_NAME>", "target_object": "<TARGET_SLOT>", "pccc_rule_reference": "<TCVN_HOAC_NFPA_RULE>", "pedagogical_reason": "<Lý do sư phạm ngắn gọn>"}}"""
 
 
+def remaining_choices(prior_challenges: list[str], challenges_given: int | None = None) -> list[str]:
+    """Challenges still legal this turn (not used yet, tier within the cap). Small models ignore
+    "do not repeat" unless they are handed the remaining options explicitly."""
+    cap = allowed_tier(len(prior_challenges) if challenges_given is None else challenges_given)
+    return [d for d in sorted(DIRECTIVE_TIERS, key=lambda k: DIRECTIVE_TIERS[k])
+            if d not in prior_challenges and DIRECTIVE_TIERS[d] <= cap]
+
+
 def build_user_prompt(t: TelemetryMessage) -> str:
     prior = ", ".join(t.prior_challenges) if t.prior_challenges else "Chưa có"
+    choices = ", ".join(remaining_choices(t.prior_challenges, t.challenges_given) + ["MAINTAIN_CURRENT_PACE"])
     return (
         f"Thời gian: {t.time_elapsed:.0f}s\n"
         f"Chỉ số ma sát nhận thức CF: {t.cognitive_friction_cf:.2f}\n"
@@ -38,6 +47,7 @@ def build_user_prompt(t: TelemetryMessage) -> str:
         f"Vị trí người học: {t.current_zone}\n"
         f"Giai đoạn kịch bản: {t.phase}\n"
         f"Thử thách đã xuất hiện trước đó: {prior}\n"
-        f"Cấp độ tối đa được phép cho thử thách tiếp theo: {allowed_tier(len(t.prior_challenges))}\n"
+        f"Cấp độ tối đa được phép cho thử thách tiếp theo: {allowed_tier(t.challenges_given)}\n"
+        f"Lượt này CHỈ được chọn một trong: {choices}\n"
         "Hãy đưa ra quyết định tiếp theo!"
     )

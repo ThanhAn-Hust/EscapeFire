@@ -57,7 +57,7 @@ class Director:
             return self._finish(telemetry, started, DirectiveMessage(source="fallback"), raw=None,
                                 error=f"llm_error:{type(exc).__name__}")
 
-        tier1 = validate_llm_output(raw, telemetry.prior_challenges)
+        tier1 = validate_llm_output(raw, telemetry.prior_challenges, telemetry.challenges_given)
         if not tier1.ok:
             return self._finish(telemetry, started, DirectiveMessage(source="fallback"), raw=raw, error=tier1.error)
 

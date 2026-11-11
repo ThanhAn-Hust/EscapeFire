@@ -37,9 +37,10 @@ DEMO_OUTPUTS = [  # one challenge per tier, in order (scripted stand-in for the 
 
 
 def create_app(llm: LLMClient | None = None, log_dir: Path | None = Path("logs"),
-               min_observation_s: float | None = None) -> FastAPI:
+               min_observation_s: float | None = None, llm_timeout_s: float = 6.0,
+               debrief_timeout_s: float = 8.0) -> FastAPI:
     app = FastAPI(title="EscapeFire Edge AI Director")
-    director = Director(llm or OllamaClient(), log_dir=log_dir,
+    director = Director(llm or OllamaClient(), log_dir=log_dir, timeout_s=llm_timeout_s,
                         **({} if min_observation_s is None else {"min_observation_s": min_observation_s}))
     app.state.director = director
 
@@ -49,7 +50,7 @@ def create_app(llm: LLMClient | None = None, log_dir: Path | None = Path("logs")
 
     @app.post("/aar/debrief", response_model=DebriefResponse)
     async def aar_debrief(req: DebriefRequest) -> DebriefResponse:
-        return await generate_debrief(director.llm, req)
+        return await generate_debrief(director.llm, req, timeout_s=debrief_timeout_s)
 
     # Local mock of the LMS (daotao.ai) contract so demos work without the real LMS.
     @app.post("/api/v1/sessions/{session_id}/complete")
@@ -108,11 +109,17 @@ def main() -> None:
     parser.add_argument("--fake-llm", action="store_true", help="use scripted directives instead of Ollama")
     parser.add_argument("--min-observation", type=float, default=None,
                         help="seconds of emergency to observe before any escalation (default 15)")
+    parser.add_argument("--llm-timeout", type=float, default=6.0,
+                        help="seconds the director waits for the LLM before falling back (default 6)")
+    parser.add_argument("--debrief-timeout", type=float, default=8.0,
+                        help="seconds the AAR debrief waits for the LLM before using the template (default 8)")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
-    llm: LLMClient = ScriptedLLM(DEMO_OUTPUTS) if args.fake_llm else OllamaClient()
-    uvicorn.run(create_app(llm, min_observation_s=args.min_observation), host=args.host, port=args.port)
+    http_timeout = max(args.llm_timeout, args.debrief_timeout) + 2.0
+    llm: LLMClient = ScriptedLLM(DEMO_OUTPUTS) if args.fake_llm else OllamaClient(timeout_s=http_timeout)
+    uvicorn.run(create_app(llm, min_observation_s=args.min_observation, llm_timeout_s=args.llm_timeout,
+                           debrief_timeout_s=args.debrief_timeout), host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

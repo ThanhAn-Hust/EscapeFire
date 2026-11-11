@@ -158,3 +158,21 @@ def test_websocket_roundtrip(tmp_path):
 
         ws.send_text(json.dumps({"type": "telemetry", "time_elapsed": 1, "cognitive_friction_cf": 7}))
         assert ws.receive_json()["error"] == "schema"
+
+
+def test_prompt_offers_only_unused_challenges_within_tier():
+    user = build_user_prompt(calm(prior_challenges=["TRIGGER_CO2_PIN_JAM"]))
+    line = next(l for l in user.splitlines() if l.startswith("Lượt này CHỈ được chọn"))
+    assert "TRIGGER_CO2_PIN_JAM" not in line
+    assert "TRIGGER_SMOKE_SURGE" in line and "TRIGGER_BLACKOUT" in line
+    assert "ESCALATE_SECONDARY_FIRE" not in line and "MAINTAIN_CURRENT_PACE" in line
+
+
+def test_refused_challenges_do_not_raise_the_tier():
+    # alarm cable cut was refused on the headset (alarm already raised): it is "used" but the learner never faced it
+    t = calm(prior_challenges=["TRIGGER_CO2_PIN_JAM", "TRIGGER_SMOKE_SURGE", "TRIGGER_ALARM_CABLE_CUT"], accepted_challenges=2)
+    assert t.challenges_given == 2
+    assert "Cấp độ tối đa được phép cho thử thách tiếp theo: 3" in build_user_prompt(t)
+    fm200 = '{"directive": "ESCALATE_FM200_COUNTDOWN", "target_object": "x", "pccc_rule_reference": "NFPA 2001 / TCVN 7161", "pedagogical_reason": "y"}'
+    assert not validate_llm_output(fm200, t.prior_challenges, t.challenges_given).ok
+    assert validate_llm_output(fm200, t.prior_challenges).ok  # legacy clients: tier from the list length

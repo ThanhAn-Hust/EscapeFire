@@ -43,8 +43,9 @@ _RULES = "\n".join(f"- {k}: {v}" for k, v in PCCC_RULES.items())
 DEBRIEF_SYSTEM_PROMPT = f"""Bạn là AI Mentor PCCC thân thiện, nhận xét sau buổi diễn tập thực tế ảo cho sinh viên.
 Chỉ dựa trên bảng điểm được cung cấp, không bịa thêm sự kiện. Chỉ trích dẫn các luật sau nếu cần:
 {_RULES}
-Viết tiếng Việt, 3-5 câu, giọng gợi mở (Socratic): khen 1 điểm mạnh cụ thể, chỉ ra 1-2 lỗi quan trọng nhất kèm lý do an toàn,
-kết thúc bằng một câu hỏi tự vấn. Không dùng JSON, không markdown, không liệt kê điểm số."""
+Viết tiếng Việt, 3-4 câu ngắn, TỐI ĐA 550 ký tự, giọng gợi mở (Socratic): khen 1 điểm mạnh cụ thể, chỉ ra 1-2 lỗi quan trọng nhất
+kèm lý do an toàn, kết thúc bằng một câu hỏi tự vấn. Chỉ nói về các tiêu chí có trong bảng điểm; tiêu chí đạt điểm tối đa là đã làm đúng,
+không được nói người học bỏ sót bước đó. Không dùng JSON, không markdown, không liệt kê điểm số."""
 
 
 def build_debrief_prompt(req: DebriefRequest) -> str:
@@ -57,6 +58,16 @@ def build_debrief_prompt(req: DebriefRequest) -> str:
     return "\n".join(lines)
 
 
+def _trim_to_sentences(text: str, limit: int = MAX_DEBRIEF_CHARS) -> str:
+    """Small models overshoot the length budget; keep the whole sentences that fit instead of discarding everything."""
+    t = text.strip()
+    if len(t) <= limit:
+        return t
+    cut = t[:limit]
+    end = max(cut.rfind(p) for p in (". ", "? ", "! ", ".\n", "?\n", "!\n"))
+    return cut[:end + 1].strip() if end >= 200 else t
+
+
 def _is_acceptable(text: str) -> bool:
     t = text.strip()
     return 20 <= len(t) <= MAX_DEBRIEF_CHARS and not t.startswith("{") and "```" not in t
@@ -65,9 +76,11 @@ def _is_acceptable(text: str) -> bool:
 async def generate_debrief(llm: LLMClient, req: DebriefRequest, timeout_s: float = 8.0) -> DebriefResponse:
     fallback = DebriefResponse(debrief=req.template_debrief or "Hoàn thành buổi diễn tập.", source="template")
     try:
-        text = await asyncio.wait_for(llm.complete(DEBRIEF_SYSTEM_PROMPT, build_debrief_prompt(req)), timeout=timeout_s)
+        complete = getattr(llm, "complete_text", llm.complete)  # free text, not JSON mode
+        text = await asyncio.wait_for(complete(DEBRIEF_SYSTEM_PROMPT, build_debrief_prompt(req)), timeout=timeout_s)
     except Exception:  # timeout, connection error, ...
         return fallback
+    text = _trim_to_sentences(text or "")
     if not text or not _is_acceptable(text):
         return fallback
     return DebriefResponse(debrief=text.strip(), source="llm")

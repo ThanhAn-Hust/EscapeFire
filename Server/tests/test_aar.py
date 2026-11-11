@@ -57,3 +57,9 @@ def test_http_endpoints(tmp_path):
 
     assert client.post("/api/v1/sessions/..%2Fevil/complete", json=report).status_code in (400, 404)
     assert client.post("/aar/debrief", json={"passed": True, "total_score": 500}).status_code == 422
+
+
+def test_overlong_llm_text_is_trimmed_to_whole_sentences():
+    long_text = ("Bạn ngắt Aptomat đúng lúc và dùng đúng bình CO2. " * 25).strip()
+    r = asyncio.run(generate_debrief(ScriptedLLM([long_text]), req()))
+    assert r.source == "llm" and len(r.debrief) <= 900 and r.debrief.endswith(".")

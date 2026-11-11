@@ -17,6 +17,8 @@ namespace EscapeFire.Scenario
         [JsonProperty("phase")] public string Phase = "";
         [JsonProperty("emergency_elapsed")] public float EmergencyElapsed;
         [JsonProperty("prior_challenges")] public List<string> PriorChallenges = new List<string>();
+        /// <summary>Challenges actually applied (prior_challenges also lists permanently refused ones). Drives the tier.</summary>
+        [JsonProperty("accepted_challenges")] public int AcceptedChallenges;
     }
 
     /// <summary>Edge server → headset decision.</summary>

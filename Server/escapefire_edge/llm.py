@@ -24,16 +24,26 @@ class OllamaClient:
         self.timeout_s = timeout_s
 
     async def complete(self, system: str, user: str) -> str:
+        """Director call: Ollama JSON mode so the reply parses as a directive."""
+        return await self._chat(system, user, json_mode=True)
+
+    async def complete_text(self, system: str, user: str) -> str:
+        """Free-text call (AAR debrief). JSON mode here makes Gemma emit JSON or stall until the timeout."""
+        return await self._chat(system, user, json_mode=False)
+
+    async def _chat(self, system: str, user: str, json_mode: bool) -> str:
         payload = {
             "model": self.model,
             "stream": False,
-            "format": "json",
-            "options": {"temperature": 0.2},
+            "options": {"temperature": 0.2, "num_predict": 400},
+            "keep_alive": "30m",
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
         }
+        if json_mode:
+            payload["format"] = "json"
         async with httpx.AsyncClient(timeout=self.timeout_s) as client:
             response = await client.post(f"{self.base_url}/api/chat", json=payload)
             response.raise_for_status()
