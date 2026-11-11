@@ -15,6 +15,9 @@ namespace EscapeFire.Interactions
         [SerializeField] private MeshRenderer buttonRenderer;
         [SerializeField] private Color activatedColor = Color.yellow;
         [SerializeField] private AudioSource alarmAudio;
+        [Tooltip("Part that visibly stays pushed in after activation (optional).")]
+        [SerializeField] private Transform pressedElement;
+        [SerializeField] private Vector3 pressDepthLocal = new Vector3(0f, 0f, 0.006f);
 
         public bool IsActivated { get; private set; } = false;
         public bool IsCableCut { get; private set; } = false;
@@ -48,6 +51,8 @@ namespace EscapeFire.Interactions
 
             IsActivated = true;
             Debug.Log("[FireAlarmButton] Manual Fire Alarm Button Pressed!");
+            // Real call points latch in: the pressed element stays pushed in until reset with a key.
+            if (pressedElement != null) pressedElement.localPosition += pressDepthLocal;
 
             if (buttonRenderer != null)
             {

@@ -31,24 +31,6 @@ namespace EscapeFire.Tests.PlayMode.XR
         }
 
         [UnityTest]
-        public IEnumerator NearOnly_HandAtButton_Presses()
-        {
-            yield return LoadLab();
-            var alarm = Object.FindFirstObjectByType<FireAlarmButton>();
-            Vector3 b = alarm.transform.position;
-            var eye = new Vector3(b.x, 1.6f, b.z + 0.6f);
-            yield return StandAt(eye, b);
-            Quaternion palm = Quaternion.LookRotation(b - eye);
-            yield return Xr.MoveHand(Hand.Right, b + new Vector3(0f, 0f, 0.06f), palm, 0.5f);
-            Shot("hand_at_call_point");
-            Xr.Grip(Hand.Right, true);
-            yield return Xr.Wait(0.3f);
-            Xr.Grip(Hand.Right, false);
-            yield return Xr.Wait(0.2f);
-            Assert.IsTrue(alarm.IsActivated);
-        }
-
-        [UnityTest]
         public IEnumerator Posture_CrouchingSlowsWalking()
         {
             yield return LoadLab();

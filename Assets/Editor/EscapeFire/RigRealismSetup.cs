@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
 using UnityEngine.XR.Interaction.Toolkit.Interactables;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion;
 using UnityEngine.XR.Interaction.Toolkit.Locomotion.Comfort;
@@ -52,6 +53,80 @@ namespace EscapeFire.EditorTools
             SetupHand(origin, "Right Controller", false, log);
             SetupVignette(origin, log);
             AddNearOnlyFilters(log);
+            SetupCallPoints(log);
+        }
+
+        /// <summary>
+        /// B.1-1: a manual call point is pressed with a fingertip, ≥ 8 mm into the face, towards the wall.
+        /// Grabbing it with a fist or pointing from afar does nothing.
+        /// </summary>
+        private static void SetupCallPoints(List<string> log)
+        {
+            foreach (var alarm in Object.FindObjectsByType<FireAlarmButton>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var interactable = alarm.GetComponent<XRBaseInteractable>();
+                if (interactable == null) continue;
+                var near = alarm.GetComponent<NearOnlyFilter>();
+                if (near != null) { near.PokeOnly = true; near.Reach = 0.12f; EditorUtility.SetDirty(near); }
+
+                Vector3 intoWall = IntoWall(alarm.transform.position);
+                PokeAxis axis = LocalAxis(alarm.transform, intoWall);
+                var box = alarm.GetComponent<BoxCollider>();
+                MakeFacePlate(box, axis, CallPointTravel);
+                // XRI selects when the fingertip reaches the interactable's pivot; the pivot sits behind the face,
+                // so shift the trigger point forward to "face + travel".
+                float faceToPivot = box != null ? Vector3.Dot(alarm.transform.position - box.bounds.center, intoWall) + box.bounds.extents[intoWall.x != 0f ? 0 : 2] : 0f;
+                var poke = alarm.GetComponent<XRPokeFilter>();
+                if (poke == null) poke = alarm.gameObject.AddComponent<XRPokeFilter>();
+                poke.pokeConfiguration = new UnityEngine.XR.Interaction.Toolkit.Filtering.PokeThresholdDatumProperty(new PokeThresholdData
+                {
+                    pokeDirection = axis,
+                    interactionDepthOffset = Mathf.Max(0f, faceToPivot - CallPointTravel),
+                    enablePokeAngleThreshold = true,
+                    pokeAngleThreshold = 60f
+                });
+                EditorUtility.SetDirty(poke);
+                log.Add($"call point '{alarm.name}': fingertip poke {LocalAxis(alarm.transform, intoWall)}");
+            }
+        }
+
+        /// <summary>
+        /// XRI fires a poke when the fingertip has travelled through the whole collider along the poke axis, so the
+        /// collider becomes a thin plate at the front face: its thickness is the real button travel (~9 mm).
+        /// </summary>
+        public const float CallPointTravel = 0.009f;
+
+        public static void MakeFacePlate(BoxCollider box, PokeAxis axis, float travelMeters)
+        {
+            if (box == null) return;
+            int i = axis == PokeAxis.X || axis == PokeAxis.NegativeX ? 0 : axis == PokeAxis.Y || axis == PokeAxis.NegativeY ? 1 : 2;
+            float sign = axis == PokeAxis.X || axis == PokeAxis.Y || axis == PokeAxis.Z ? -1f : 1f; // front face is opposite the poke direction
+            float scale = Mathf.Abs(box.transform.lossyScale[i]);
+            if (scale < 1e-5f) return;
+            Vector3 size = box.size, center = box.center;
+            float front = center[i] + sign * size[i] * 0.5f;
+            size[i] = travelMeters / scale;
+            center[i] = front - sign * size[i] * 0.5f;
+            box.size = size;
+            box.center = center;
+            EditorUtility.SetDirty(box);
+        }
+
+        /// <summary>Walls are axis-aligned: the direction from the room centre towards the wall the object hangs on.</summary>
+        public static Vector3 IntoWall(Vector3 p)
+        {
+            Vector3 d = new Vector3(p.x, 0f, p.z);
+            return Mathf.Abs(d.x) > Mathf.Abs(d.z) ? new Vector3(Mathf.Sign(d.x), 0f, 0f) : new Vector3(0f, 0f, Mathf.Sign(d.z));
+        }
+
+        public static PokeAxis LocalAxis(Transform t, Vector3 worldDir)
+        {
+            var axes = new (Vector3 dir, PokeAxis axis)[]
+            {
+                (t.right, PokeAxis.X), (-t.right, PokeAxis.NegativeX), (t.up, PokeAxis.Y), (-t.up, PokeAxis.NegativeY),
+                (t.forward, PokeAxis.Z), (-t.forward, PokeAxis.NegativeZ)
+            };
+            return axes.OrderByDescending(a => Vector3.Dot(a.dir.normalized, worldDir)).First().axis;
         }
 
         private static void SetupHand(XROrigin origin, string controllerName, bool left, List<string> log)

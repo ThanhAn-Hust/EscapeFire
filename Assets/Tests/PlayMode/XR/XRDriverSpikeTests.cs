@@ -46,31 +46,6 @@ namespace EscapeFire.Tests.PlayMode.XR
             Assert.Less(Vector3.Distance(near.transform.position, _xr.HandPosition(Hand.Right)), 0.25f, "controller pose must drive the hand");
         }
 
-        [UnityTest]
-        public IEnumerator Grip_OnAlarmButton_RaisesAlarm_ThroughXRI()
-        {
-            GameSession.Reset();
-            GameSession.Begin(TrainingMode.Guided, "XRTEST");
-            yield return SceneManager.LoadSceneAsync(SceneNames.LAB, LoadSceneMode.Single);
-            yield return null;
-            _xr = XRInputDriver.Create();
-            var alarm = Object.FindFirstObjectByType<FireAlarmButton>();
-            Vector3 b = alarm.transform.position;
-            var eye = new Vector3(b.x, 1.6f, b.z + 0.7f);
-            _xr.LookAt(eye, b);
-            Quaternion palm = Quaternion.LookRotation(b - eye);
-            _xr.SetHand(Hand.Right, eye + new Vector3(0.2f, -0.35f, -0.2f), palm);
-            yield return _xr.Wait(0.2f);
-            yield return _xr.MoveHand(Hand.Right, b + new Vector3(0f, 0f, 0.05f), palm, 0.6f);
-            _xr.Grip(Hand.Right, true);
-            yield return _xr.Wait(0.3f);
-            _xr.Grip(Hand.Right, false);
-            yield return _xr.Wait(0.2f);
-            foreach (var i in Object.FindObjectsByType<XRBaseInteractor>(FindObjectsSortMode.None))
-                Debug.Log($"[XRSpike] interactor {i.name} ({i.GetType().Name}) at {i.transform.position} hover={i.hasHover}");
-            Assert.IsTrue(alarm.IsActivated, "grabbing the call point with the right controller must raise the alarm");
-        }
-
         private XRBaseInteractor FindInteractor(Hand hand)
         {
             string side = hand == Hand.Left ? "Left" : "Right";

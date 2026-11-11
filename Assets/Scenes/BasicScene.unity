@@ -469,6 +469,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: EscapeFire.Runtime::EscapeFire.Interactions.NearOnlyFilter
   reach: 0.15
+  pokeOnly: 0
 --- !u!1 &68296202
 GameObject:
   m_ObjectHideFlags: 0
@@ -3882,7 +3883,7 @@ MonoBehaviour:
       m_Name: 
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 0ba36b8d-0ac8-42b7-936c-31c476bb865b
+      m_Id: 7e58a225-b747-47bb-b1ba-050c4d5eea82
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -3894,7 +3895,7 @@ MonoBehaviour:
       m_Name: 
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 17f75fdc-fb60-4b96-bdc0-624df5a55b99
+      m_Id: f1824f00-dd5f-4dcd-9178-3a13fcb24acc
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -3906,6 +3907,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   maxCurlDegrees: 75
+  curlSign: 1
 --- !u!1001 &431483769
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6932,6 +6934,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: EscapeFire.Runtime::EscapeFire.Interactions.NearOnlyFilter
   reach: 0.35
+  pokeOnly: 0
 --- !u!1001 &781869683
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9101,6 +9104,7 @@ GameObject:
   - component: {fileID: 1107643497}
   - component: {fileID: 1107643502}
   - component: {fileID: 1107643503}
+  - component: {fileID: 1107643504}
   m_Layer: 0
   m_Name: Fire_Alarm_Switch
   m_TagString: Untagged
@@ -9123,6 +9127,8 @@ MonoBehaviour:
   buttonRenderer: {fileID: 0}
   activatedColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   alarmAudio: {fileID: 0}
+  pressedElement: {fileID: 0}
+  pressDepthLocal: {x: 0, y: 0, z: 0.006}
 --- !u!23 &1107643498
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -9191,8 +9197,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1, y: 1, z: 0.1125}
+  m_Center: {x: 0, y: 0, z: 0.44375}
 --- !u!33 &1107643500
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -9317,7 +9323,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a8f8da343a993a54ca6ae0ea33b83be8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: EscapeFire.Runtime::EscapeFire.Interactions.NearOnlyFilter
-  reach: 0.15
+  reach: 0.12
+  pokeOnly: 1
+--- !u!114 &1107643504
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1107643496}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 115f1a2a50d85cd4b9d6dad4c95622be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.XR.Interaction.Toolkit::UnityEngine.XR.Interaction.Toolkit.Filtering.XRPokeFilter
+  m_Interactable: {fileID: 1107643502}
+  m_PokeCollider: {fileID: 1107643499}
+  m_PokeConfiguration:
+    m_UseConstant: 1
+    m_ConstantValue:
+      m_PokeDirection: 6
+      m_InteractionDepthOffset: 0.030999962
+      m_EnablePokeAngleThreshold: 1
+      m_PokeAngleThreshold: 60
+    m_Variable: {fileID: 0}
 --- !u!1 &1111951185
 GameObject:
   m_ObjectHideFlags: 0
@@ -10115,6 +10144,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: EscapeFire.Runtime::EscapeFire.Interactions.NearOnlyFilter
   reach: 0.15
+  pokeOnly: 0
 --- !u!1 &1188076184
 GameObject:
   m_ObjectHideFlags: 0
@@ -12080,6 +12110,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: EscapeFire.Runtime::EscapeFire.Interactions.NearOnlyFilter
   reach: 0.15
+  pokeOnly: 0
 --- !u!1 &1358855840
 GameObject:
   m_ObjectHideFlags: 0
@@ -14401,7 +14432,7 @@ MonoBehaviour:
       m_Name: 
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: f2c8151b-b62f-4964-88f1-7d6c0f683e18
+      m_Id: 1cc8b6f2-972b-4e2a-856d-55365c0d02c4
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -14413,7 +14444,7 @@ MonoBehaviour:
       m_Name: 
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 279615e8-ee8f-4ac0-9590-f9b24478595f
+      m_Id: 68299e72-2208-4d09-a1b0-7e283bf47646
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
@@ -14425,6 +14456,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   maxCurlDegrees: 75
+  curlSign: 1
 --- !u!1001 &1631944169
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -19308,6 +19340,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: EscapeFire.Runtime::EscapeFire.Interactions.NearOnlyFilter
   reach: 0.15
+  pokeOnly: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

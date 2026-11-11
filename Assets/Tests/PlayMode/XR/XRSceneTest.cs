@@ -59,6 +59,34 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return Xr.Wait(settle);
         }
 
+        /// <summary>Fingertip (poke point) of a hand, as XRI uses it.</summary>
+        protected Transform PokeTip(Hand hand)
+        {
+            string side = hand == Hand.Left ? "Left" : "Right";
+            foreach (var p in Object.FindObjectsByType<UnityEngine.XR.Interaction.Toolkit.Interactors.XRPokeInteractor>(FindObjectsSortMode.None))
+                for (var t = p.transform; t != null; t = t.parent)
+                    if (t.name.StartsWith(side)) return p.GetAttachTransform(null);
+            return null;
+        }
+
+        /// <summary>
+        /// Presses a surface with the index fingertip: approach 6 cm in front, push <paramref name="depth"/> past the
+        /// surface along <paramref name="intoSurface"/>, hold, pull back — like pressing a real button.
+        /// </summary>
+        protected IEnumerator Poke(Hand hand, Vector3 surfacePoint, Vector3 intoSurface, float depth, float hold = 0.3f)
+        {
+            Quaternion rot = Quaternion.LookRotation(intoSurface, Vector3.up);
+            Xr.SetHand(hand, surfacePoint - intoSurface * 0.25f, rot);
+            yield return Xr.Wait(0.05f);
+            var tip = PokeTip(hand);
+            Vector3 tipOffset = tip != null ? tip.position - Xr.HandPosition(hand) : Vector3.zero;
+            Vector3 start = surfacePoint - intoSurface * 0.06f - tipOffset;
+            yield return Xr.MoveHand(hand, start, rot, 0.3f);
+            yield return Xr.MoveHand(hand, surfacePoint + intoSurface * depth - tipOffset, rot, 0.25f);
+            yield return Xr.Wait(hold);
+            yield return Xr.MoveHand(hand, start, rot, 0.2f);
+        }
+
         protected static Vector3 Flat(Vector3 v) { v.y = 0f; return v.sqrMagnitude < 1e-6f ? Vector3.forward : v.normalized; }
 
         /// <summary>Saves what the learner sees right now (rig camera) as a PNG.</summary>
