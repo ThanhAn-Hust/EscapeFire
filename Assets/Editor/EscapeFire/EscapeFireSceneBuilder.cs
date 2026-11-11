@@ -58,10 +58,11 @@ namespace EscapeFire.EditorTools
             var status = CreateText(canvas, "Status", "", 32, new Vector2(0f, 110f), new Vector2(950f, 110f));
             SetPrivateField(menu, "statusText", status);
 
-            CreateButton(canvas, "XÁC NHẬN CHIỀU CAO (đứng thẳng)", new Vector2(0f, 0f), menu.CalibrateHeight);
-            CreateButton(canvas, "CHẾ ĐỘ: CÓ HƯỚNG DẪN", new Vector2(-240f, -110f), menu.SelectGuidedMode, 440f);
-            CreateButton(canvas, "CHẾ ĐỘ: SÁT HẠCH", new Vector2(240f, -110f), menu.SelectExamMode, 440f);
-            CreateButton(canvas, "BẮT ĐẦU BÀI TẬP PHÒNG LAB", new Vector2(0f, -240f), menu.StartDrill, 700f, new Color(0.75f, 0.15f, 0.12f));
+            CreateButton(canvas, "XÁC NHẬN CHIỀU CAO (đứng thẳng)", new Vector2(0f, 10f), menu.CalibrateHeight);
+            CreateButton(canvas, "1. BÀI GIẢNG (bắt đầu từ đây)", new Vector2(0f, -85f), menu.StartLesson, 700f, new Color(0.15f, 0.45f, 0.75f));
+            CreateButton(canvas, "2. CHẾ ĐỘ: CÓ HƯỚNG DẪN", new Vector2(-240f, -180f), menu.SelectGuidedMode, 440f);
+            CreateButton(canvas, "3. CHẾ ĐỘ: SÁT HẠCH", new Vector2(240f, -180f), menu.SelectExamMode, 440f);
+            CreateButton(canvas, "BẮT ĐẦU BÀI TẬP PHÒNG LAB", new Vector2(0f, -285f), menu.StartDrill, 700f, new Color(0.75f, 0.15f, 0.12f));
 
             SaveScene(scene, MenuPath);
         }
@@ -251,7 +252,7 @@ namespace EscapeFire.EditorTools
         public static void ApplyBuildSettings()
         {
             var scenes = new List<EditorBuildSettingsScene>();
-            foreach (var path in new[] { MenuPath, LabPath, AARPath })
+            foreach (var path in new[] { MenuPath, LessonRoomBuilder.PATH, LabPath, AARPath })
             {
                 if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) != null) scenes.Add(new EditorBuildSettingsScene(path, true));
                 else Debug.LogWarning($"[EscapeFire] Scene not found, skipped in Build Settings: {path}");

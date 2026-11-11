@@ -208,7 +208,7 @@ namespace EscapeFire.EditorTools
         /// B.1-4 / B.1-5: carry handle as grab point, wall bracket (lift to detach), one hand on the body only,
         /// a safety pin pulled by the other hand, a horn / hose nozzle held by the other hand to aim.
         /// </summary>
-        private static void SetupExtinguishers(List<string> log)
+        public static void SetupExtinguishers(List<string> log)
         {
             foreach (var ext in Object.FindObjectsByType<FireExtinguisher>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
@@ -363,28 +363,47 @@ namespace EscapeFire.EditorTools
             {
                 var interactable = alarm.GetComponent<XRBaseInteractable>();
                 if (interactable == null) continue;
-                var near = alarm.GetComponent<NearOnlyFilter>();
-                if (near != null) { near.PokeOnly = true; near.Reach = 0.12f; EditorUtility.SetDirty(near); }
-
-                Vector3 intoWall = IntoWall(alarm.transform.position);
-                PokeAxis axis = LocalAxis(alarm.transform, intoWall);
-                var box = alarm.GetComponent<BoxCollider>();
-                MakeFacePlate(box, axis, CallPointTravel);
-                // XRI selects when the fingertip reaches the interactable's pivot; the pivot sits behind the face,
-                // so shift the trigger point forward to "face + travel".
-                float faceToPivot = box != null ? Vector3.Dot(alarm.transform.position - box.bounds.center, intoWall) + box.bounds.extents[intoWall.x != 0f ? 0 : 2] : 0f;
-                var poke = alarm.GetComponent<XRPokeFilter>();
-                if (poke == null) poke = alarm.gameObject.AddComponent<XRPokeFilter>();
-                poke.pokeConfiguration = new UnityEngine.XR.Interaction.Toolkit.Filtering.PokeThresholdDatumProperty(new PokeThresholdData
-                {
-                    pokeDirection = axis,
-                    interactionDepthOffset = Mathf.Max(0f, faceToPivot - CallPointTravel),
-                    enablePokeAngleThreshold = true,
-                    pokeAngleThreshold = 60f
-                });
-                EditorUtility.SetDirty(poke);
-                log.Add($"call point '{alarm.name}': fingertip poke {LocalAxis(alarm.transform, intoWall)}");
+                MakePokeable(interactable, IntoWall(alarm.transform.position), CallPointTravel);
+                log.Add($"call point '{alarm.name}': fingertip poke {LocalAxis(alarm.transform, IntoWall(alarm.transform.position))}");
             }
+        }
+
+        /// <summary>
+        /// Makes an interactable a real push button: only the index fingertip (poke) triggers it, pressing
+        /// <paramref name="travel"/> metres along <paramref name="pressDirWorld"/> past its front face.
+        /// </summary>
+        public static void MakePokeable(XRBaseInteractable interactable, Vector3 pressDirWorld, float travel)
+        {
+            var go = interactable.gameObject;
+            var near = go.GetComponent<NearOnlyFilter>();
+            if (near == null) { EnsureNearOnly(interactable, 0.12f); near = go.GetComponent<NearOnlyFilter>(); }
+            near.PokeOnly = true;
+            near.Reach = 0.12f;
+            EditorUtility.SetDirty(near);
+
+            Vector3 dir = pressDirWorld.normalized;
+            PokeAxis axis = LocalAxis(go.transform, dir);
+            var box = go.GetComponent<BoxCollider>();
+            float faceToPivot = 0f;
+            if (box != null)
+            {
+                Vector3 e = box.bounds.extents;
+                float ext = Mathf.Abs(dir.x) * e.x + Mathf.Abs(dir.y) * e.y + Mathf.Abs(dir.z) * e.z;
+                Vector3 front = box.bounds.center - dir * ext;
+                // XRI selects when the fingertip reaches the interactable's pivot: shift the trigger to "face + travel".
+                faceToPivot = Vector3.Dot(go.transform.position - front, dir);
+                MakeFacePlate(box, axis, travel);
+            }
+            var poke = go.GetComponent<XRPokeFilter>();
+            if (poke == null) poke = go.AddComponent<XRPokeFilter>();
+            poke.pokeConfiguration = new UnityEngine.XR.Interaction.Toolkit.Filtering.PokeThresholdDatumProperty(new PokeThresholdData
+            {
+                pokeDirection = axis,
+                interactionDepthOffset = Mathf.Max(0f, faceToPivot - travel),
+                enablePokeAngleThreshold = true,
+                pokeAngleThreshold = 60f
+            });
+            EditorUtility.SetDirty(poke);
         }
 
         /// <summary>

@@ -35,6 +35,7 @@ namespace EscapeFire.Scenario
             if (!won && !failed) return;
 
             _reported = true;
+            if (won && GameSession.Mode == TrainingMode.Guided) ProgressionStore.GuidedPassed = true; // unlocks the exam
             var scoring = ScoringManager.Instance;
             string json = scoring != null ? scoring.ExportJSONReport() : string.Empty;
             string failCause = LabProgressiveScenarioController.Instance != null

@@ -315,6 +315,7 @@ namespace EscapeFire.Tests.PlayMode
             GameSession.Begin(mode, "PLAYTEST");
             SessionResult.Reset();
             LmsSync.OutboxFolder = "lms_outbox_tests";
+            ProgressionStore.KeyPrefix = "EF_test_progress_"; // never touch the learner's real progress
             TelemetryLogger.FolderOverride = "TelemetryReports_tests";
             yield return SceneManager.LoadSceneAsync(SceneNames.LAB, LoadSceneMode.Single);
             yield return null;

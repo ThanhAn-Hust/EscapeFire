@@ -9,6 +9,8 @@ namespace EscapeFire.Core
         public const string MAIN_MENU = "00_MainMenu";
         public const string LAB = "BasicScene"; // 01_ComputerLab_Sim in the spec; kept as BasicScene to preserve history.
         public const string AAR = "02_AAR_Evaluation";
+        /// <summary>Interactive lesson room: theory + hands-on practice before the drill (plan V1.4).</summary>
+        public const string LESSON = "01_Lesson";
     }
 
     /// <summary>

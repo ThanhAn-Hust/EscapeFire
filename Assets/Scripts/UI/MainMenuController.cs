@@ -14,6 +14,8 @@ namespace EscapeFire.UI
         [SerializeField] private Transform headTransform;
         [SerializeField] private TextMeshProUGUI statusText;
         [SerializeField] private string studentId = GameSession.DEFAULT_STUDENT_ID;
+        [Tooltip("Lesson -> Guided -> Exam ladder (plan V1.5). Turn off for instructor demos.")]
+        [SerializeField] private bool requireProgression = true;
 
         private TrainingMode _selectedMode = TrainingMode.Guided;
 
@@ -45,18 +47,42 @@ namespace EscapeFire.UI
 
         public void SelectGuidedMode()
         {
+            if (requireProgression && !ProgressionStore.GuidedUnlocked)
+            {
+                SetStatus("Hãy học BÀI GIẢNG trước (5 trạm), rồi mới thực hành có hướng dẫn.");
+                return;
+            }
             _selectedMode = TrainingMode.Guided;
             RefreshStatus();
         }
 
         public void SelectExamMode()
         {
+            if (requireProgression && !ProgressionStore.ExamUnlocked)
+            {
+                SetStatus("SÁT HẠCH mở khi bạn đã xong Bài giảng và vượt qua 1 lần Có hướng dẫn.");
+                return;
+            }
             _selectedMode = TrainingMode.Exam;
             RefreshStatus();
         }
 
+        /// <summary>Lesson room first (advisor: "bài giảng trước, sau đó thực hành").</summary>
+        public void StartLesson()
+        {
+            GameSession.Begin(TrainingMode.Guided, studentId);
+            SessionResult.Reset();
+            SceneFlowManager.Load(SceneNames.LESSON);
+        }
+
         public void StartDrill()
         {
+            if (requireProgression && !ProgressionStore.GuidedUnlocked)
+            {
+                SetStatus("Hãy học BÀI GIẢNG trước khi vào phòng Lab.");
+                return;
+            }
+            if (requireProgression && _selectedMode == TrainingMode.Exam && !ProgressionStore.ExamUnlocked) _selectedMode = TrainingMode.Guided;
             GameSession.Begin(_selectedMode, studentId);
             SessionResult.Reset();
             SceneFlowManager.Load(SceneNames.LAB);
@@ -68,7 +94,8 @@ namespace EscapeFire.UI
             string height = GameSession.IsCalibrated
                 ? $"H₀ = {GameSession.CalibratedHeight:F2}m (khom khi < {GameSession.CalibratedHeight * 0.7f:F2}m)"
                 : "Chưa hiệu chuẩn chiều cao";
-            SetStatus($"Chế độ: {mode}\n{height}");
+            string ladder = $"Bài giảng {(ProgressionStore.LessonDone ? "✔" : "○")}  ·  Có hướng dẫn {(ProgressionStore.GuidedPassed ? "✔" : "○")}  ·  Sát hạch {(ProgressionStore.ExamUnlocked ? "mở" : "khoá")}";
+            SetStatus($"Chế độ: {mode}\n{height}\n{ladder}");
         }
 
         private void SetStatus(string message)

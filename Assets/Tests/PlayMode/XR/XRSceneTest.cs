@@ -35,6 +35,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             GameSession.Begin(mode, "XRTEST");
             SessionResult.Reset();
             LmsSync.OutboxFolder = "lms_outbox_tests";
+            ProgressionStore.KeyPrefix = "EF_test_progress_";
             TelemetryLogger.FolderOverride = "TelemetryReports_tests";
             yield return SceneManager.LoadSceneAsync(SceneNames.LAB, LoadSceneMode.Single);
             yield return null;
