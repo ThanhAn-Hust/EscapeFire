@@ -4,8 +4,8 @@ namespace EscapeFire.Hazards
 {
     /// <summary>
     /// How much of the agent actually reaches the fuel (plan Phần B.1-5, PASS: Aim at the base, Squeeze, Sweep).
-    /// Pure logic so it can be unit-tested and tuned. Distances/angles are initial proposals:
-    /// TODO(V1): verify effective range per extinguisher type (CO2 ≈ 1–2.5 m) against NFPA 10 / TCVN sources.
+    /// Pure logic so it can be unit-tested and tuned. Rule R04 (OSHA PASS; stand 1.8–2.4 m away) and R05
+    /// (CO2 MT5 range ≥ 2 m) — see docs/pccc_ground_truth.md. Cone / sweep thresholds are design choices.
     /// </summary>
     public static class FireSuppressionModel
     {

@@ -294,6 +294,7 @@ namespace EscapeFire.EditorTools
 
                 var so = new SerializedObject(ext);
                 so.FindProperty("nozzle").objectReferenceValue = tip;
+                so.FindProperty("fullChargeSeconds").floatValue = co2 ? 12f : 40f; // R05: CO2 MT5 >= 10 s; water ~ 40 s
                 so.ApplyModifiedPropertiesWithoutUndo();
                 log.Add("extinguisher '" + ext.name + "' (" + ext.Type + "): carry handle, wall bracket, pin, " + (co2 ? "CO2 horn" : "hose nozzle"));
             }

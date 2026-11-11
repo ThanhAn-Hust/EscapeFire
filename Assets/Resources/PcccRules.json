@@ -1,0 +1,124 @@
+{
+  "rules": [
+    {
+      "id": "R01_ALARM_EARLY",
+      "title": "Báo cháy sớm",
+      "statement": "Phát hiện cháy phải báo ngay cho mọi người xung quanh (hô hoán, nhấn nút báo cháy) và gọi 114.",
+      "usedBy": ["score:alarm", "socratic:AlarmNotRaised", "lesson:station4"],
+      "sources": [
+        { "name": "Luật PCCC và CNCH số 55/2024/QH15 (hiệu lực 01/7/2025), Điều 6 Báo cháy", "url": "https://luatvietnam.vn/tin-van-ban-moi/da-co-luat-phong-chay-chua-chay-va-cuu-nan-cuu-ho-cua-quoc-hoi-so-55-2024-qh15-186-100286-article.html" },
+        { "name": "OSHA eTool: Emergency action – alarm & evacuation", "url": "https://osha.prod.pace.dol.gov/etools/evacuation-plans-procedures/emergency-standards/portable-extinguishers/use" }
+      ]
+    },
+    {
+      "id": "R02_POWER_OFF_FIRST",
+      "title": "Ngắt điện trước khi dập cháy điện",
+      "statement": "Cháy thiết bị điện: ngắt nguồn (Aptomat) trước; không dùng chất chữa cháy dẫn điện (nước, bọt) lên thiết bị đang có điện.",
+      "usedBy": ["score:power_cut", "socratic:WaterNearLivePanel", "directive:NFPA 75 8.4"],
+      "sources": [
+        { "name": "NFPA 75 (Protection of IT Equipment) §8.4 – chất chữa cháy không dẫn điện cho thiết bị đang mang điện", "url": "https://www.nfpa.org/codes-and-standards/nfpa-75-standard-development/75" },
+        { "name": "SGGP – Kỹ năng thoát nạn khi cháy cao ốc (hướng dẫn Cảnh sát PCCC TP.HCM)", "url": "https://www.sggp.org.vn/thoat-nan-khi-chay-cao-oc-post471983.html" }
+      ]
+    },
+    {
+      "id": "R03_RIGHT_AGENT",
+      "title": "Chọn đúng loại bình",
+      "statement": "Cháy điện dùng bình CO2 (hoặc bột phù hợp); bình nước/bọt chỉ cho chất rắn thông thường khi đã ngắt điện.",
+      "usedBy": ["score:agent", "lesson:station2"],
+      "sources": [
+        { "name": "NFPA 10 – Portable Fire Extinguishers (phân loại đám cháy A/B/C/K)", "url": "https://www.nfpa.org/codes-and-standards/nfpa-10-standard-development/10" },
+        { "name": "Thông số bình CO2 MT5 (nhãn 55B, dùng cho cháy điện)", "url": "https://thietbipcccbinhduong.com/binh-chua-chay-co2-mt5/" }
+      ]
+    },
+    {
+      "id": "R04_PASS",
+      "title": "Kỹ thuật PASS",
+      "statement": "Pull rút chốt (phá niêm), Aim chĩa loa/vòi vào GỐC lửa, Squeeze bóp cò, Sweep quét qua lại ở gốc lửa đến khi tắt; đứng cách khoảng 1,8–2,4 m.",
+      "usedBy": ["score:technique", "model:FireSuppressionModel", "lesson:station3"],
+      "values": { "standoffMinMeters": 1.8, "standoffMaxMeters": 2.4 },
+      "sources": [
+        { "name": "OSHA eTool – Fire Extinguisher Use (PASS)", "url": "https://osha.prod.pace.dol.gov/etools/evacuation-plans-procedures/emergency-standards/portable-extinguishers/use" },
+        { "name": "Clark County Fire Dept. – đứng cách 6–8 ft (1,8–2,4 m)", "url": "https://clarkcountynv.gov/government/departments/fire/fire-extinguishers" }
+      ]
+    },
+    {
+      "id": "R05_CO2_CHARGE",
+      "title": "Thời lượng và tầm phun bình CO2 5 kg",
+      "statement": "Bình CO2 MT5 (5 kg) phun tối thiểu khoảng 10 giây, tầm phun tối thiểu 2 m; bình châu Âu 5 kg khoảng 13–15 giây. Mô phỏng dùng 12 giây.",
+      "usedBy": ["extinguisher:fullChargeSeconds", "model:FireSuppressionModel"],
+      "values": { "dischargeSeconds": 12, "minRangeMeters": 2 },
+      "sources": [
+        { "name": "Thiết bị PCCC Bình Dương – Bình chữa cháy CO2 MT5", "url": "https://thietbipcccbinhduong.com/binh-chua-chay-co2-mt5/" },
+        { "name": "Safelincs – UltraFire 5 kg CO2", "url": "https://safelincs.co.uk/ultrafire-5kg-co2-fire-extinguisher" }
+      ]
+    },
+    {
+      "id": "R06_EVACUATE_IF_EMPTY",
+      "title": "Hết bình hoặc cháy lớn thì sơ tán",
+      "statement": "Nếu bình hết mà lửa chưa tắt, hoặc đám cháy vượt giai đoạn ban đầu, phải ngừng dập và sơ tán ngay.",
+      "usedBy": ["mentor:extinguisherEmpty", "directive:ESCALATE_FM200_COUNTDOWN"],
+      "sources": [
+        { "name": "OSHA eTool – Fire Extinguisher Use", "url": "https://osha.prod.pace.dol.gov/etools/evacuation-plans-procedures/emergency-standards/portable-extinguishers/use" },
+        { "name": "NFPA 2001 – Clean Agent (FM-200) systems: cảnh báo trước khi xả", "url": "https://www.nfpa.org/codes-and-standards/nfpa-2001-standard-development/2001" }
+      ]
+    },
+    {
+      "id": "R07_STAY_LOW",
+      "title": "Cúi thấp, bò dưới khói, che mũi miệng",
+      "statement": "Khói và khí nóng bốc lên cao; không khí sạch gần sàn (khoảng 30–60 cm). Cúi thấp hoặc bò, che mũi miệng bằng khăn ướt.",
+      "usedBy": ["score:crouch", "socratic:StandingInSmoke", "lesson:station5", "posture:PostureRules"],
+      "sources": [
+        { "name": "USFA – Get Out Safely: A Factsheet on Fire Escape Planning", "url": "https://www.fortworthtexas.gov/files/assets/public/fire/documents/getoutsafely.pdf" },
+        { "name": "SGGP – Bỏ túi kỹ năng thoát hiểm chung cư cao tầng", "url": "https://www.sggp.org.vn/bo-tui-ngay-ky-nang-thoat-hiem-hoa-hoan-khi-sinh-song-tai-chung-cu-cao-tang-post710988.html" }
+      ]
+    },
+    {
+      "id": "R08_DOOR_BACK_OF_HAND",
+      "title": "Kiểm tra cửa bằng mu bàn tay",
+      "statement": "Trước khi mở cửa: cúi thấp, dùng mu bàn tay sờ phần trên cánh cửa, tay nắm và khe cửa. Nóng thì không mở, dùng lối thoát khác.",
+      "usedBy": ["door:DoorHeatChecker", "socratic:HotHandleUnchecked", "directive:NFPA 101"],
+      "sources": [
+        { "name": "USFA – Get Out Safely (back of your hand on the door, knob and crack)", "url": "https://www.fortworthtexas.gov/files/assets/public/fire/documents/getoutsafely.pdf" },
+        { "name": "FEMA (lưu trữ) – What to do during a fire", "url": "https://webarchive.library.unt.edu/web/20080916061555/http://www.fema.gov/hazard/fire/fire_during.shtm" }
+      ]
+    },
+    {
+      "id": "R09_RESCUE_KEEP_LOW",
+      "title": "Hỗ trợ người bị nạn trong khói",
+      "statement": "Người còn tỉnh: dìu đi, cả hai giữ thấp. Người bất tỉnh: kéo sát sàn (Rautek / kéo bằng chăn), giữ đầu thấp, bảo vệ đầu cổ khi xuống cầu thang.",
+      "usedBy": ["score:rescue", "npc:EscortGrip"],
+      "sources": [
+        { "name": "Fire Engineering – Civilian Rescue: Removing the Occupant", "url": "https://www.fireengineering.com/firefighting/civilian-rescue-removing-the-occupant/" },
+        { "name": "Miami-Dade – Victim Removal Techniques", "url": "https://mdsceh.miamidade.gov/mobi/moms/section%2006%20-%20victim%20removal%20techniques.pdf" }
+      ]
+    },
+    {
+      "id": "R10_NO_ELEVATOR",
+      "title": "Không dùng thang máy, đi cầu thang bộ theo biển EXIT",
+      "statement": "Khi cháy không dùng thang máy; đi cầu thang bộ theo biển EXIT, tay tựa tường/lan can, thấy nóng thì quay lại.",
+      "usedBy": ["lesson:station5", "building:ElevatorTrap"],
+      "sources": [
+        { "name": "TDI Texas – High-rise buildings Q&A (NFPA 101 §7.14)", "url": "https://Www.Tdi.Texas.Gov/pubs/videoresource/qahighrisebldge.pdf" },
+        { "name": "SGGP – Thoát nạn khi cháy cao ốc", "url": "https://www.sggp.org.vn/thoat-nan-khi-chay-cao-oc-post471983.html" }
+      ]
+    },
+    {
+      "id": "R11_FM200_EVACUATE",
+      "title": "Hệ thống chữa cháy khí FM-200",
+      "statement": "Khi hệ thống khí sạch (FM-200) báo đếm ngược, mọi người phải rời khỏi phòng trước khi xả khí.",
+      "usedBy": ["directive:NFPA 2001 / TCVN 7161", "hazard:FM200System"],
+      "sources": [
+        { "name": "NFPA 2001 – Clean Agent Fire Extinguishing Systems", "url": "https://www.nfpa.org/codes-and-standards/nfpa-2001-standard-development/2001" }
+      ]
+    },
+    {
+      "id": "R12_FIRE_TRIANGLE",
+      "title": "Tam giác cháy",
+      "statement": "Cháy cần đủ ba yếu tố: chất cháy, nhiệt và oxy. Loại bỏ một yếu tố thì đám cháy tắt (CO2 làm ngạt và làm lạnh).",
+      "usedBy": ["lesson:station1"],
+      "sources": [
+        { "name": "NFPA – Fire basics / fire triangle", "url": "https://www.nfpa.org/education-and-research/home-fire-safety" }
+      ]
+    }
+  ]
+}

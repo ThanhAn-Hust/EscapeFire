@@ -116,3 +116,27 @@ namespace EscapeFire.Tests
         }
     }
 }
+
+namespace EscapeFire.Tests
+{
+    public class PassTechniqueScoringTests
+    {
+        private static EscapeFire.Analytics.SessionFacts Facts(float aim, float sweep)
+        {
+            var f = EscapeFire.Analytics.SessionFacts.Empty;
+            f.FireStartedAt = 1f; f.FirstSprayAt = 5f; f.PinPulled = true; f.FireExtinguished = true;
+            f.PassBaseRatio = aim; f.PassSweepRatio = sweep;
+            return f;
+        }
+
+        private static int Technique(EscapeFire.Analytics.SessionFacts f)
+        {
+            foreach (var i in EscapeFire.Analytics.AfterActionReport.BuildScorecard(f)) if (i.Key == "technique") return i.Points;
+            return -1;
+        }
+
+        [NUnit.Framework.Test] public void GoodPASS_Full15() => NUnit.Framework.Assert.AreEqual(15, Technique(Facts(0.8f, 0.7f)));
+        [NUnit.Framework.Test] public void AimedAtFlames_NoSweep_LosesPoints() => NUnit.Framework.Assert.AreEqual(8, Technique(Facts(0f, 0f)));
+        [NUnit.Framework.Test] public void Unmeasured_NotPenalised() => NUnit.Framework.Assert.AreEqual(15, Technique(Facts(-1f, -1f)));
+    }
+}

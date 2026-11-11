@@ -122,9 +122,10 @@ namespace EscapeFire.Scenario
 
                 case ScenarioPhase.Phase1_PowerFlickerWarning:
                     if (redEmergencyLight != null) redEmergencyLight.SetActive(true);
-                    SetAIMentorGuidance("CẢNH BÁO: Tụ điện Tủ Server có dấu hiệu bốc khói! Hãy kiểm tra và ngắt Cầu dao Aptomat ngay!");
-                    if (ScoringManager.Instance != null)
-                        ScoringManager.Instance.AddScore(10, "Phát hiện dấu hiệu chập điện sớm");
+                    // No free points here: the learner has not done anything yet (ground-truth review V1.3).
+                    SetAIMentorGuidance(GameSession.Mode == TrainingMode.Guided
+                        ? "CẢNH BÁO: Tủ server có tia lửa và mùi khét — dấu hiệu chập điện. Bạn sẽ làm gì trước tiên?"
+                        : "Tủ server có tia lửa và mùi khét.");
                     break;
 
                 case ScenarioPhase.Phase2_ServerExplosionFire:
@@ -137,7 +138,10 @@ namespace EscapeFire.Scenario
                     {
                         alarmAudioSource.Play();
                     }
-                    SetAIMentorGuidance("CHÁY RỒI! Bấm chuông báo cháy, ngắt Aptomat, lấy bình CO2 xịt dập lửa và khom người né khói độc!");
+                    // Exam mode gives no procedure hints (plan Phần B.0-8): the learner must know what to do.
+                    SetAIMentorGuidance(GameSession.Mode == TrainingMode.Guided
+                        ? "CHÁY RỒI! Báo động cho mọi người, ngắt Aptomat, dùng bình CO2 theo PASS và khom người né khói độc!"
+                        : "Có cháy ở tủ server!");
                     break;
 
                 case ScenarioPhase.Phase3_SmokeEvacuation:

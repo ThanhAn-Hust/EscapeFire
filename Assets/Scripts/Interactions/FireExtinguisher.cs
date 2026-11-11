@@ -27,8 +27,8 @@ namespace EscapeFire.Interactions
         [SerializeField] private AudioSource sprayAudioSource;
 
         [Header("Realism (plan Phần B.1-5)")]
-        [Tooltip("Discharge time of a full bottle. TODO(V1): verify (CO2 5 kg ≈ 13–15 s).")]
-        [SerializeField] private float fullChargeSeconds = 15f;
+        [Tooltip("Discharge time of a full bottle (rule R05: CO2 MT5 5 kg ≥ 10 s, EU 5 kg 13–15 s → 12 s).")]
+        [SerializeField] private float fullChargeSeconds = 12f;
         [Tooltip("Horn / hose nozzle tip. The jet leaves along its forward axis.")]
         [SerializeField] private Transform nozzle;
 

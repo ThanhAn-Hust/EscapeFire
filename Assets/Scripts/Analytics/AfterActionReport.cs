@@ -19,6 +19,10 @@ namespace EscapeFire.Analytics
         public bool UsedConductiveAgentOnLivePower;
         public bool PinPulled;
         public bool FireExtinguished;
+        /// <summary>Share of spraying time aimed at the base of the fire (PASS "Aim"), -1 = not measured.</summary>
+        public float PassBaseRatio;
+        /// <summary>Share of spraying time with a side-to-side sweep (PASS "Sweep"), -1 = not measured.</summary>
+        public float PassSweepRatio;
         public float StandingInSmokeSeconds;
         public bool NpcRescued;
         public bool DoorHeatChecked;
@@ -31,7 +35,9 @@ namespace EscapeFire.Analytics
             FireStartedAt = -1f,
             AlarmRaisedAt = -1f,
             PowerCutAt = -1f,
-            FirstSprayAt = -1f
+            FirstSprayAt = -1f,
+            PassBaseRatio = -1f,
+            PassSweepRatio = -1f
         };
     }
 
@@ -83,9 +89,14 @@ namespace EscapeFire.Analytics
                 f.FirstSprayAt < 0f ? "Chưa sử dụng bình chữa cháy" :
                 rightAgent ? "Dùng bình CO2/bột phù hợp" : "Bình đầu tiên không phù hợp cháy điện"));
 
-            int technique = (f.PinPulled ? 5 : 0) + (f.FireExtinguished ? 10 : 0);
-            items.Add(Item("technique", "Kỹ thuật rút chốt & xịt gốc lửa", technique, 15,
-                f.FireExtinguished ? "Dập tắt hoàn toàn đám cháy" : f.PinPulled ? "Đã rút chốt nhưng chưa dập tắt" : "Chưa rút chốt"));
+            // PASS (OSHA): Pull 3 + Aim at the base 4 + Sweep 3 + fire out 5. Unmeasured aim/sweep (-1) is not penalised.
+            bool measured = f.PassBaseRatio >= 0f && f.PassSweepRatio >= 0f;
+            int aim = !f.PinPulled ? 0 : !measured ? 4 : (int)Math.Round(4f * Math.Min(1f, f.PassBaseRatio / 0.6f));
+            int sweep = !f.PinPulled ? 0 : !measured ? 3 : (int)Math.Round(3f * Math.Min(1f, f.PassSweepRatio / 0.5f));
+            int technique = (f.PinPulled ? 3 : 0) + aim + sweep + (f.FireExtinguished ? 5 : 0);
+            string passNote = measured ? $" — nhắm gốc {f.PassBaseRatio * 100f:F0}%, quét {f.PassSweepRatio * 100f:F0}% thời gian phun" : "";
+            items.Add(Item("technique", "Kỹ thuật PASS (rút chốt, nhắm gốc, bóp, quét)", technique, 15,
+                (f.FireExtinguished ? "Dập tắt hoàn toàn đám cháy" : f.PinPulled ? "Đã rút chốt nhưng chưa dập tắt" : "Chưa rút chốt") + passNote));
 
             int crouch = Math.Max(0, 20 - (int)Math.Ceiling(f.StandingInSmokeSeconds * CROUCH_PENALTY_PER_SECOND));
             items.Add(Item("crouch", "Duy trì khom lưng dưới khói", crouch, 20,

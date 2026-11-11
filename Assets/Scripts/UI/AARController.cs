@@ -99,6 +99,12 @@ namespace EscapeFire.UI
                 foreach (var item in SessionResult.Scorecard)
                 {
                     summary.AppendLine($"{item.Label}: {item.Points}/{item.MaxPoints}  <size=70%>({item.Note})</size>");
+                    // V1.6: where points were lost, say which PCCC rule and source it comes from.
+                    if (item.Points < item.MaxPoints)
+                    {
+                        var rule = PcccRuleBook.For("score:" + item.Key);
+                        if (rule != null) summary.AppendLine($"<size=60%><color=#9fd3ff>Theo: {rule.Citation}</color></size>");
+                    }
                 }
             }
             SetText(summaryText, summary.ToString());

@@ -108,6 +108,18 @@ namespace EscapeFire.Analytics
             f.DurationSeconds = Now;
             var tracker = CognitiveFrictionTracker.Instance;
             f.AverageCognitiveFriction = tracker != null ? tracker.AverageCF : 0.5f;
+            float spraying = 0f, atBase = 0f, sweeping = 0f;
+            foreach (var fx in FindObjectsByType<EscapeFire.Interactions.ExtinguisherSprayEffect>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                spraying += fx.SecondsSpraying;
+                atBase += fx.SecondsAtBase;
+                sweeping += fx.SecondsSweeping;
+            }
+            if (spraying >= 0.5f)
+            {
+                f.PassBaseRatio = atBase / spraying;
+                f.PassSweepRatio = sweeping / spraying;
+            }
             return f;
         }
 
