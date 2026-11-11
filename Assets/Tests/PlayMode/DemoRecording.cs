@@ -72,6 +72,8 @@ namespace EscapeFire.Tests.PlayMode
         private readonly List<string> _rejected = new List<string>();
         private readonly HashSet<Directive> _active = new HashSet<Directive>();
         private float _fireStart = -1f;
+        private float _toastUntil;
+        private bool _recordVideo = true;
 
         private static readonly Regex EDGE_LOG = new Regex(@"\[EdgeDirector\] (\S+) \((.*), (\d+)ms\) -> (\w+)");
 
@@ -147,6 +149,121 @@ namespace EscapeFire.Tests.PlayMode
             }
             File.WriteAllText(Path.Combine(_dir, "probe.txt"), sb.ToString());
             Debug.Log("[DemoProbe]\n" + sb);
+        }
+
+        /// <summary>
+        /// Screenshots only (no LLM, no video) of the visuals fixed after the 2026-11-11 review: glass wall, NPC
+        /// walk cycle, smoke plume / layer, CO2 jet, Hoa escorted, hinged exit door, hallway ceiling.
+        /// </summary>
+        [UnityTest, Timeout(600000)]
+        public IEnumerator DemoShots_ReviewFixes()
+        {
+            RequireGpu();
+            _recordVideo = false;
+            yield return Load(connectEdge: false);
+            SetupRig();
+            EventBus<MentorMessageEvent>.Subscribe(OnMentor);
+            EventBus<PhaseChangedEvent>.Subscribe(OnPhase);
+            try { yield return ReviewShots(); }
+            finally
+            {
+                EventBus<MentorMessageEvent>.Unsubscribe(OnMentor);
+                EventBus<PhaseChangedEvent>.Unsubscribe(OnPhase);
+                WriteTimeline();
+            }
+        }
+
+        private IEnumerator ReviewShots()
+        {
+            var c = LabProgressiveScenarioController.Instance;
+            var minh = Npc(NPCRole.MinhPanic);
+            var hoa = Npc(NPCRole.HoaFaint);
+            var co2 = Extinguisher(ExtinguisherType.CO2);
+            var door = Object.FindFirstObjectByType<DoorHeatChecker>();
+            var smoke = Object.FindFirstObjectByType<SmokeDensityController>();
+            SetField(Object.FindFirstObjectByType<OxygenSystem>(), "depletionRateInSmoke", 0.1f);
+            Vector3 fireBase = new Vector3(6f, 0.9f, 4.2f);
+
+            Act("Tường kính phía tây: có tường thấp, khung và kính");
+            Place(new Vector3(-3f, 1.6f, -3.5f), new Vector3(-9f, 1.6f, 0.5f));
+            yield return Hold(1.5f, new Vector3(-9f, 1.6f, 0.5f));
+            Shot("glass_wall");
+
+            c.SetPhase(ScenarioPhase.Phase2_ServerExplosionFire);
+            Act("Minh hoảng loạn chạy ra cửa (chân tay chuyển động)");
+            Place(new Vector3(-1.5f, 1.5f, -2.5f), minh.transform.position + Vector3.up);
+            for (float t = 0f; t < 3.2f; t += Time.deltaTime) yield return Hold(0f, minh.transform.position + Vector3.up * 0.9f);
+            Shot("minh_running");
+            yield return Hold(0.35f, minh.transform.position + Vector3.up * 0.9f);
+            Shot("minh_running_b");
+
+            Act("Khói đen bốc lên từ tủ server và lan dưới trần");
+            SetField(smoke, "smokeLoweringSpeed", 0.18f);
+            Place(new Vector3(0f, 1.6f, -5.2f), new Vector3(5f, 2.6f, 3f));
+            yield return Hold(7f, new Vector3(5f, 2.6f, 3f));
+            Shot("smoke_plume");
+            float wait = 0f;
+            while (smoke.CurrentSmokeHeight > 1.6f && wait < 12f) { wait += Time.deltaTime; yield return Hold(0f, new Vector3(4f, 2.2f, 2f)); }
+            _eye = 1.0f;
+            Act("Lớp khói dày hạ thấp: người chơi khom dưới lớp khói");
+            yield return Hold(2f, new Vector3(4f, 1.6f, 2f));
+            Shot("smoke_layer_crouched");
+            _eye = 1.75f;
+            Act("Đứng thẳng trong khói: tầm nhìn mù mịt");
+            yield return Hold(2.5f, new Vector3(4f, 1.6f, 2f));
+            Shot("standing_in_smoke");
+            _eye = 1.0f;
+
+            Act("Ngắt Aptomat, rút chốt, bóp cò: luồng CO2 phun vào gốc lửa");
+            Object.FindFirstObjectByType<CircuitBreakerSwitch>().SetPowerState(false);
+            Place(new Vector3(6.9f, 1.0f, 2.2f), fireBase);
+            Carry(co2);
+            co2.PullSafetyPin();
+            yield return Hold(1f, fireBase);
+            for (float t = 0f; t < 2.2f; t += Time.deltaTime)
+            {
+                if (!co2.IsSpraying) co2.TrySpray(isElectricalPowerLive: false);
+                co2.Nozzle.rotation = Quaternion.LookRotation(fireBase - co2.Nozzle.position);
+                yield return Hold(0f, fireBase);
+            }
+            Shot("co2_spray");
+            yield return Hold(0.4f, fireBase);
+            co2.StopSpray();
+            c.ServerFire.Extinguish(1e6f);
+            Uncarry(co2);
+
+            if (!hoa.IsFainted) hoa.TriggerEmergencyReaction();
+            Vector3 hp = hoa.transform.position;
+            Act("Hoa ngất vì khói");
+            Place(new Vector3(EAST_AISLE_X, 1.0f, hp.z - 1.2f), hp + Vector3.up * 0.3f);
+            yield return Hold(1.2f, hp + Vector3.up * 0.3f);
+            Shot("hoa_fainted");
+            hoa.SetEscortTarget(_cam.transform);
+            hoa.RescueNPC();
+            Act("Đỡ Hoa dậy: Hoa khom người đi theo người chơi ra cửa");
+            yield return Walk(new Vector3(2f, 1f, -6f), new Vector2(EAST_AISLE_X, FRONT_ROW_Z), new Vector2(3.2f, FRONT_ROW_Z));
+            yield return Hold(1.6f, hoa.transform.position + Vector3.up * 0.8f);
+            Shot("hoa_follows");
+
+            Act("Kiểm tra tay nắm cửa bằng mu bàn tay");
+            yield return Walk(new Vector3(0f, 1.1f, -6.9f), new Vector2(0.3f, -5.4f));
+            door.CheckDoorHeatWithHand();
+            yield return Hold(1f, new Vector3(0f, 1.1f, -6.9f));
+            Shot("door_closed");
+            Act("Tay nắm không nóng: đẩy cửa ra hành lang");
+            door.OpenDoor();
+            yield return Hold(0.7f, new Vector3(0f, 1.1f, -6.9f));
+            Shot("door_opening");
+            yield return Hold(1.2f, new Vector3(0f, 1.1f, -8f));
+            Shot("door_open");
+            Act("Hành lang thoát hiểm (đã có trần)");
+            yield return Walk(new Vector3(0f, 1.2f, -13f), new Vector2(0f, -7.6f), new Vector2(0f, -9.4f));
+            yield return Hold(1f, new Vector3(0f, 1.6f, -13f));
+            Shot("hallway");
+            Act("Nhìn lại cửa từ phía hành lang");
+            yield return Hold(2.5f, new Vector3(0f, 1.2f, -5f));
+            Shot("door_from_hallway");
+            yield return Frame();
         }
 
         [UnityTest, Timeout(900000)]
@@ -324,8 +441,9 @@ namespace EscapeFire.Tests.PlayMode
                 Vector3 hp = hoa.transform.position;
                 yield return GoToEastAisle(hp.z, new Vector3(hp.x, 0.3f, hp.z));
                 yield return Hold(1f, new Vector3(hp.x, 0.3f, hp.z));
+                hoa.SetEscortTarget(_cam.transform);
                 hoa.RescueNPC();
-                Act("Đã cứu Hoa, Hoa tự đi ra lối thoát");
+                Act("Đỡ Hoa dậy, dìu bạn đi thấp người theo mình ra cửa");
                 yield return Hold(2.5f, new Vector3(hp.x, 0.8f, hp.z));
                 Shot("hoa_rescued");
             }
@@ -340,7 +458,10 @@ namespace EscapeFire.Tests.PlayMode
             yield return Hold(2.2f, new Vector3(0f, 1.0f, -6.9f));
             Shot("door_check");
             Uncarry(co2);
-            Act("Cửa không nóng: mở cửa, sơ tán ra hành lang");
+            Act(door.IsDoorHot ? "Tay nắm nóng: mở hé cửa thật chậm, nấp sau cánh cửa" : "Tay nắm không nóng: đẩy cửa, sơ tán ra hành lang");
+            door.OpenDoor();
+            yield return Hold(1.8f, new Vector3(0f, 1.0f, -9f));
+            Shot("door_opening");
             yield return Walk(new Vector3(0f, 1.0f, -13f), new Vector2(0f, -7.6f), new Vector2(0f, -9.2f));
             c.TriggerHallwayEvacuationWin();
             yield return Hold(2.5f, new Vector3(0f, 1.0f, -13f));
@@ -357,6 +478,7 @@ namespace EscapeFire.Tests.PlayMode
             while (!target.IsExtinguished && t < maxSeconds && !ext.IsEmpty && !_active.Contains(Directive.EscalateFm200Countdown))
             {
                 if (!ext.IsSpraying) ext.TrySpray(isElectricalPowerLive: false);
+                ext.Nozzle.rotation = Quaternion.LookRotation(aim - ext.Nozzle.position);
                 if (ext.IsSpraying) target.Extinguish(ext.ExtinguishPowerPerSecond * Time.deltaTime);
                 t += Time.deltaTime;
                 if (!shotTaken && t > 1.5f) { Shot(shot); shotTaken = true; }
@@ -522,7 +644,7 @@ namespace EscapeFire.Tests.PlayMode
 
         private void Capture()
         {
-            if (_encoder == null) return;
+            if (_cam == null) return;
             UpdateOverlay();
             _cam.Render();
             var prev = RenderTexture.active;
@@ -531,10 +653,13 @@ namespace EscapeFire.Tests.PlayMode
             _tex.Apply(false);
             RenderTexture.active = prev;
 
-            long due = (long)((Time.unscaledTime - _recStart) * FPS) + 1;
-            int added = 0;
-            while (_frames < due && added < FPS) { _encoder.AddFrame(_tex); _frames++; added++; }
-            if (_frames < due) _frames = due; // long hitch (scene load): drop it instead of a frozen second
+            if (_encoder != null)
+            {
+                long due = (long)((Time.unscaledTime - _recStart) * FPS) + 1;
+                int added = 0;
+                while (_frames < due && added < FPS) { _encoder.AddFrame(_tex); _frames++; added++; }
+                if (_frames < due) _frames = due; // long hitch (scene load): drop it instead of a frozen second
+            }
 
             if (_pendingShot != null && Time.time >= _pendingShotAt)
             {
@@ -551,6 +676,13 @@ namespace EscapeFire.Tests.PlayMode
             {
                 string prevName = $"{++_shotIndex:00}_{_pendingShot}.png";
                 File.WriteAllBytes(Path.Combine(_dir, "shots", prevName), _tex.EncodeToPNG());
+            }
+            if (delay <= 0f && _tex != null && _shotIndex >= 0 && Time.frameCount > 2)
+            {
+                // _tex holds the frame just rendered from the current view: save it now, before the camera moves on.
+                File.WriteAllBytes(Path.Combine(_dir, "shots", $"{++_shotIndex:00}_{name}.png"), _tex.EncodeToPNG());
+                Note($"screenshot {name}");
+                return;
             }
             _pendingShot = name;
             _pendingShotAt = Time.time + delay;
@@ -583,10 +715,10 @@ namespace EscapeFire.Tests.PlayMode
             }
         }
 
-        private IEnumerator Load()
+        private IEnumerator Load(bool connectEdge = true)
         {
             GameSession.Reset();
-            GameSession.Begin(TrainingMode.Exam, "DEMO");
+            GameSession.Begin(connectEdge ? TrainingMode.Exam : TrainingMode.Guided, "DEMO");
             SessionResult.Reset();
             LmsSync.OutboxFolder = "lms_outbox_demo";
             TelemetryLogger.FolderOverride = "TelemetryReports_demo";
@@ -595,12 +727,22 @@ namespace EscapeFire.Tests.PlayMode
             yield return null;
 
             var edge = Object.FindFirstObjectByType<EdgeDirectorClient>();
+            if (connectEdge) yield return ConnectEdge(edge);
+            else SetField(edge, "reconnectDelaySeconds", 999f);
+            HideXrCamerasAndPinHead();
+        }
+
+        private IEnumerator ConnectEdge(EdgeDirectorClient edge)
+        {
             SetField(edge, "telemetryIntervalSeconds", 5f); // real: 10 s, halved so the 3-minute video shows more decisions
             SetField(edge, "reconnectDelaySeconds", 2f);
             edge.Connect(EDGE_URL);
             for (int i = 0; i < 40 && !edge.IsConnected; i++) yield return new WaitForSecondsRealtime(0.25f);
             Assert.IsTrue(edge.IsConnected, "Edge server not reachable at " + EDGE_URL);
+        }
 
+        private void HideXrCamerasAndPinHead()
+        {
             // Keep the XR rig camera from rendering in parallel (the demo camera is the only view).
             foreach (var cam in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None)) cam.enabled = false;
 
@@ -610,6 +752,7 @@ namespace EscapeFire.Tests.PlayMode
             foreach (var detector in Object.FindObjectsByType<VRHeightDetector>(FindObjectsSortMode.None)) SetField(detector, "headTransform", _head);
             foreach (var collector in Object.FindObjectsByType<SessionFactsCollector>(FindObjectsSortMode.None)) SetField(collector, "head", _head);
             foreach (var coach in Object.FindObjectsByType<DeterministicVoiceTriggerManager>(FindObjectsSortMode.None)) SetField(coach, "head", _head);
+            foreach (var smoke in Object.FindObjectsByType<SmokeDensityController>(FindObjectsSortMode.None)) smoke.SetViewer(_head);
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -623,7 +766,7 @@ namespace EscapeFire.Tests.PlayMode
 
         private void SetupRig()
         {
-            _dir = Path.Combine(Directory.GetCurrentDirectory(), "Logs", "Demo", DateTime.Now.ToString("yyyyMMdd_HHmmss"));
+            _dir = Path.Combine(Directory.GetCurrentDirectory(), "Logs", "Demo", DateTime.Now.ToString("yyyyMMdd_HHmmss") + (_recordVideo ? "" : "_shots"));
             Directory.CreateDirectory(Path.Combine(_dir, "shots"));
 
             var camGo = new GameObject("_DemoCamera");
@@ -648,7 +791,7 @@ namespace EscapeFire.Tests.PlayMode
                 includeAlpha = false,
                 bitRateMode = UnityEditor.VideoBitrateMode.High
             };
-            _encoder = new MediaEncoder(Path.Combine(_dir, "demo.mp4"), attrs);
+            if (_recordVideo) _encoder = new MediaEncoder(Path.Combine(_dir, "demo.mp4"), attrs);
             _recStart = Time.unscaledTime;
             _t0 = Time.time;
             _timeline.AppendLine("| Thời điểm | Diễn biến |");
@@ -676,11 +819,11 @@ namespace EscapeFire.Tests.PlayMode
             canvas.planeDistance = 0.2f;
             canvas.sortingOrder = 100;
 
-            _title = Box(go.transform, new Vector2(0f, 1f), new Vector2(16f, -14f), new Vector2(560f, 64f), 17, TextAlignmentOptions.TopLeft, out _);
-            _title.text = "<b>EscapeFire</b> · Diễn tập PCCC phòng Lab · chế độ <b>Sát hạch</b>\n" +
-                          "<size=14>AI Director: Gemma 3 4B qua Ollama, chạy cục bộ trên laptop</size>";
-            _status = Box(go.transform, new Vector2(1f, 1f), new Vector2(-16f, -14f), new Vector2(330f, 128f), 15, TextAlignmentOptions.TopLeft, out _statusBox);
-            _feed = Box(go.transform, new Vector2(1f, 1f), new Vector2(-16f, -150f), new Vector2(430f, 168f), 14, TextAlignmentOptions.TopLeft, out _feedBox);
+            _title = Box(go.transform, new Vector2(0f, 1f), new Vector2(16f, -14f), new Vector2(330f, 40f), 17, TextAlignmentOptions.MidlineLeft, out _);
+            _title.text = "<b>EscapeFire</b> · Diễn tập PCCC";
+            _status = Box(go.transform, new Vector2(1f, 1f), new Vector2(-16f, -14f), new Vector2(10f, 10f), 15, TextAlignmentOptions.TopLeft, out _statusBox);
+            _statusBox.SetActive(false); // technical state (CF, O2, phase codes) is kept in timeline.md, not on screen
+            _feed = Box(go.transform, new Vector2(1f, 1f), new Vector2(-16f, -14f), new Vector2(360f, 64f), 17, TextAlignmentOptions.MidlineLeft, out _feedBox);
             _subtitle = Box(go.transform, new Vector2(0.5f, 0f), new Vector2(0f, 18f), new Vector2(1100f, 92f), 20, TextAlignmentOptions.Center, out _);
         }
 
@@ -730,10 +873,9 @@ namespace EscapeFire.Tests.PlayMode
                 _status.text = sb.ToString();
             }
 
-            var feed = new StringBuilder("<b>AI Director (laptop) → kính VR</b>\n");
-            if (_feedLines.Count == 0) feed.Append("<color=#bbbbbb>Đang quan sát người học (≥15 s sau khi cháy)…</color>");
-            for (int i = Mathf.Max(0, _feedLines.Count - 3); i < _feedLines.Count; i++) feed.AppendLine(_feedLines[i]);
-            _feed.text = feed.ToString();
+            bool toast = _feedLines.Count > 0 && Time.time < _toastUntil;
+            if (toast) _feed.text = "<color=#ffb27a>AI tăng độ khó</color>\n" + _feedLines[_feedLines.Count - 1];
+            if (_feedBox.activeSelf != toast && SceneManager.GetActiveScene().name == SceneNames.LAB) _feedBox.SetActive(toast);
 
             string sub = string.IsNullOrEmpty(_action) ? "" : $"<color=#ffd27f>Người chơi:</color> {_action}";
             if (Time.time < _mentorUntil) sub += (sub.Length > 0 ? "\n" : "") + $"<color=#8fd3ff>AI Mentor:</color> {_mentor}";
@@ -749,11 +891,11 @@ namespace EscapeFire.Tests.PlayMode
             if (!m.Success) return;
             string code = m.Groups[1].Value, rule = m.Groups[2].Value, result = m.Groups[4].Value;
             float sec = int.Parse(m.Groups[3].Value) / 1000f;
-            bool ok = result == "Accepted";
-            string name = DirectiveVn(code);
-            _feedLines.Add(ok
-                ? $"<color=#ff9f6e>+ {name}</color>\n   <size=12>{code} · luật {rule} · Gemma {sec:F1} s</size>"
-                : $"<color=#bbbbbb>× {name}: lớp 2 trên kính chặn ({result})</color>");
+            if (result == "Accepted")
+            {
+                _feedLines.Add(DirectiveVn(code));
+                _toastUntil = Time.time + 6f;
+            }
             Note($"🤖 Gemma → `{code}` ({rule}, {sec:F1} s) → **{result}**");
         }
 
