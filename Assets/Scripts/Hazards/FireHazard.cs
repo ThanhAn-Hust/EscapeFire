@@ -21,6 +21,12 @@ namespace EscapeFire.Hazards
         public float FireIntensity { get; private set; }
         public bool IsExtinguished => FireIntensity <= 0f;
         public ParticleSystem Particles => fireParticles;
+        /// <summary>Base of the flames: where the agent has to go (PASS "Aim at the base").</summary>
+        public Vector3 BasePoint => fireParticles != null ? fireParticles.transform.position : transform.position;
+
+        private static readonly System.Collections.Generic.List<FireHazard> s_active = new System.Collections.Generic.List<FireHazard>();
+        /// <summary>Fires currently enabled in the scene (burning or not).</summary>
+        public static System.Collections.Generic.IReadOnlyList<FireHazard> Active => s_active;
         /// <summary>True when the PerformanceBudgetGovernor refused this emitter (fire stays dark, no events).</summary>
         public bool IsSuppressed { get; private set; }
 
@@ -34,6 +40,7 @@ namespace EscapeFire.Hazards
 
         private void OnEnable()
         {
+            if (!s_active.Contains(this)) s_active.Add(this);
             var governor = PerformanceBudgetGovernor.Instance;
             IsSuppressed = governor != null && !governor.TryRegisterFire(this);
             if (IsSuppressed) GoDark();
@@ -41,6 +48,7 @@ namespace EscapeFire.Hazards
 
         private void OnDisable()
         {
+            s_active.Remove(this);
             if (PerformanceBudgetGovernor.Instance != null) PerformanceBudgetGovernor.Instance.UnregisterFire(this);
         }
 

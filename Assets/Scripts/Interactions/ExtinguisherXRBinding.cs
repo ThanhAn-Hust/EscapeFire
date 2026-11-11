@@ -80,6 +80,9 @@ namespace EscapeFire.Interactions
             _extinguisher.StopSpray();
             _holder = null;
             // XRI restores the pre-grab kinematic state on release; once taken off the wall it obeys gravity.
+            // Still on its hook (never lifted): it keeps hanging there.
+            var mount = GetComponent<ExtinguisherMount>();
+            if (mount != null && mount.IsMounted) return;
             if (_body != null && mountedOnWall)
             {
                 _body.isKinematic = false;
@@ -93,19 +96,39 @@ namespace EscapeFire.Interactions
             {
                 _extinguisher.PullSafetyPin();
             }
-
-            bool powerLive = circuitBreaker != null && circuitBreaker.IsPowerOn;
-            bool spraying = _extinguisher.TrySpray(powerLive);
-
-            if (_holder == null) return;
-            if (spraying) _holder.SendHapticImpulse(sprayHapticAmplitude, 0.1f);
-            else if (_extinguisher.Type == ExtinguisherType.WaterFoam && powerLive)
-                _holder.SendHapticImpulse(shockHapticAmplitude, shockHapticDuration);
         }
 
         private void OnTriggerReleased(DeactivateEventArgs args)
         {
             _extinguisher.StopSpray();
+        }
+
+        private float _nextHaptic;
+
+        /// <summary>
+        /// Squeeze (PASS): the lever is analog. Below the valve threshold nothing comes out; above it the flow follows
+        /// how hard the learner squeezes. Releasing stops the discharge at once.
+        /// </summary>
+        private void Update()
+        {
+            if (_holder == null || !_grab.isSelected) return;
+            float squeeze = _holder.activateInput.ReadValue();
+            if (squeeze < Hazards.FireSuppressionModel.MinSqueeze)
+            {
+                if (_extinguisher.IsSpraying) _extinguisher.StopSpray();
+                return;
+            }
+            _extinguisher.Flow = squeeze;
+            bool powerLive = circuitBreaker != null && circuitBreaker.IsPowerOn;
+            bool wasSpraying = _extinguisher.IsSpraying;
+            bool spraying = _extinguisher.TrySpray(powerLive);
+            if (!spraying && !wasSpraying && _extinguisher.Type == ExtinguisherType.WaterFoam && powerLive)
+                _holder.SendHapticImpulse(shockHapticAmplitude, shockHapticDuration);
+            if (spraying && Time.time >= _nextHaptic)
+            {
+                _nextHaptic = Time.time + 0.1f;
+                _holder.SendHapticImpulse(sprayHapticAmplitude * squeeze, 0.1f);
+            }
         }
     }
 }

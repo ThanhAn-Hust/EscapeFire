@@ -12,6 +12,10 @@ namespace EscapeFire.Interactions
     /// </summary>
     public class NearOnlyFilter : MonoBehaviour, IXRHoverFilter, IXRSelectFilter
     {
+        [Tooltip("Held in one hand at a time (bottle body): the other hand works the pin / horn instead of stealing it.")]
+        [SerializeField] private bool exclusive;
+        public bool Exclusive { get => exclusive; set => exclusive = value; }
+
         [Tooltip("Max distance (m) from the hand to the object's colliders.")]
         [SerializeField] private float reach = 0.15f;
         [Tooltip("Pressed with a fingertip in real life (call point, lift button): only the poke interactor may select.")]
@@ -27,8 +31,14 @@ namespace EscapeFire.Interactions
         public bool Process(IXRHoverInteractor interactor, IXRHoverInteractable interactable) =>
             (!pokeOnly || interactor is XRPokeInteractor) && InReach(interactor, interactable);
 
-        public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable) =>
-            (!pokeOnly || interactor is XRPokeInteractor) && InReach(interactor, interactable);
+        public bool Process(IXRSelectInteractor interactor, IXRSelectInteractable interactable)
+        {
+            // XRI re-checks select filters every frame: something already in the hand stays in the hand.
+            if (interactable != null && interactable.interactorsSelecting.Contains(interactor)) return true;
+            if (pokeOnly && !(interactor is XRPokeInteractor)) return false;
+            if (exclusive && interactable.isSelected && !interactable.interactorsSelecting.Contains(interactor)) return false;
+            return InReach(interactor, interactable);
+        }
 
         private bool InReach(IXRInteractor interactor, IXRInteractable interactable)
         {

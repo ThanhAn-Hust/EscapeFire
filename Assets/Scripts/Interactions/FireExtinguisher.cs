@@ -26,13 +26,36 @@ namespace EscapeFire.Interactions
         [SerializeField] private GameObject safetyPinObject;
         [SerializeField] private AudioSource sprayAudioSource;
 
+        [Header("Realism (plan Phần B.1-5)")]
+        [Tooltip("Discharge time of a full bottle. TODO(V1): verify (CO2 5 kg ≈ 13–15 s).")]
+        [SerializeField] private float fullChargeSeconds = 15f;
+        [Tooltip("Horn / hose nozzle tip. The jet leaves along its forward axis.")]
+        [SerializeField] private Transform nozzle;
+
         public ExtinguisherType Type => type;
         /// <summary>Nozzle transform (the jet points along its forward axis); aim it at the base of the fire.</summary>
-        public Transform Nozzle => sprayParticles != null ? sprayParticles.transform : transform;
+        public Transform Nozzle => nozzle != null ? nozzle : sprayParticles != null ? sprayParticles.transform : transform;
+        /// <summary>How hard the trigger is squeezed (0..1). Drives the flow rate.</summary>
+        public float Flow { get; set; } = 1f;
+        public float FullChargeSeconds => fullChargeSeconds;
 
         private void Awake()
         {
+            RemainingAgentSeconds = fullChargeSeconds > 0f ? fullChargeSeconds : float.PositiveInfinity;
             if (sprayParticles == null) sprayParticles = BuildSprayJet();
+            if (nozzle != null) SetNozzle(nozzle);
+            if (GetComponent<ExtinguisherSprayEffect>() == null) gameObject.AddComponent<ExtinguisherSprayEffect>();
+        }
+
+        /// <summary>Moves the jet to a horn / hose tip so the learner aims with the horn, not the bottle.</summary>
+        public void SetNozzle(Transform tip)
+        {
+            nozzle = tip;
+            if (sprayParticles != null && tip != null)
+            {
+                sprayParticles.transform.SetParent(tip, false);
+                sprayParticles.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
         }
 
         /// <summary>
@@ -61,6 +84,7 @@ namespace EscapeFire.Interactions
             main.startColor = type == ExtinguisherType.CO2 ? new Color(0.95f, 0.97f, 1f, 0.85f) : new Color(0.75f, 0.88f, 1f, 0.8f);
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.maxParticles = 700;
+            main.cullingMode = ParticleSystemCullingMode.AlwaysSimulate; // empty bounds would otherwise never start
 
             var emission = ps.emission;
             emission.rateOverTime = 260f;
@@ -96,23 +120,25 @@ namespace EscapeFire.Interactions
         /// <summary>Seconds of extinguishing agent left (infinite unless the low-pressure anomaly is active).</summary>
         public float RemainingAgentSeconds { get; private set; } = float.PositiveInfinity;
         public bool IsEmpty => RemainingAgentSeconds <= 0f;
-        public bool HasLowPressure => !float.IsPositiveInfinity(RemainingAgentSeconds);
+        /// <summary>AI anomaly applied (gauge in the red): only a few seconds of agent.</summary>
+        public bool HasLowPressure { get; private set; }
 
         /// <summary>Anomaly TRIGGER_EXTINGUISHER_LOW_PRESSURE: the gauge is in the red, only a few seconds of agent.</summary>
         public void SetLowPressure(float secondsOfAgent)
         {
-            RemainingAgentSeconds = Mathf.Max(0.5f, secondsOfAgent);
+            HasLowPressure = true;
+            RemainingAgentSeconds = Mathf.Min(RemainingAgentSeconds, Mathf.Max(0.5f, secondsOfAgent));
         }
 
         private void Update()
         {
-            if (!IsSpraying || !HasLowPressure) return;
-            RemainingAgentSeconds -= Time.deltaTime;
+            if (!IsSpraying || float.IsPositiveInfinity(RemainingAgentSeconds)) return;
+            RemainingAgentSeconds -= Time.deltaTime * Mathf.Clamp01(Flow);
             if (RemainingAgentSeconds > 0f) return;
             RemainingAgentSeconds = 0f;
             StopSpray();
             EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent(
-                "Bình đã hết áp! Còn bình nào an toàn cho cháy điện không, hay đã đến lúc sơ tán?"));
+                "Bình đã hết! Còn bình nào an toàn cho cháy điện không, hay đã đến lúc sơ tán?"));
         }
 
         private int _pullsRemaining = 1;

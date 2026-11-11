@@ -54,6 +54,157 @@ namespace EscapeFire.EditorTools
             SetupVignette(origin, log);
             AddNearOnlyFilters(log);
             SetupCallPoints(log);
+            SetupExtinguishers(log);
+        }
+
+        // ------------------------------------------------------------------ V0.4 / V0.5 extinguishers
+
+        /// <summary>
+        /// B.1-4 / B.1-5: carry handle as grab point, wall bracket (lift to detach), one hand on the body only,
+        /// a safety pin pulled by the other hand, a horn / hose nozzle held by the other hand to aim.
+        /// </summary>
+        private static void SetupExtinguishers(List<string> log)
+        {
+            foreach (var ext in Object.FindObjectsByType<FireExtinguisher>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var grab = ext.GetComponent<XRGrabInteractable>();
+                if (grab == null) continue;
+                Transform t = ext.transform;
+                Bounds b = ModelBounds(t);
+
+                var handle = Child(t, "CarryHandle");
+                handle.position = new Vector3(b.center.x, b.max.y - 0.07f, b.center.z);
+                handle.rotation = t.rotation;
+                // The carry handle must be grabbable: a collider around it (the body collider stops lower).
+                var handleCol = handle.GetComponent<BoxCollider>();
+                if (handleCol == null) handleCol = handle.gameObject.AddComponent<BoxCollider>();
+                Vector3 hs = handle.lossyScale;
+                handleCol.size = new Vector3(0.14f / Mathf.Max(1e-4f, hs.x), 0.1f / Mathf.Max(1e-4f, hs.y), 0.1f / Mathf.Max(1e-4f, hs.z));
+                handleCol.center = Vector3.zero;
+                if (!grab.colliders.Contains(handleCol) && grab.colliders.Count > 0) grab.colliders.Add(handleCol);
+                grab.attachTransform = handle;
+                grab.useDynamicAttach = false;
+                grab.attachEaseInTime = 0.2f; // heavy: follows the hand with a little lag
+                grab.movementType = XRBaseInteractable.MovementType.Instantaneous; // no physics shove against the wall while hooked
+                grab.throwOnDetach = false;
+                EditorUtility.SetDirty(grab);
+
+                // Order matters: the general transformer follows the hand, then the bracket constrains it.
+                var general = ext.GetComponent<UnityEngine.XR.Interaction.Toolkit.Transformers.XRGeneralGrabTransformer>();
+                if (general == null) general = ext.gameObject.AddComponent<UnityEngine.XR.Interaction.Toolkit.Transformers.XRGeneralGrabTransformer>();
+                var mount = ext.GetComponent<ExtinguisherMount>();
+                if (mount == null) mount = ext.gameObject.AddComponent<ExtinguisherMount>();
+                var gso = new SerializedObject(grab);
+                var list = gso.FindProperty("m_StartingSingleGrabTransformers");
+                list.ClearArray();
+                list.InsertArrayElementAtIndex(0); list.GetArrayElementAtIndex(0).objectReferenceValue = general;
+                list.InsertArrayElementAtIndex(1); list.GetArrayElementAtIndex(1).objectReferenceValue = mount;
+                gso.ApplyModifiedPropertiesWithoutUndo();
+                var near = ext.GetComponent<NearOnlyFilter>();
+                if (near != null) { near.Exclusive = true; near.Reach = 0.15f; EditorUtility.SetDirty(near); }
+
+                Vector3 side = t.right; // the pin slides out sideways through the valve
+                var pin = Child(t, "SafetyPin");
+                pin.position = handle.position + side * 0.03f + t.up * 0.02f;
+                pin.rotation = t.rotation;
+                ClearChildren(pin);
+                Prim(PrimitiveType.Cylinder, "Ring", pin, new Vector3(0.035f, 0f, 0f), Quaternion.Euler(0f, 0f, 90f), new Vector3(0.035f, 0.004f, 0.035f), Mat("EF_PinRing", new Color(0.95f, 0.8f, 0.1f)));
+                Prim(PrimitiveType.Cylinder, "Rod", pin, Vector3.zero, Quaternion.Euler(0f, 0f, 90f), new Vector3(0.006f, 0.03f, 0.006f), Mat("EF_PinRod", new Color(0.75f, 0.75f, 0.78f), 0.8f, 1f));
+                var pinComp = pin.GetComponent<ExtinguisherPin>();
+                if (pinComp == null) pinComp = pin.gameObject.AddComponent<ExtinguisherPin>();
+                pinComp.Configure(ext, grab, Vector3.right);
+                EditorUtility.SetDirty(pinComp);
+
+                bool co2 = ext.Type == ExtinguisherType.CO2;
+                var hoseRoot = Child(t, "HoseRoot");
+                hoseRoot.position = handle.position + t.up * 0.03f - side * 0.02f;
+                var horn = Child(t, "Horn");
+                // Hangs in its clip on the side of the bottle, pointing down.
+                horn.position = new Vector3(b.center.x, b.center.y + 0.05f, b.center.z) - side * (b.extents.x + 0.035f);
+                horn.rotation = Quaternion.LookRotation(Vector3.down, t.forward);
+                ClearChildren(horn);
+                var dark = Mat("EF_HornBlack", new Color(0.06f, 0.06f, 0.06f), 0.4f);
+                Prim(PrimitiveType.Cylinder, "Grip", horn, new Vector3(0f, 0f, -0.05f), Quaternion.Euler(90f, 0f, 0f), new Vector3(0.03f, 0.04f, 0.03f), dark);
+                if (co2)
+                {
+                    // CO2 discharge horn: a wide black cone
+                    Prim(PrimitiveType.Cylinder, "Horn_Mid", horn, new Vector3(0f, 0f, 0.04f), Quaternion.Euler(90f, 0f, 0f), new Vector3(0.05f, 0.05f, 0.05f), dark);
+                    Prim(PrimitiveType.Cylinder, "Horn_Mouth", horn, new Vector3(0f, 0f, 0.11f), Quaternion.Euler(90f, 0f, 0f), new Vector3(0.085f, 0.03f, 0.085f), dark);
+                }
+                else
+                {
+                    Prim(PrimitiveType.Cylinder, "Nozzle", horn, new Vector3(0f, 0f, 0.03f), Quaternion.Euler(90f, 0f, 0f), new Vector3(0.025f, 0.04f, 0.025f), dark);
+                }
+                var tip = Child(horn, "Tip");
+                tip.localPosition = new Vector3(0f, 0f, co2 ? 0.15f : 0.08f);
+                tip.localRotation = Quaternion.identity;
+                var lr = horn.GetComponent<LineRenderer>();
+                if (lr == null) lr = horn.gameObject.AddComponent<LineRenderer>();
+                lr.sharedMaterial = Mat("EF_HoseBlack", new Color(0.04f, 0.04f, 0.04f), 0.3f);
+                lr.widthMultiplier = 0.018f;
+                var hornComp = horn.GetComponent<ExtinguisherHorn>();
+                if (hornComp == null) hornComp = horn.gameObject.AddComponent<ExtinguisherHorn>();
+                hornComp.Configure(ext, grab, hoseRoot);
+                EditorUtility.SetDirty(hornComp);
+
+                var so = new SerializedObject(ext);
+                so.FindProperty("nozzle").objectReferenceValue = tip;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                log.Add("extinguisher '" + ext.name + "' (" + ext.Type + "): carry handle, wall bracket, pin, " + (co2 ? "CO2 horn" : "hose nozzle"));
+            }
+        }
+
+        private static Bounds ModelBounds(Transform root)
+        {
+            bool any = false;
+            Bounds b = new Bounds(root.position, Vector3.one * 0.3f);
+            foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r is ParticleSystemRenderer || r is LineRenderer) continue;
+                string n = r.name;
+                if (n == "Ring" || n == "Rod" || n.StartsWith("Horn") || n == "Grip" || n == "Nozzle") continue;
+                if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds);
+            }
+            return b;
+        }
+
+        private static Transform Child(Transform parent, string name)
+        {
+            var c = parent.Find(name);
+            if (c != null) return c;
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            return go.transform;
+        }
+
+        private static void ClearChildren(Transform t)
+        {
+            for (int i = t.childCount - 1; i >= 0; i--)
+                if (t.GetChild(i).name != "Tip") Object.DestroyImmediate(t.GetChild(i).gameObject);
+        }
+
+        private static void Prim(PrimitiveType type, string name, Transform parent, Vector3 localPos, Quaternion localRot, Vector3 worldSize, Material mat)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = name;
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.SetParent(parent, false);
+            go.transform.SetLocalPositionAndRotation(localPos, localRot);
+            Vector3 ps = parent.lossyScale;
+            go.transform.localScale = new Vector3(worldSize.x / Mathf.Max(1e-4f, ps.x), worldSize.y / Mathf.Max(1e-4f, ps.y), worldSize.z / Mathf.Max(1e-4f, ps.z));
+            go.GetComponent<Renderer>().sharedMaterial = mat;
+        }
+
+        private static Material Mat(string name, Color c, float smooth = 0.4f, float metal = 0f)
+        {
+            string path = "Assets/Settings/" + name + ".mat";
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null) { m = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(m, path); }
+            m.SetColor("_BaseColor", c);
+            m.SetFloat("_Smoothness", smooth);
+            m.SetFloat("_Metallic", metal);
+            EditorUtility.SetDirty(m);
+            return m;
         }
 
         /// <summary>

@@ -143,6 +143,7 @@ namespace EscapeFire.Hazards
             main.startColor = new Color(smokeColor.r, smokeColor.g, smokeColor.b, alpha);
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.maxParticles = 400;
+            main.cullingMode = ParticleSystemCullingMode.AlwaysSimulate;
             var emission = ps.emission;
             emission.rateOverTime = 0f;
             var shape = ps.shape;
