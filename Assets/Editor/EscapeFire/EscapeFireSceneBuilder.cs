@@ -28,9 +28,9 @@ namespace EscapeFire.EditorTools
     {
         private const string SCENES_DIR = "Assets/Scenes";
         private const string XR_ORIGIN_PREFAB = "Assets/VRTemplateAssets/Prefabs/Setup/Complete XR Origin Set Up Variant.prefab";
-        private static string MenuPath => $"{SCENES_DIR}/{SceneNames.MAIN_MENU}.unity";
+        internal static string MenuPath => $"{SCENES_DIR}/{SceneNames.MAIN_MENU}.unity";
         private static string LabPath => $"{SCENES_DIR}/{SceneNames.LAB}.unity";
-        private static string AARPath => $"{SCENES_DIR}/{SceneNames.AAR}.unity";
+        internal static string AARPath => $"{SCENES_DIR}/{SceneNames.AAR}.unity";
 
         [MenuItem("EscapeFire/M1/Build Everything (Menu + AAR + Wire Lab + Build Settings)")]
         public static void BuildEverything()
@@ -49,20 +49,21 @@ namespace EscapeFire.EditorTools
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             CreateEnvironment("Lobby (5m x 5m)", new Color(0.82f, 0.80f, 0.76f));
-            var canvas = CreateWorldCanvas("MainMenuCanvas", new Vector3(0f, 1.5f, 2f), new Vector2(1000f, 700f));
+            var canvas = CreateWorldCanvas("MainMenuCanvas", new Vector3(0f, 1.45f, 1.2f), new Vector2(1000f, 860f));
 
             var controllerGo = new GameObject("[MainMenu]");
             var menu = controllerGo.AddComponent<MainMenuController>();
 
-            CreateText(canvas, "Title", "DIỄN TẬP PCCC THỰC TẾ ẢO\nPhòng Lab Máy tính", 54, new Vector2(0f, 250f), new Vector2(950f, 150f));
-            var status = CreateText(canvas, "Status", "", 32, new Vector2(0f, 110f), new Vector2(950f, 110f));
+            CreateText(canvas, "Title", "DIỄN TẬP PCCC THỰC TẾ ẢO\nPhòng Lab Máy tính", 54, new Vector2(0f, 330f), new Vector2(950f, 150f));
+            var status = CreateText(canvas, "Status", "", 32, new Vector2(0f, 190f), new Vector2(950f, 110f));
             SetPrivateField(menu, "statusText", status);
 
-            CreateButton(canvas, "XÁC NHẬN CHIỀU CAO (đứng thẳng)", new Vector2(0f, 10f), menu.CalibrateHeight);
-            CreateButton(canvas, "1. BÀI GIẢNG (bắt đầu từ đây)", new Vector2(0f, -85f), menu.StartLesson, 700f, new Color(0.15f, 0.45f, 0.75f));
-            CreateButton(canvas, "2. CHẾ ĐỘ: CÓ HƯỚNG DẪN", new Vector2(-240f, -180f), menu.SelectGuidedMode, 440f);
-            CreateButton(canvas, "3. CHẾ ĐỘ: SÁT HẠCH", new Vector2(240f, -180f), menu.SelectExamMode, 440f);
-            CreateButton(canvas, "BẮT ĐẦU BÀI TẬP PHÒNG LAB", new Vector2(0f, -285f), menu.StartDrill, 700f, new Color(0.75f, 0.15f, 0.12f));
+            CreateButton(canvas, "XÁC NHẬN CHIỀU CAO (đứng thẳng)", new Vector2(0f, 65f), menu.CalibrateHeight);
+            CreateButton(canvas, "1. BÀI GIẢNG (bắt đầu từ đây)", new Vector2(0f, -30f), menu.StartLesson, 700f, new Color(0.15f, 0.45f, 0.75f));
+            CreateButton(canvas, "2. CHẾ ĐỘ: CÓ HƯỚNG DẪN", new Vector2(-240f, -125f), menu.SelectGuidedMode, 440f);
+            CreateButton(canvas, "3. CHẾ ĐỘ: SÁT HẠCH", new Vector2(240f, -125f), menu.SelectExamMode, 440f);
+            CreateButton(canvas, "BẮT ĐẦU BÀI TẬP PHÒNG LAB", new Vector2(0f, -230f), menu.StartDrill, 700f, new Color(0.75f, 0.15f, 0.12f));
+            CreateButton(canvas, "4. PHÒNG MỚI (sinh từ mô tả)", new Vector2(0f, -335f), menu.StartGeneratedRoom, 700f, new Color(0.45f, 0.25f, 0.65f));
 
             SaveScene(scene, MenuPath);
         }
@@ -72,7 +73,7 @@ namespace EscapeFire.EditorTools
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             CreateEnvironment("Hologram Command Room", new Color(0.12f, 0.16f, 0.22f));
-            var canvas = CreateWorldCanvas("AARCanvas", new Vector3(0f, 1.6f, 2.2f), new Vector2(1400f, 900f));
+            var canvas = CreateWorldCanvas("AARCanvas", new Vector3(0f, 1.6f, 1.4f), new Vector2(1400f, 900f));
 
             var controllerGo = new GameObject("[AAR]");
             var aar = controllerGo.AddComponent<AARController>();
@@ -90,15 +91,16 @@ namespace EscapeFire.EditorTools
             // Holographic mini-map table with the replayed path (red = standing in smoke).
             var table = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             table.name = "HoloTable";
-            table.transform.position = new Vector3(0f, 0.4f, 1.0f);
+            // V5.1: beside the learner, not between them and the result board (it blocked the buttons)
+            table.transform.position = new Vector3(-1.4f, 0.4f, 0.5f);
             table.transform.localScale = new Vector3(1.4f, 0.4f, 1.4f);
             var map = new GameObject("TrajectoryMiniMap");
-            map.transform.position = new Vector3(0f, 0.81f, 1.0f);
+            map.transform.position = new Vector3(-1.4f, 0.81f, 0.5f);
             map.AddComponent<TrajectoryView>();
 
             var radar = new GameObject("SkillRadar");
-            radar.transform.position = new Vector3(-1.5f, 1.5f, 1.8f);
-            radar.transform.rotation = Quaternion.Euler(0f, -30f, 0f);
+            radar.transform.position = new Vector3(1.6f, 1.5f, 1.2f);
+            radar.transform.rotation = Quaternion.Euler(0f, 40f, 0f);
             radar.AddComponent<RadarChartView>();
 
             CreateButton(canvas, "LÀM LẠI BÀI TẬP", new Vector2(-260f, -300f), aar.Retry, 480f);
@@ -296,7 +298,12 @@ namespace EscapeFire.EditorTools
             floor.GetComponent<Renderer>().sharedMaterial = mat;
 
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(XR_ORIGIN_PREFAB);
-            if (prefab != null) PrefabUtility.InstantiatePrefab(prefab);
+            if (prefab != null)
+            {
+                // V5.1: the learner must start facing the board (the prefab came in turned 130 degrees away)
+                var rig = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+                rig.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            }
             else
             {
                 Debug.LogWarning($"[EscapeFire] XR Origin prefab not found at {XR_ORIGIN_PREFAB}; adding a plain camera.");
@@ -359,6 +366,13 @@ namespace EscapeFire.EditorTools
 
             var button = go.GetComponent<Button>();
             UnityEventTools.AddPersistentListener(button.onClick, onClick);
+            // V5.1: pressable with the fingertip too (thin collider over the button, XRI poke into the canvas)
+            var box = go.AddComponent<BoxCollider>();
+            box.size = new Vector3(width, 90f, 20f);
+            var poke = go.AddComponent<UIButtonPoke>();
+            var si = go.AddComponent<XRSimpleInteractable>();
+            UnityEventTools.AddVoidPersistentListener(si.selectEntered, poke.Press);
+            RigRealismSetup.MakePokeable(si, parent.forward, 0.009f);
 
             var text = CreateText(rt, "Label", label, 30, Vector2.zero, new Vector2(width - 20f, 80f));
             text.raycastTarget = false;

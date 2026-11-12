@@ -75,6 +75,35 @@ namespace EscapeFire.UI
             SceneFlowManager.Load(SceneNames.LESSON);
         }
 
+        private static readonly string[] GeneratedRooms = { "library", "canteen", "office", "workshop", "lab" };
+
+        /// <summary>
+        /// V5.1: a room built from a ScenarioSpec (V4). Each press opens the next sample room with a new arrangement
+        /// (seed); an instructor with the edge server can hand in a spec from a prompt instead (GeneratedScenario.Request).
+        /// </summary>
+        public void StartGeneratedRoom()
+        {
+            if (requireProgression && !ProgressionStore.GuidedUnlocked)
+            {
+                SetStatus("Hãy học BÀI GIẢNG trước khi vào phòng mới.");
+                return;
+            }
+            int index = PlayerPrefs.GetInt(ProgressionStore.KeyPrefix + "generated_index", 0);
+            PlayerPrefs.SetInt(ProgressionStore.KeyPrefix + "generated_index", index + 1);
+            string room = GeneratedRooms[index % GeneratedRooms.Length];
+            var sample = Resources.Load<TextAsset>("Scenarios/" + room);
+            if (sample == null)
+            {
+                SetStatus("Không tìm thấy phòng mẫu " + room + ".");
+                return;
+            }
+            EscapeFire.Generation.GeneratedScenario.Pending = Newtonsoft.Json.Linq.JObject.Parse(sample.text);
+            EscapeFire.Generation.GeneratedScenario.Seed = UnityEngine.Random.Range(1, 10000);
+            GameSession.Begin(TrainingMode.Guided, studentId);
+            SessionResult.Reset();
+            SceneFlowManager.Load(SceneNames.GENERATED);
+        }
+
         public void StartDrill()
         {
             if (requireProgression && !ProgressionStore.GuidedUnlocked)
@@ -94,7 +123,8 @@ namespace EscapeFire.UI
             string height = GameSession.IsCalibrated
                 ? $"H₀ = {GameSession.CalibratedHeight:F2}m (khom khi < {GameSession.CalibratedHeight * 0.7f:F2}m)"
                 : "Chưa hiệu chuẩn chiều cao";
-            string ladder = $"Bài giảng {(ProgressionStore.LessonDone ? "✔" : "○")}  ·  Có hướng dẫn {(ProgressionStore.GuidedPassed ? "✔" : "○")}  ·  Sát hạch {(ProgressionStore.ExamUnlocked ? "mở" : "khoá")}";
+            // plain words: the Vietnamese font has no check-mark / circle glyphs (they showed as blanks)
+            string ladder = $"Bài giảng: {(ProgressionStore.LessonDone ? "xong" : "chưa")}  ·  Có hướng dẫn: {(ProgressionStore.GuidedPassed ? "đạt" : "chưa")}  ·  Sát hạch: {(ProgressionStore.ExamUnlocked ? "mở" : "khoá")}";
             SetStatus($"Chế độ: {mode}\n{height}\n{ladder}");
         }
 

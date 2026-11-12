@@ -61,6 +61,7 @@ namespace EscapeFire.Scenario
                 reportJson: json);
 
             SessionResult.RecordSkills(observations, skills);
+            SessionResult.DrillScene = SceneNames.LAB;
             SessionResult.RecordReview(facts, scorecard, radar, debrief,
                 collector != null ? collector.Positions : null,
                 collector != null ? collector.StandingInSmokeFlags : null);

@@ -19,6 +19,10 @@ namespace EscapeFire.Generation
         public enum State { Idle, Running, Won, Failed }
 
         [SerializeField] private float shockDistance = 4f;
+        [Tooltip("Off in tests that stay in the room after the drill ends.")]
+        [SerializeField] private bool loadAARScene = true;
+        [SerializeField] private float delayBeforeAAR = 4f;
+        private float _startedAt;
 
         private ScenarioSpec _spec;
         private FireHazard _fire;
@@ -43,6 +47,7 @@ namespace EscapeFire.Generation
             if (_fire != null) _fire.OnFireExtinguished += OnExtinguished;
             Current = State.Running;
             Outcome = "";
+            _startedAt = Time.time;
             Say($"Tình huống: {spec.Title}. Cháy lớp {spec.FireClass}. Chọn đúng bình hoặc thoát ra lối EXIT.");
         }
 
@@ -107,14 +112,44 @@ namespace EscapeFire.Generation
             Outcome = outcome;
             Say(outcome);
             // VL.1: an unseen generated room is the transfer test of "right agent for the fire class" (R03)
+            var observations = new List<EscapeFire.Analytics.SkillObservation>();
+            bool rightAgent = !(_spec.FireClass == "E" && _waterUsed) && !_reignited;
             if (_co2Used || _waterUsed)
+                observations.Add(new EscapeFire.Analytics.SkillObservation { Skill = "R03_RIGHT_AGENT", Correct = rightAgent, Why = "phòng sinh: " + _spec.Title });
+            var model = observations.Count > 0 ? EscapeFire.Analytics.SkillStore.Record(observations) : EscapeFire.Analytics.SkillStore.Load();
+            RecordResult(s == State.Won, rightAgent, observations, model);
+            if (loadAARScene) StartCoroutine(GoToAAR());
+        }
+
+        /// <summary>V5.1: a generated room ends like the lab drill — a result for the AAR scene, then the AAR.</summary>
+        private void RecordResult(bool won, bool rightAgent, List<EscapeFire.Analytics.SkillObservation> observations, EscapeFire.Analytics.SkillModel model)
+        {
+            bool used = _co2Used || _waterUsed;
+            var items = new List<EscapeFire.Analytics.ScorecardItem>
             {
-                bool right = !(_spec.FireClass == "E" && _waterUsed) && !_reignited;
-                EscapeFire.Analytics.SkillStore.Record(new List<EscapeFire.Analytics.SkillObservation>
-                {
-                    new EscapeFire.Analytics.SkillObservation { Skill = "R03_RIGHT_AGENT", Correct = right, Why = "phòng sinh: " + _spec.Title }
-                });
-            }
+                new EscapeFire.Analytics.ScorecardItem { Key = "agent", Label = "Chọn đúng bình theo lớp cháy", MaxPoints = 40,
+                    Points = !used ? 20 : rightAgent ? 40 : 0,
+                    Note = !used ? "Không dùng bình (sơ tán ngay)" : rightAgent ? $"Đúng chất chữa cháy cho cháy lớp {_spec.FireClass}" : $"Sai chất chữa cháy cho cháy lớp {_spec.FireClass}" },
+                new EscapeFire.Analytics.ScorecardItem { Key = "technique", Label = "Dập tắt đám cháy", MaxPoints = 30,
+                    Points = FireOut && rightAgent ? 30 : 0, Note = FireOut ? "Đám cháy đã tắt" : "Đám cháy chưa tắt" },
+                new EscapeFire.Analytics.ScorecardItem { Key = "evacuation", Label = "Thoát ra lối EXIT an toàn", MaxPoints = 30,
+                    Points = won ? 30 : 0, Note = won ? "Ra lối thoát an toàn" : Outcome }
+            };
+            var facts = EscapeFire.Analytics.SessionFacts.Empty;
+            facts.Passed = won;
+            facts.FailCause = won ? "" : Outcome;
+            facts.DurationSeconds = Time.time - _startedAt;
+            int total = EscapeFire.Analytics.AfterActionReport.Total(items);
+            SessionResult.Record(won, total, facts.DurationSeconds, won ? "" : Outcome, new List<string> { _spec.Title, Outcome }, "");
+            SessionResult.RecordReview(facts, items, new EscapeFire.Analytics.SkillRadar(), Outcome, null, null);
+            SessionResult.RecordSkills(observations, model);
+            SessionResult.DrillScene = SceneNames.GENERATED;
+        }
+
+        private IEnumerator GoToAAR()
+        {
+            yield return new WaitForSecondsRealtime(delayBeforeAAR);
+            SceneFlowManager.Load(SceneNames.AAR);
         }
 
         private static void Say(string m) => EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent(m));

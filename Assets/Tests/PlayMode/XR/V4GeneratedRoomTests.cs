@@ -35,6 +35,9 @@ namespace EscapeFire.Tests.PlayMode.XR
             Xr = XRInputDriver.Create();
             yield return null;
             _builder = Object.FindFirstObjectByType<ScenarioBuilder>();
+            // these tests stay in the room after the drill ends (no automatic AAR scene)
+            typeof(GeneratedDrill).GetField("loadAARScene", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                .SetValue(_builder.GetComponent<GeneratedDrill>(), false);
             Assert.IsTrue(_builder.Built, "room built: " + string.Join(",", _builder.Errors));
             Body(_builder.Layout.Start.Yaw);
             yield return Xr.Wait(0.5f);

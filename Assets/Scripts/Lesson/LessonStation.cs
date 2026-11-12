@@ -119,7 +119,7 @@ namespace EscapeFire.Lesson
                 sb.Append("<color=#ffd27f><b>Câu hỏi:</b></color> ").Append(question).Append('\n');
                 for (int i = 0; i < options.Length; i++) sb.Append("<b>").Append((char)('A' + i)).Append(".</b> ").Append(options[i]).Append('\n');
             }
-            else sb.Append("<color=#7CFC9A><b>Hoàn thành trạm này ✔</b></color>");
+            else sb.Append("<color=#7CFC9A><b>Hoàn thành trạm này ✓</b></color>");
             board.text = sb.ToString();
         }
     }

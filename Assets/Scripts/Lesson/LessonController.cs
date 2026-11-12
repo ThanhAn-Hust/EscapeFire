@@ -71,6 +71,12 @@ namespace EscapeFire.Lesson
             EscapeFire.Analytics.SkillStore.Save(model);
         }
 
+        /// <summary>V5.1: the lesson room always has a way back to the menu.</summary>
+        public void BackToMenu()
+        {
+            SceneFlowManager.Load(SceneNames.MAIN_MENU);
+        }
+
         /// <summary>Continue button: go to the guided drill.</summary>
         public void GoToGuidedDrill()
         {

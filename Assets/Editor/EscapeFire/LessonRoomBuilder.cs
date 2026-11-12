@@ -61,6 +61,11 @@ namespace EscapeFire.EditorTools
             var poke = next.AddComponent<PokeAction>();
             UnityEventTools.AddVoidPersistentListener(next.GetComponent<XRSimpleInteractable>().selectEntered, poke.Press);
             UnityEventTools.AddVoidPersistentListener(poke.OnPressed, controller.GoToGuidedDrill);
+            // V5.1: always a way back to the menu
+            var back = Button("BackToMenuButton", new Vector3(0.35f, TableTop + 0.015f, -4.45f), "VỀ MENU", new Color(0.4f, 0.4f, 0.45f), null, 180f);
+            var backPoke = back.AddComponent<PokeAction>();
+            UnityEventTools.AddVoidPersistentListener(back.GetComponent<XRSimpleInteractable>().selectEntered, backPoke.Press);
+            UnityEventTools.AddVoidPersistentListener(backPoke.OnPressed, controller.BackToMenu);
             controller.Configure(stations.ToArray(), progress, next);
 
             var log = new List<string>();

@@ -80,6 +80,10 @@ namespace EscapeFire.UI
             }
 
             SetText(headlineText, SessionResult.Passed ? "THOÁT HIỂM AN TOÀN" : "DIỄN TẬP THẤT BẠI");
+            // V5.1: the 5-axis radar is measured only in the lab drill; a generated room would show a misleading 0 %
+            bool labDrill = SessionResult.DrillScene != SceneNames.GENERATED;
+            foreach (var radar in FindObjectsByType<RadarChartView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                radar.gameObject.SetActive(labDrill);
 
             bool hasScorecard = SessionResult.Scorecard.Count > 0;
             int score = hasScorecard ? AfterActionReport.Total(SessionResult.Scorecard) : SessionResult.Score;
@@ -143,9 +147,11 @@ namespace EscapeFire.UI
 
         public void Retry()
         {
+            string scene = string.IsNullOrEmpty(SessionResult.DrillScene) ? SceneNames.LAB : SessionResult.DrillScene;
             GameSession.Begin(GameSession.Mode, GameSession.StudentId);
             SessionResult.Reset();
-            SceneFlowManager.Load(SceneNames.LAB);
+            SessionResult.DrillScene = scene;
+            SceneFlowManager.Load(scene);
         }
 
         public void BackToMenu()

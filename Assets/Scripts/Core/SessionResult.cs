@@ -24,6 +24,8 @@ namespace EscapeFire.Core
         public static List<ScorecardItem> Scorecard { get; private set; } = new List<ScorecardItem>();
         public static SkillRadar Radar { get; private set; }
         public static string Debrief { get; set; } = string.Empty;
+        /// <summary>V5.1: the scene the drill was played in (AAR "retry" goes back there).</summary>
+        public static string DrillScene { get; set; } = SceneNames.LAB;
         /// <summary>VL: this drill's skill observations and the learner's mastery after it.</summary>
         public static List<SkillObservation> SkillObservations { get; private set; } = new List<SkillObservation>();
         public static Dictionary<string, float> SkillMastery { get; private set; } = new Dictionary<string, float>();
