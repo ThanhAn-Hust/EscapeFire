@@ -9,6 +9,7 @@ Metrics per mode:
   - challenges per drill, distinct challenges (piece codes incl. parameters), distinct drill sequences / drills
   - entropy (bits) of the first challenge across drills — how predictable the director is
   - latency mean / p95
+  - weak-skill targeting (VL.3): each simulated learner has 2 weak PCCC skills; share of challenges that train one
 Usage (Ollama with gemma3:4b running):
   uv run python bench/director_ablation.py --drills 20 --out ../docs/v4_director_ablation.md
   uv run python bench/director_ablation.py --dry-run   # scripted fake LLM: checks the tool only, NOT results
@@ -30,6 +31,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from escapefire_edge import catalog  # noqa: E402
+from escapefire_edge.challenge import directive_skills  # noqa: E402
 from escapefire_edge.director import Director  # noqa: E402
 from escapefire_edge.llm import OllamaClient  # noqa: E402
 from escapefire_edge.schema import MAINTAIN, ChallengeMessage, TelemetryMessage  # noqa: E402
@@ -67,16 +69,19 @@ def telemetry_for(drill: int, turn: int, state: dict, rng: random.Random) -> Tel
         is_power_cut=rng.random() < 0.5, held_item=rng.choice(HELD), current_zone=rng.choice(ZONES),
         phase="Phase2_ServerExplosionFire", emergency_elapsed=30 + turn * 30,
         prior_challenges=list(state["prior"]), accepted_challenges=state["accepted"],
-        prior_pieces=list(state["pieces"]), blocked_routes=list(state["blocked"]))
+        prior_pieces=list(state["pieces"]), blocked_routes=list(state["blocked"]), weak_skills=list(state["weak"]))
 
 
 async def run_mode(mode: str, llm, drills: int, turns: int, seed: int) -> dict:
     director = Director(llm, mode=mode, timeout_s=30.0, log_dir=None, min_observation_s=0)
     latencies, valid, asked = [], 0, 0
     sequences, firsts, distinct = [], [], set()
+    challenges, targeted = 0, 0
+    trainable = sorted({s for spec in catalog.pieces().values() for s in spec.get("skills", [])}
+                       | {s for spec in catalog.pieces().values() for opts in spec.get("option_skills", {}).values() for v in opts.values() for s in v})
     for d in range(drills):
         rng = random.Random(seed * 1000 + d)  # same telemetry for every mode
-        state = {"prior": [], "accepted": 0, "pieces": [], "blocked": []}
+        state = {"prior": [], "accepted": 0, "pieces": [], "blocked": [], "weak": rng.sample(trainable, 2)}
         seq = []
         for t in range(turns):
             started = time.perf_counter()
@@ -98,10 +103,14 @@ async def run_mode(mode: str, llm, drills: int, turns: int, seed: int) -> dict:
                     distinct.add(code + (json.dumps(nums, sort_keys=True) if nums else ""))
                 state["accepted"] += 1
                 seq.append("+".join(codes))
+                challenges += 1
+                targeted += msg.targets_weak_skill
             elif msg.directive != MAINTAIN:
                 state["prior"].append(msg.directive)
                 state["accepted"] += 1
                 seq.append(msg.directive)
+                challenges += 1
+                targeted += any(s in state["weak"] for s in directive_skills(msg.directive))
                 distinct.add(msg.directive)
         sequences.append(tuple(seq))
         if seq:
@@ -119,15 +128,16 @@ async def run_mode(mode: str, llm, drills: int, turns: int, seed: int) -> dict:
         "first_challenge_entropy_bits": round(entropy, 2),
         "latency_ms_mean": round(statistics.mean(latencies), 1),
         "latency_ms_p95": round(sorted(latencies)[int(0.95 * (len(latencies) - 1))], 1),
+        "weak_skill_targeted": round(targeted / challenges, 2) if challenges else 0.0,
     }
 
 
 def table(results: list[dict], header: str) -> str:
     lines = [header, "",
-             "| Chế độ | Hợp lệ Tier-1 | Thử thách / ván | Thử thách khác nhau | Chuỗi khác nhau / ván | Entropy thử thách đầu (bit) | Trễ TB (ms) | Trễ p95 (ms) |",
-             "| :--- | :-: | :-: | :-: | :-: | :-: | :-: | :-: |"]
+             "| Chế độ | Nhắm đúng kỹ năng yếu | Hợp lệ Tier-1 | Thử thách / ván | Thử thách khác nhau | Chuỗi khác nhau / ván | Entropy thử thách đầu (bit) | Trễ TB (ms) | Trễ p95 (ms) |",
+             "| :--- | :-: | :-: | :-: | :-: | :-: | :-: | :-: | :-: |"]
     for r in results:
-        lines.append(f"| {r['mode']} | {r['validity'] * 100:.0f}% | {r['challenges_per_drill']:.1f} | {r['distinct_challenges']} | "
+        lines.append(f"| {r['mode']} | {r['weak_skill_targeted'] * 100:.0f}% | {r['validity'] * 100:.0f}% | {r['challenges_per_drill']:.1f} | {r['distinct_challenges']} | "
                      f"{r['distinct_sequences']}/{r['drills']} | {r['first_challenge_entropy_bits']} | {r['latency_ms_mean']} | {r['latency_ms_p95']} |")
     return "\n".join(lines) + "\n"
 

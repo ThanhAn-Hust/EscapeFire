@@ -41,6 +41,8 @@ namespace EscapeFire.Lesson
         public bool IsActive { get; set; }
         public int WrongAnswers { get; private set; }
         public string Title => title;
+        public string RuleId => ruleId;
+        public int OptionCount => options != null ? options.Length : 0;
         public IPracticeCheck Practice => practice as IPracticeCheck;
 
         public void Configure(string stationTitle, string text, string rule, string q, string[] opts, int correct, string why,

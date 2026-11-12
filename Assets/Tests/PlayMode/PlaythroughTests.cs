@@ -61,6 +61,13 @@ namespace EscapeFire.Tests.PlayMode
                 hoa.TriggerEmergencyReaction();
                 rec.Action("Rescue Hoa"); hoa.RescueNPC();
                 rec.Action("Check door handle with back of hand"); Object.FindFirstObjectByType<DoorHeatChecker>().CheckDoorHeatWithHand();
+                rec.Action("Open the exit door and lead Hoa to it (logic shortcut; the VR escort is in V0EscortTests)");
+                var exitDoor = Object.FindFirstObjectByType<ExitDoor>();
+                exitDoor.Open();
+                hoa.SetEscortTarget(exitDoor.transform);
+                // VL.2: the rescue counts once Hoa is out of the room, not when she is picked up
+                for (float t = 0f; t < 40f && hoa.gameObject.activeInHierarchy; t += Time.deltaTime) yield return null;
+                Assert.IsFalse(hoa.gameObject.activeInHierarchy, "Hoa walked out through the exit");
                 foreach (var v in EscapeFire.NPC.VictimBody.All)
                 {
                     rec.Action("Move unconscious Nam into stairwell A (logic shortcut; the VR drag is in V3RescueTests)");
@@ -307,8 +314,10 @@ namespace EscapeFire.Tests.PlayMode
                 Time.timeScale = 1f;
                 rec.Finish();
                 Object.Destroy(head);
+                // VL.5: the mentor first asks (recall), then tells when the same mistake repeats
+                Assert.That(rec.MentorLines, Has.Some.EqualTo(SocraticRules.QuestionFor(SocraticTrigger.StandingInSmoke)), rec.Summary());
                 Assert.That(rec.MentorLines, Has.Some.Contains("khom người"), rec.Summary());
-                Assert.That(rec.MentorLines, Has.Some.Contains("chuông báo động"), rec.Summary());
+                Assert.That(rec.MentorLines, Has.Some.EqualTo(SocraticRules.QuestionFor(SocraticTrigger.AlarmNotRaised)), rec.Summary());
             }
         }
 
@@ -321,6 +330,8 @@ namespace EscapeFire.Tests.PlayMode
         {
             GameSession.Reset();
             GameSession.Begin(mode, "PLAYTEST");
+            ProgressionStore.KeyPrefix = "EF_test_progress_";
+            EscapeFire.Analytics.SkillStore.Clear();
             SessionResult.Reset();
             LmsSync.OutboxFolder = "lms_outbox_tests";
             ProgressionStore.KeyPrefix = "EF_test_progress_"; // never touch the learner's real progress

@@ -21,6 +21,7 @@ namespace EscapeFire.Scenario
         [JsonProperty("accepted_challenges")] public int AcceptedChallenges;
         [JsonProperty("prior_pieces")] public List<string> PriorPieces = new List<string>();
         [JsonProperty("blocked_routes")] public List<string> BlockedRoutes = new List<string>();
+        [JsonProperty("weak_skills")] public List<string> WeakSkills = new List<string>();
     }
 
     /// <summary>Edge server → headset decision.</summary>

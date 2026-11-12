@@ -49,6 +49,7 @@ namespace EscapeFire.Scenario
         private readonly System.Collections.Generic.HashSet<Directive> _applied = new System.Collections.Generic.HashSet<Directive>();
 
         public int EscalationCount => _escalationCount;
+        private System.Collections.Generic.List<string> _weakSkills;
 
         /// <summary>Paused by EdgeDirectorClient while the LLM edge server is connected (it decides escalations then).</summary>
         public bool LocalEscalationEnabled { get; set; } = true;
@@ -121,21 +122,27 @@ namespace EscapeFire.Scenario
 
             // Prefer the hardest tier currently allowed, then fall back to easier unused ones.
             // Within a tier the starting candidate is random, so every drill plays out differently.
+            // VL.3: CF still decides WHEN (calm learner) and the tier cap HOW HARD; among the allowed challenges the
+            // ones that train the learner's weak skills go first.
             int allowed = DirectiveTiers.AllowedTier(_escalationCount);
             int offset = Random.Range(0, ESCALATION_ORDER.Length);
-            for (int tier = allowed; tier >= 1; tier--)
-            {
-                for (int k = 0; k < ESCALATION_ORDER.Length; k++)
+            if (_weakSkills == null) _weakSkills = EscapeFire.Analytics.SkillStore.WeakSkills(3);
+            for (int pass = 0; pass < 2; pass++)
+                for (int tier = allowed; tier >= 1; tier--)
                 {
-                    var d = ESCALATION_ORDER[(k + offset) % ESCALATION_ORDER.Length];
-                    if (DirectiveTiers.TierOf(d) != tier || _applied.Contains(d)) continue; // each type once per drill
-                    if (TryExecute(d, "local") == DirectiveResult.Accepted)
+                    for (int k = 0; k < ESCALATION_ORDER.Length; k++)
                     {
-                        _lastEscalation = Time.time;
-                        return;
+                        var d = ESCALATION_ORDER[(k + offset) % ESCALATION_ORDER.Length];
+                        if (DirectiveTiers.TierOf(d) != tier || _applied.Contains(d)) continue; // each type once per drill
+                        bool trainsWeak = EscapeFire.Generation.ChallengeValidator.DirectiveSkills(DirectiveCodes.ToCode(d)).Exists(s => _weakSkills.Contains(s));
+                        if (pass == 0 && !trainsWeak) continue;
+                        if (TryExecute(d, "local") == DirectiveResult.Accepted)
+                        {
+                            _lastEscalation = Time.time;
+                            return;
+                        }
                     }
                 }
-            }
         }
 
         private void OnCognitiveStateChanged(CognitiveStateChangedEvent e)

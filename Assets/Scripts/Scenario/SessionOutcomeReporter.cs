@@ -46,6 +46,9 @@ namespace EscapeFire.Scenario
             var facts = collector != null ? collector.BuildFacts(won, failCause) : SessionFacts.Empty;
             if (collector == null) { facts.Passed = won; facts.FailCause = failCause; }
             var scorecard = AfterActionReport.BuildScorecard(facts);
+            // VL.1: what this drill showed about each PCCC skill, folded into the learner's skill model
+            var observations = SkillEvidence.FromDrill(facts);
+            var skills = SkillStore.Record(observations);
             var radar = AfterActionReport.BuildRadar(facts, scorecard);
             string debrief = AfterActionReport.TemplateDebrief(facts, scorecard);
 
@@ -57,6 +60,7 @@ namespace EscapeFire.Scenario
                 logs: scoring != null ? scoring.GetFormattedLogs() : null,
                 reportJson: json);
 
+            SessionResult.RecordSkills(observations, skills);
             SessionResult.RecordReview(facts, scorecard, radar, debrief,
                 collector != null ? collector.Positions : null,
                 collector != null ? collector.StandingInSmokeFlags : null);
@@ -68,7 +72,7 @@ namespace EscapeFire.Scenario
 
             string lmsJson = LmsReportBuilder.Build(GameSession.SessionId, GameSession.StudentId, GameSession.Mode.ToString(),
                 facts, scorecard, radar, debrief, scoring != null ? scoring.GetFormattedLogs() : new System.Collections.Generic.List<string>(),
-                MicroAIGovernor.Instance != null ? MicroAIGovernor.Instance.EscalationCount : 0);
+                MicroAIGovernor.Instance != null ? MicroAIGovernor.Instance.EscalationCount : 0, observations, skills);
             LmsSync.Submit(GameSession.SessionId, lmsJson);
 
             if (loadAARScene) StartCoroutine(LoadAARAfterDelay());

@@ -31,7 +31,8 @@ namespace EscapeFire.Scenario
             var added = new List<Item>();
             if (string.IsNullOrWhiteSpace(transcript)) return added;
             string t = " " + Plain(transcript) + " ";
-            Check(Item.Address, Regex.IsMatch(t, @"dia chi|duong|\bpho\b|\btoa\b|bach khoa|dai hoc|\btruong\b|\bngo\b|\bquan\b|phuong|\bso \d+"), added);
+            // a concrete place, not just the words "địa chỉ" (VL.2 loophole)
+            Check(Item.Address, Regex.IsMatch(t, @"duong \w+|\bpho \w+|\btoa \w+|bach khoa|dai hoc \w+|\btruong \w+|\bngo \d+|\bquan \w+|phuong \w+|\bso \d+"), added);
             Check(Item.Floor, Regex.IsMatch(t, @"\btang\s*(\d+|mot|hai|ba|bon|nam|sau|bay|tam|chin|muoi|tret)\b"), added);
             Check(Item.What, Regex.IsMatch(t, @"\bchay\b") && Regex.IsMatch(t, @"server|may chu|tu dien|\bdien\b|phong|\blab\b|thiet bi|hoa chat|\bkhoi\b|may tinh"), added);
             Check(Item.People, Regex.IsMatch(t, @"mac ket|bi ket|nguoi bi|\bngat\b|bat tinh|nan nhan|khong (co )?ai|con nguoi|co nguoi|bi thuong|\bkhong co nguoi"), added);

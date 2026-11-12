@@ -163,6 +163,10 @@ namespace EscapeFire.Scenario
             result == DirectiveResult.RejectedAlreadyActive ||
             result == DirectiveResult.RejectedPrerequisiteMissing;
 
+        private List<string> _weak;
+        /// <summary>VL.3: the learner's weakest PCCC skills from earlier sessions (read once per drill).</summary>
+        private List<string> WeakSkills => _weak ?? (_weak = EscapeFire.Analytics.SkillStore.WeakSkills(3));
+
         private TelemetryPayload BuildTelemetry()
         {
             var controller = LabProgressiveScenarioController.Instance;
@@ -180,6 +184,7 @@ namespace EscapeFire.Scenario
             };
             payload.PriorChallenges.AddRange(_priorChallenges);
             payload.AcceptedChallenges = _acceptedChallenges;
+            payload.WeakSkills.AddRange(WeakSkills);
             var runner = ChallengeRunner.Instance;
             if (runner != null)
             {

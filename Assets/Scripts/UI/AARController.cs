@@ -107,6 +107,7 @@ namespace EscapeFire.UI
                     }
                 }
             }
+            summary.Append(SkillSummary(SessionResult.SkillObservations, SessionResult.SkillMastery));
             SetText(summaryText, summary.ToString());
             SetText(debriefText, string.IsNullOrEmpty(SessionResult.Debrief) ? string.Empty : "[AI MENTOR] " + SessionResult.Debrief);
 
@@ -117,6 +118,27 @@ namespace EscapeFire.UI
                 logs.AppendLine(SessionResult.Logs[i]);
             }
             SetText(logText, logs.ToString());
+        }
+
+        /// <summary>
+        /// VL.2: the AAR shows each PCCC skill this drill tested (shown / not yet) and the learner's mastery across
+        /// sessions, so the debrief is about skills, not only a total score that can be gamed.
+        /// </summary>
+        public static string SkillSummary(System.Collections.Generic.IReadOnlyList<SkillObservation> observations,
+                                          System.Collections.Generic.IReadOnlyDictionary<string, float> mastery)
+        {
+            if (observations == null || observations.Count == 0) return string.Empty;
+            var sb = new StringBuilder();
+            sb.AppendLine();
+            sb.AppendLine("<b>KỸ NĂNG PCCC</b> <size=70%>(mức thành thạo qua các buổi)</size>");
+            foreach (var o in observations)
+            {
+                var rule = PcccRuleBook.Get(o.Skill);
+                float p = mastery != null && mastery.TryGetValue(o.Skill, out var v) ? v : 0f;
+                string title = rule != null ? rule.Title : o.Skill;
+                sb.AppendLine($"{(o.Correct ? "<color=#7CFC9A>ĐẠT</color>" : "<color=#FF8A80>CHƯA</color>")} {title}: {p * 100f:F0}%  <size=70%>({o.Why})</size>");
+            }
+            return sb.ToString();
         }
 
         public void Retry()

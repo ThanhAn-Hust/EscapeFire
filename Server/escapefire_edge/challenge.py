@@ -28,6 +28,7 @@ class ChallengeContext:
     cf: float = 0.0
     prior: list[str] = field(default_factory=list)          # piece codes already used this drill
     blocked_routes: list[str] = field(default_factory=list)  # routes already blocked
+    weak_skills: list[str] = field(default_factory=list)     # VL.3: skills the learner should practise (not a rule)
 
 
 @dataclass
@@ -47,6 +48,19 @@ class ChallengeResult:
     def codes(self) -> list[str]:
         return [piece_code(p) for p in self.pieces]
 
+    @property
+    def skills(self) -> list[str]:
+        """PCCC skills (rule ids) this challenge makes the learner practise."""
+        out: list[str] = []
+        for p in self.pieces:
+            for s in piece_skills(p):
+                if s not in out:
+                    out.append(s)
+        return out
+
+    def targets(self, weak_skills: list[str]) -> bool:
+        return any(s in weak_skills for s in self.skills)
+
 
 def piece_code(p: dict) -> str:
     """KIND, or KIND:option for pieces with an option parameter (each counts as its own challenge)."""
@@ -55,6 +69,19 @@ def piece_code(p: dict) -> str:
         if "options" in rng:
             return f"{p['piece']}:{p.get('params', {}).get(name, '')}"
     return str(p.get("piece", ""))
+
+
+def piece_skills(p: dict) -> list[str]:
+    spec = catalog.pieces()[p["piece"]]
+    for name, by_option in spec.get("option_skills", {}).items():
+        value = p.get("params", {}).get(name)
+        if value in by_option:
+            return list(by_option[value])
+    return list(spec.get("skills", []))
+
+
+def directive_skills(directive: str) -> list[str]:
+    return list(catalog.catalog()["challenge"].get("directive_skills", {}).get(directive, []))
 
 
 def piece_tier(p: dict) -> int:
@@ -202,7 +229,11 @@ def _piece_catalog_text() -> str:
         tier = f"cấp {spec['tier']}" if not tiers else "cấp " + ", ".join(
             f"{v}={t}" for opts in tiers.values() for v, t in opts.items())
         alone = " (phải đứng một mình)" if spec.get("alone") else ""
-        lines.append(f"- {kind} [{tier}]{alone}: {spec['desc']}. Tham số: {', '.join(params)}. Luật: {spec['rule']}")
+        if spec.get("option_skills"):
+            trains = "; ".join(f"{v}→{'/'.join(s)}" for opts in spec["option_skills"].values() for v, s in opts.items())
+        else:
+            trains = "/".join(spec.get("skills", []))
+        lines.append(f"- {kind} [{tier}]{alone}: {spec['desc']}. Tham số: {', '.join(params)}. Luật: {spec['rule']}. Luyện kỹ năng: {trains}")
     return "\n".join(lines)
 
 
@@ -217,6 +248,7 @@ LUẬT AN TOÀN:
 2. Không lặp lại mảnh đã dùng; độ khó (cấp cao nhất trong các mảnh) không vượt cấp tối đa được ghi trong dữ liệu.
 3. Người học càng căng thẳng thì càng ít mảnh.
 4. Trích dẫn đúng một luật trong: {", ".join(catalog.rules())}.
+5. ƯU TIÊN mảnh luyện đúng các KỸ NĂNG CÒN YẾU của người học (ghi trong dữ liệu); nêu rõ kỹ năng đó trong lý do sư phạm.
 
 Đầu ra BẮT BUỘC là một JSON duy nhất:
 {{"pieces": [{{"piece": "<MẢNH>", "params": {{...}}, "delay_s": <giây>}}], "pccc_rule_reference": "<Rxx_...>", "pedagogical_reason": "<vì sao tổ hợp này dạy được người học, ngắn gọn>"}}"""
@@ -231,6 +263,7 @@ def build_composer_prompt(telemetry, ctx: ChallengeContext) -> str:
         f"Giai đoạn: {telemetry.phase}\n"
         f"Mảnh đã dùng: {prior}\n"
         f"Buồng thang đã bị chặn: {', '.join(ctx.blocked_routes) or 'không'}\n"
+        f"Kỹ năng còn yếu cần luyện (ưu tiên): {', '.join(ctx.weak_skills) or 'chưa có dữ liệu'}\n"
         f"Cấp tối đa cho thử thách này: {allowed_tier(ctx.challenges_given)}\n"
         "Hãy thiết kế thử thách tiếp theo!"
     )

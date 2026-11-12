@@ -24,6 +24,17 @@ namespace EscapeFire.Core
         public static List<ScorecardItem> Scorecard { get; private set; } = new List<ScorecardItem>();
         public static SkillRadar Radar { get; private set; }
         public static string Debrief { get; set; } = string.Empty;
+        /// <summary>VL: this drill's skill observations and the learner's mastery after it.</summary>
+        public static List<SkillObservation> SkillObservations { get; private set; } = new List<SkillObservation>();
+        public static Dictionary<string, float> SkillMastery { get; private set; } = new Dictionary<string, float>();
+
+        public static void RecordSkills(List<SkillObservation> observations, SkillModel model)
+        {
+            SkillObservations = observations ?? new List<SkillObservation>();
+            SkillMastery = new Dictionary<string, float>();
+            if (model == null) return;
+            foreach (var kv in model.Skills) SkillMastery[kv.Key] = kv.Value.PKnown;
+        }
         public static UnityEngine.Vector3[] TrajectoryPositions { get; private set; } = new UnityEngine.Vector3[0];
         public static bool[] TrajectoryInSmoke { get; private set; } = new bool[0];
 
@@ -63,6 +74,8 @@ namespace EscapeFire.Core
         [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
         public static void Reset()
         {
+            SkillObservations = new List<SkillObservation>();
+            SkillMastery = new Dictionary<string, float>();
             HasResult = false;
             Passed = false;
             Score = 0;

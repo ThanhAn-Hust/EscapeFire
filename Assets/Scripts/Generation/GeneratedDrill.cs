@@ -11,7 +11,7 @@ namespace EscapeFire.Generation
     /// <summary>
     /// Rules of a generated room (plan V4.4): the fire burns from the start; the learner may fight it with the right
     /// extinguisher or leave. Water / foam on an electrical (class E) fire = electrocution (fail, rule R03 / NFPA 75);
-    /// CO2 on a solid (class A) fire knocks the flames down but the embers re-ignite once (CO2 does not cool).
+    /// CO2 on a solid (class A) fire knocks the flames down but the embers re-ignite once (CO2 cools very little).
     /// Reaching an exit corridor ends the drill.
     /// </summary>
     public class GeneratedDrill : MonoBehaviour
@@ -79,7 +79,7 @@ namespace EscapeFire.Generation
             yield return new WaitForSeconds(3f);
             if (Current != State.Running || _fire == null) yield break;
             _fire.ResetFire();
-            Say("Than hồng bùng cháy lại! CO2 chỉ làm ngạt lửa, không làm nguội chất rắn (giấy, gỗ) — dùng bình nước/bọt hoặc sơ tán.");
+            Say("Than hồng bùng cháy lại! CO2 làm ngạt lửa nhưng làm nguội rất ít — giấy, gỗ còn âm ỉ dễ bùng lại. Dùng bình nước/bọt hoặc sơ tán.");
         }
 
         private void Update()
@@ -106,6 +106,15 @@ namespace EscapeFire.Generation
             Current = s;
             Outcome = outcome;
             Say(outcome);
+            // VL.1: an unseen generated room is the transfer test of "right agent for the fire class" (R03)
+            if (_co2Used || _waterUsed)
+            {
+                bool right = !(_spec.FireClass == "E" && _waterUsed) && !_reignited;
+                EscapeFire.Analytics.SkillStore.Record(new List<EscapeFire.Analytics.SkillObservation>
+                {
+                    new EscapeFire.Analytics.SkillObservation { Skill = "R03_RIGHT_AGENT", Correct = right, Why = "phòng sinh: " + _spec.Title }
+                });
+            }
         }
 
         private static void Say(string m) => EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent(m));

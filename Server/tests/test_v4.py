@@ -166,3 +166,48 @@ def test_composer_over_websocket():
         ws.send_text(calm(accepted_challenges=1).model_dump_json())
         msg = ws.receive_json()
     assert msg["type"] == "challenge" and msg["pieces"][0]["piece"] == "LIGHTS_OFF"
+
+
+# ---------------- VL.3: challenges know which PCCC skills they train
+
+from escapefire_edge.challenge import build_composer_prompt, directive_skills, piece_skills  # noqa: E402
+
+
+def test_every_piece_and_directive_trains_known_skills():
+    for kind, spec in catalog.pieces().items():
+        assert spec.get("skills"), kind
+        for s in spec["skills"]:
+            assert s in catalog.rules()
+    for d in ("TRIGGER_CO2_PIN_JAM", "TRIGGER_SMOKE_SURGE", "ESCALATE_FM200_COUNTDOWN"):
+        assert directive_skills(d) and all(s in catalog.rules() for s in directive_skills(d))
+
+
+def test_option_specific_skills():
+    assert piece_skills({"piece": "DEVICE_FAULT", "params": {"device": "alarm_cable_cut"}}) == ["R01_ALARM_EARLY"]
+    assert "R06_EVACUATE_IF_EMPTY" in piece_skills({"piece": "DEVICE_FAULT", "params": {"device": "co2_low_pressure"}})
+
+
+def test_composer_reports_whether_it_targets_a_weak_skill():
+    hit = _run(Director(ScriptedLLM([COMPOSED]), mode="composer").decide(calm(accepted_challenges=1, weak_skills=["R07_STAY_LOW"])))
+    miss = _run(Director(ScriptedLLM([COMPOSED]), mode="composer").decide(calm(accepted_challenges=1, weak_skills=["R08_DOOR_BACK_OF_HAND"])))
+    assert hit.targets_weak_skill and "R07_STAY_LOW" in hit.skills
+    assert not miss.targets_weak_skill
+
+
+def test_weak_skills_reach_the_prompt_and_cf_rules_still_apply():
+    t = calm(weak_skills=["R08_DOOR_BACK_OF_HAND"])
+    prompt = build_composer_prompt(t, ChallengeContext(weak_skills=t.weak_skills))
+    assert "R08_DOOR_BACK_OF_HAND" in prompt
+    llm = ScriptedLLM([COMPOSED])
+    d = _run(Director(llm, mode="composer").decide(calm(cognitive_friction_cf=0.5, weak_skills=["R07_STAY_LOW"])))
+    assert d.source == "rule" and llm.calls == 0, "CF still decides when to add a challenge"
+
+
+# ---------------- VL.4: one quiz item per rule (paper / online pre-post-retention test)
+
+def test_every_rule_has_a_quiz_item():
+    book = json.loads((ROOT / "Assets" / "Resources" / "PcccRules.json").read_text(encoding="utf-8"))
+    for r in book["rules"]:
+        q = r["quiz"]
+        assert q["question"].strip() and len(q["options"]) == 3 and 0 <= q["answer"] < 3 and q["why"].strip(), r["id"]
+        assert len(set(q["options"])) == 3, r["id"]

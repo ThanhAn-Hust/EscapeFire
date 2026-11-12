@@ -92,7 +92,8 @@ class Director:
 
     async def _compose(self, telemetry: TelemetryMessage, started: float) -> DirectiveMessage | ChallengeMessage:
         ctx = ChallengeContext(challenges_given=telemetry.challenges_given, cf=telemetry.cognitive_friction_cf,
-                               prior=list(telemetry.prior_pieces), blocked_routes=list(telemetry.blocked_routes))
+                               prior=list(telemetry.prior_pieces), blocked_routes=list(telemetry.blocked_routes),
+                               weak_skills=list(telemetry.weak_skills))
         try:
             raw = await asyncio.wait_for(
                 self.llm.complete(COMPOSER_SYSTEM, build_composer_prompt(telemetry, ctx)), timeout=self.timeout_s)
@@ -106,7 +107,8 @@ class Director:
             return self._finish(telemetry, started, DirectiveMessage(source="fallback"), raw=raw,
                                 error="composer:" + ";".join(result.errors[:4]))
         return self._finish(telemetry, started, ChallengeMessage(
-            pieces=result.pieces, tier=result.tier, pccc_rule_reference=result.pccc_rule_reference,
+            pieces=result.pieces, tier=result.tier, skills=result.skills, targets_weak_skill=result.targets(ctx.weak_skills),
+            pccc_rule_reference=result.pccc_rule_reference,
             pedagogical_reason=result.pedagogical_reason), raw=raw, error="")
 
     def _finish(self, telemetry: TelemetryMessage, started: float, message: DirectiveMessage | ChallengeMessage,

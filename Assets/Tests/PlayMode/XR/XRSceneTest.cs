@@ -37,6 +37,8 @@ namespace EscapeFire.Tests.PlayMode.XR
             Application.targetFrameRate = 72;
             GameSession.Reset();
             GameSession.Begin(mode, "XRTEST");
+            ProgressionStore.KeyPrefix = "EF_test_progress_";
+            EscapeFire.Analytics.SkillStore.Clear(); // every test starts as a new learner (VL skill model)
             SessionResult.Reset();
             LmsSync.OutboxFolder = "lms_outbox_tests";
             ProgressionStore.KeyPrefix = "EF_test_progress_";

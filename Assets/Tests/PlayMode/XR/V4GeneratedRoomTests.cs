@@ -25,6 +25,8 @@ namespace EscapeFire.Tests.PlayMode.XR
             Application.targetFrameRate = 72;
             GameSession.Reset();
             GameSession.Begin(TrainingMode.Guided, "XRTEST");
+            ProgressionStore.KeyPrefix = "EF_test_progress_";
+            EscapeFire.Analytics.SkillStore.Clear();
             SessionResult.Reset();
             GeneratedScenario.Pending = spec;
             GeneratedScenario.Seed = seed;

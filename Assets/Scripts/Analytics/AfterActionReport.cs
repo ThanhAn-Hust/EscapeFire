@@ -41,6 +41,15 @@ namespace EscapeFire.Analytics
         public float WallFollowRatio;
         public bool RollCallPresent;
         public bool RollCallCorrect;
+        // ---- VL: evidence for the skill model / loophole fixes
+        /// <summary>Hoa exists in this scene (her rescue can be checked to the end).</summary>
+        public bool HoaTracked;
+        /// <summary>Hoa actually got out (not just picked up and left behind).</summary>
+        public bool HoaOut;
+        public bool LowPressureApplied;
+        public bool Fm200Started;
+        /// <summary>Highest the dragged victim's head went above the floor (m), -1 = no drag.</summary>
+        public float VictimMaxHeadHeight;
 
         public static SessionFacts Empty => new SessionFacts
         {
@@ -51,7 +60,8 @@ namespace EscapeFire.Analytics
             FirstSprayAt = -1f,
             PassBaseRatio = -1f,
             PassSweepRatio = -1f,
-            WallFollowRatio = -1f
+            WallFollowRatio = -1f,
+            VictimMaxHeadHeight = -1f
         };
     }
 
@@ -92,7 +102,10 @@ namespace EscapeFire.Analytics
             // Raise the alarm (R01): call point; with a radio in the scene the 114 call is part of it.
             bool alarm = f.AlarmRaisedAt >= 0f;
             int call = f.Call114Complete ? (f.Call114AskBacks == 0 ? 4 : 3) : 0;
-            int alarmPts = f.Call114Present ? (alarm ? 6 : 0) + call : (alarm ? 10 : 0);
+            // VL.2: lateness matters (R01 "báo ngay"): full within 30 s, 60 % within 90 s, 30 % after that
+            float alarmDelay = alarm ? Since(f.FireStartedAt, f.AlarmRaisedAt) : -1f;
+            float alarmFactor = !alarm ? 0f : alarmDelay <= ALARM_FAST_SECONDS ? 1f : alarmDelay <= 90f ? 0.6f : 0.3f;
+            int alarmPts = f.Call114Present ? (int)Math.Round(6 * alarmFactor) + call : (int)Math.Round(10 * alarmFactor);
             string alarmNote = alarm ? $"Báo động sau {Since(f.FireStartedAt, f.AlarmRaisedAt):F0}s kể từ khi cháy" : "Không kích hoạt báo động";
             if (f.Call114Present)
                 alarmNote += f.Call114Complete ? (f.Call114AskBacks == 0 ? "; gọi 114 đủ 4 ý" : $"; gọi 114 đủ ý sau {f.Call114AskBacks} lần bị hỏi lại") : "; chưa gọi 114 đủ địa chỉ, tầng, đám cháy, người mắc kẹt";
@@ -123,10 +136,12 @@ namespace EscapeFire.Analytics
 
             // Rescue (R09): Hoa supported out 8; unconscious victim dragged to the stairwell 4; panicking colleague kept
             // out of the lift 3. Elements absent from the scene count with Hoa.
-            int rescue = (f.NpcRescued ? 8 : 0)
+            // VL.2 loophole: picking Hoa up and leaving her behind used to earn the full 8 points.
+            int hoa = !f.NpcRescued ? 0 : (!f.HoaTracked || f.HoaOut) ? 8 : 3;
+            int rescue = hoa
                        + (f.VictimPresent ? (f.VictimSafe ? 4 : 0) : (f.NpcRescued ? 4 : 0))
                        + (f.PanicNpcPresent ? (f.PanicNpcStopped ? 3 : 0) : (f.NpcRescued ? 3 : 0));
-            var rescueNotes = new List<string> { f.NpcRescued ? "dìu Hoa ra khỏi vùng khói" : "chưa hỗ trợ Hoa" };
+            var rescueNotes = new List<string> { !f.NpcRescued ? "chưa hỗ trợ Hoa" : hoa == 8 ? "dìu Hoa ra khỏi vùng khói" : "đỡ Hoa dậy nhưng chưa đưa ra ngoài" };
             if (f.VictimPresent) rescueNotes.Add(f.VictimSafe ? "kéo nạn nhân bất tỉnh vào buồng thang (Rautek)" : "bỏ lại nạn nhân bất tỉnh ở hành lang");
             if (f.PanicNpcPresent) rescueNotes.Add(f.PanicNpcStopped ? "ngăn Minh đi thang máy" : "để Minh vào thang máy");
             items.Add(Item("rescue", "Cứu nạn", rescue, 15, Capitalize(string.Join(", ", rescueNotes))));

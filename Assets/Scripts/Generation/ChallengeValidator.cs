@@ -13,6 +13,7 @@ namespace EscapeFire.Generation
         public float DelaySeconds;
         public string Code;
         public int Tier;
+        public readonly List<string> Skills = new List<string>();
 
         public string Option(string name) => Options.TryGetValue(name, out var v) ? v : "";
         public float Number(string name, float fallback = 0f) => Numbers.TryGetValue(name, out var v) ? v : fallback;
@@ -24,6 +25,8 @@ namespace EscapeFire.Generation
         public float Cf;
         public List<string> Prior = new List<string>();
         public List<string> BlockedRoutes = new List<string>();
+        /// <summary>VL.3: the learner's weakest skills (preference, never a rejection reason).</summary>
+        public List<string> WeakSkills = new List<string>();
     }
 
     public sealed class ChallengeCheck
@@ -36,6 +39,8 @@ namespace EscapeFire.Generation
         public string Reason = "";
         public string Error => Errors.Count > 0 ? Errors[0] : "";
         public IEnumerable<string> Codes => Pieces.Select(p => p.Code);
+        public List<string> Skills => Pieces.SelectMany(p => p.Skills).Distinct().ToList();
+        public bool Targets(IEnumerable<string> weak) => weak != null && Skills.Intersect(weak).Any();
     }
 
     /// <summary>
@@ -108,6 +113,7 @@ namespace EscapeFire.Generation
                 piece.DelaySeconds = delay;
                 piece.Code = CodeOf(piece, (JObject)spec2);
                 piece.Tier = TierOf(piece, (JObject)spec2);
+                piece.Skills.AddRange(SkillsOf(piece, (JObject)spec2));
                 clean.Add(piece);
             }
             if (r.Errors.Count > 0) return r;
@@ -159,6 +165,18 @@ namespace EscapeFire.Generation
                 if (prop.Value["options"] != null) return $"{p.Kind}:{p.Option(prop.Name)}";
             return p.Kind;
         }
+
+        private static IEnumerable<string> SkillsOf(ChallengePiece p, JObject spec)
+        {
+            if (spec["option_skills"] is JObject bySkill)
+                foreach (var prop in bySkill.Properties())
+                    if (prop.Value[p.Option(prop.Name)] is JArray s) return s.Values<string>();
+            return spec["skills"] is JArray list ? list.Values<string>() : Enumerable.Empty<string>();
+        }
+
+        /// <summary>Skills an enum directive trains (catalog "directive_skills"), for the local governor's choice.</summary>
+        public static List<string> DirectiveSkills(string code) =>
+            V4Catalog.Challenge["directive_skills"]?[code] is JArray s ? s.Values<string>().ToList() : new List<string>();
 
         private static int TierOf(ChallengePiece p, JObject spec)
         {

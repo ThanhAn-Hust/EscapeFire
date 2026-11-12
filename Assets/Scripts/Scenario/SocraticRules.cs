@@ -80,6 +80,45 @@ namespace EscapeFire.Scenario
             return fired;
         }
 
+        /// <summary>The PCCC skill a coaching situation is about (for hint fading by mastery).</summary>
+        public static string SkillOf(SocraticTrigger trigger)
+        {
+            switch (trigger)
+            {
+                case SocraticTrigger.WaterNearLivePanel: return "R03_RIGHT_AGENT";
+                case SocraticTrigger.StandingInSmoke: return "R07_STAY_LOW";
+                case SocraticTrigger.HotHandleUnchecked: return "R08_DOOR_BACK_OF_HAND";
+                case SocraticTrigger.AlarmNotRaised: return "R01_ALARM_EARLY";
+                default: return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// VL.5 (desirable difficulty: retrieval before telling): the first time a situation comes up the mentor only
+        /// asks a question; the instruction (<see cref="LineFor"/>) comes if it happens again. A learner who has
+        /// mastered the skill only ever gets the question.
+        /// </summary>
+        public static string QuestionFor(SocraticTrigger trigger)
+        {
+            switch (trigger)
+            {
+                case SocraticTrigger.WaterNearLivePanel:
+                    return "Dừng một chút: bình bạn đang cầm có dùng được cho thiết bị còn điện không?";
+                case SocraticTrigger.StandingInSmoke:
+                    return "Khói đang ở ngang đầu bạn. Tư thế của bạn lúc này đã đúng chưa?";
+                case SocraticTrigger.HotHandleUnchecked:
+                    return "Trước khi mở cánh cửa này, bạn cần kiểm tra điều gì?";
+                case SocraticTrigger.AlarmNotRaised:
+                    return "Lửa đã cháy được một lúc. Những người ở phòng bên cạnh đã biết chưa?";
+                default:
+                    return string.Empty;
+            }
+        }
+
+        /// <summary>Which line to say: question first, instruction on repeats, question only once mastered.</summary>
+        public static string LineFor(SocraticTrigger trigger, int timesBefore, bool mastered) =>
+            mastered || timesBefore == 0 ? QuestionFor(trigger) : LineFor(trigger);
+
         public static string LineFor(SocraticTrigger trigger)
         {
             switch (trigger)

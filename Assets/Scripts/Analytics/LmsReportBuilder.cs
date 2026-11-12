@@ -8,7 +8,7 @@ namespace EscapeFire.Analytics
     {
         public static string Build(string sessionId, string studentId, string mode, in SessionFacts facts,
             List<ScorecardItem> scorecard, SkillRadar radar, string debrief, IReadOnlyList<string> complianceLog,
-            int adaptiveEscalations)
+            int adaptiveEscalations, List<SkillObservation> skillObservations = null, SkillModel skills = null)
         {
             var items = new List<Dictionary<string, object>>(scorecard.Count);
             foreach (var it in scorecard)
@@ -41,6 +41,9 @@ namespace EscapeFire.Analytics
                 },
                 { "facts", facts },
                 { "adaptive_escalations", adaptiveEscalations },
+                { "skill_observations", skillObservations ?? new List<SkillObservation>() },
+                { "skill_mastery", skills != null ? skills.Skills : new Dictionary<string, SkillState>() },
+                { "skill_session", skills != null ? skills.Session : 0 },
                 { "debrief", debrief },
                 { "compliance_log", complianceLog }
             };

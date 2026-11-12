@@ -278,6 +278,10 @@ namespace EscapeFire.Tests.PlayMode.XR
             Debug.Log($"[FullDrill] hoa at {hoa.transform.position} active={hoa.gameObject.activeInHierarchy} supported={grip.IsSupported} rescued={hoa.IsRescued}");
             int total = SessionResult.Scorecard.Count > 0 ? AfterActionReport.Total(SessionResult.Scorecard) : -1;
             foreach (var it in SessionResult.Scorecard) Debug.Log($"[FullDrill] {it.Key} {it.Points}/{it.MaxPoints} {it.Note}");
+            // VL.1: the drill becomes evidence per PCCC skill, folded into the learner's skill model
+            foreach (var o in SessionResult.SkillObservations) Debug.Log($"[FullDrill] skill {o.Skill} {(o.Correct ? "ok" : "NOT")} ({o.Why}) -> {SessionResult.SkillMastery[o.Skill]:F2}");
+            Assert.GreaterOrEqual(SessionResult.SkillObservations.Count, 8, "the drill tested most PCCC skills");
+            Assert.IsTrue(SessionResult.SkillObservations.TrueForAll(o => o.Correct), "a correct drill shows every tested skill");
             Debug.Log($"[FullDrill] passed={SessionResult.Passed} score={total} handrail={Handrail.SecondsTouched:F1}s");
         }
 

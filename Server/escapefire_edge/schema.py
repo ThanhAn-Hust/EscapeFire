@@ -79,6 +79,7 @@ class TelemetryMessage(BaseModel):
     accepted_challenges: int | None = Field(default=None, ge=0)  # actually applied on the headset (drives the tier)
     prior_pieces: list[str] = Field(default_factory=list)    # composer piece codes already applied (V4)
     blocked_routes: list[str] = Field(default_factory=list)  # stairwells already blocked (V4)
+    weak_skills: list[str] = Field(default_factory=list)     # VL.3: learner's weakest PCCC skills (rule ids)
 
     @property
     def challenges_given(self) -> int:
@@ -101,6 +102,8 @@ class ChallengeMessage(BaseModel):
     type: Literal["challenge"] = "challenge"
     pieces: list[dict] = Field(default_factory=list)
     tier: int = 0
+    skills: list[str] = Field(default_factory=list)  # VL.3: skills the pieces train
+    targets_weak_skill: bool = False                 # VL.3: at least one is a weak skill of this learner
     pccc_rule_reference: str = ""
     pedagogical_reason: str = ""
     source: Literal["llm"] = "llm"

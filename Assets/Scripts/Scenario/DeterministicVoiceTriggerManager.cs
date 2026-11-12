@@ -21,6 +21,8 @@ namespace EscapeFire.Scenario
         [SerializeField] private VRHeightDetector heightDetector;
 
         private readonly SocraticRules _rules = new SocraticRules();
+        private readonly System.Collections.Generic.Dictionary<SocraticTrigger, int> _said = new System.Collections.Generic.Dictionary<SocraticTrigger, int>();
+        private EscapeFire.Analytics.SkillModel _skills;
         private ExtinguisherXRBinding[] _extinguishers;
         private FireAlarmButton[] _alarms;
         private float _fireBurnSeconds;
@@ -36,6 +38,21 @@ namespace EscapeFire.Scenario
             if (heightDetector == null) heightDetector = FindFirstObjectByType<VRHeightDetector>();
             _extinguishers = FindObjectsByType<ExtinguisherXRBinding>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             _alarms = FindObjectsByType<FireAlarmButton>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            _skills = EscapeFire.Analytics.SkillStore.Load();
+            if (GameSession.Mode == TrainingMode.Guided) StartCoroutine(RemindWeakSkills());
+        }
+
+        /// <summary>VL.5: open the drill by recalling what went wrong last time (spaced repetition of weak skills).</summary>
+        private System.Collections.IEnumerator RemindWeakSkills()
+        {
+            if (_skills.Session == 0) yield break;
+            var weak = _skills.WeakSkills(EscapeFire.Analytics.SkillEvidence.AllSkills, 2);
+            weak.RemoveAll(k => !_skills.Skills.ContainsKey(k)); // only skills we have evidence for
+            if (weak.Count == 0) yield break;
+            yield return new WaitForSeconds(2f);
+            var titles = weak.ConvertAll(k => EscapeFire.Analytics.PcccRuleBook.Get(k)?.Title ?? k);
+            var controller = LabProgressiveScenarioController.Instance;
+            if (controller != null) controller.SetAIMentorGuidance("Buổi trước bạn còn chưa vững: " + string.Join("; ", titles) + ". Lần này hãy nhớ lại và làm đúng.");
         }
 
         private void Update()
@@ -76,9 +93,12 @@ namespace EscapeFire.Scenario
             else if ((fired & SocraticTrigger.AlarmNotRaised) != 0) Say(controller, SocraticTrigger.AlarmNotRaised);
         }
 
-        private static void Say(LabProgressiveScenarioController controller, SocraticTrigger trigger)
+        private void Say(LabProgressiveScenarioController controller, SocraticTrigger trigger)
         {
-            controller.SetAIMentorGuidance(SocraticRules.LineFor(trigger));
+            _said.TryGetValue(trigger, out int before);
+            _said[trigger] = before + 1;
+            bool mastered = _skills != null && _skills.IsMastered(SocraticRules.SkillOf(trigger));
+            controller.SetAIMentorGuidance(SocraticRules.LineFor(trigger, before, mastered));
         }
 
         private bool IsHoldingConductiveAgent()

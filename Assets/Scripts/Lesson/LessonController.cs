@@ -16,6 +16,8 @@ namespace EscapeFire.Lesson
         [SerializeField] private GameObject continueButton;
 
         public LessonStation[] Stations => stations;
+        private readonly System.Collections.Generic.HashSet<LessonStation> _recorded = new System.Collections.Generic.HashSet<LessonStation>();
+        private bool _sessionStarted;
         public bool AllDone { get; private set; }
 
         public void Configure(LessonStation[] s, TMP_Text board, GameObject next) { stations = s; progressBoard = board; continueButton = next; }
@@ -32,7 +34,13 @@ namespace EscapeFire.Lesson
             foreach (var s in stations)
             {
                 if (s == null) continue;
-                if (s.IsComplete) { done++; s.IsActive = false; continue; }
+                if (s.IsComplete)
+                {
+                    done++;
+                    s.IsActive = false;
+                    if (_recorded.Add(s)) RecordEvidence(s);
+                    continue;
+                }
                 s.IsActive = !activeSet;
                 activeSet = true;
             }
@@ -48,6 +56,19 @@ namespace EscapeFire.Lesson
                     ? "<b>HOÀN THÀNH BÀI GIẢNG</b>\nẤn nút bên dưới để sang <b>Thực hành có hướng dẫn</b> trong phòng Lab."
                     : $"<b>BÀI GIẢNG PCCC</b> — đã xong {done}/{stations.Length} trạm\nĐi lần lượt theo các trạm có đèn vàng.";
             }
+        }
+
+        /// <summary>
+        /// VL.1: a finished station is evidence for its rule — right on the first answer = correct (multiple choice,
+        /// so the guess rate is 1/options), the hands-on practice was done either way.
+        /// </summary>
+        private void RecordEvidence(LessonStation s)
+        {
+            if (string.IsNullOrEmpty(s.RuleId)) return;
+            var model = EscapeFire.Analytics.SkillStore.Load();
+            if (!_sessionStarted) { model.BeginSession(); _sessionStarted = true; }
+            model.Observe(s.RuleId, s.WrongAnswers == 0, 1f / System.Math.Max(2, s.OptionCount));
+            EscapeFire.Analytics.SkillStore.Save(model);
         }
 
         /// <summary>Continue button: go to the guided drill.</summary>

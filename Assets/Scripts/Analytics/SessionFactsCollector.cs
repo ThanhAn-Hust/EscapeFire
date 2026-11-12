@@ -29,6 +29,7 @@ namespace EscapeFire.Analytics
         private float _startTime;
         private float _sampleTimer;
         private bool _emergency;
+        private SmokeZone[] _zones;
 
         public IReadOnlyList<Vector3> Positions => _positions;
         public IReadOnlyList<bool> StandingInSmokeFlags => _inSmokeStanding;
@@ -88,9 +89,16 @@ namespace EscapeFire.Analytics
         {
             if (head == null) return;
 
-            bool standingInSmoke = _emergency && smoke != null &&
-                                   BreathingRules.IsBreathingSmoke(head.position.y, smoke.CurrentSmokeHeight,
-                                       heightDetector != null && heightDetector.IsCrouching);
+            bool crouching = heightDetector != null && heightDetector.IsCrouching;
+            bool standingInSmoke = _emergency && smoke != null && smoke.ContainsXZ(head.position) && head.position.y > -0.5f &&
+                                   BreathingRules.IsBreathingSmoke(head.position.y, smoke.CurrentSmokeHeight, crouching);
+            // VL.2: the corridor and stairwells have their own smoke (V2): standing up in it counts too
+            if (_emergency && !standingInSmoke && !crouching)
+            {
+                if (_zones == null) _zones = FindObjectsByType<SmokeZone>(FindObjectsSortMode.None);
+                foreach (var z in _zones)
+                    if (z != null && z.Thickness > 0.3f && z.Space.Contains(head.position) && head.position.y > z.LayerBottom) { standingInSmoke = true; break; }
+            }
             if (standingInSmoke) _facts.StandingInSmokeSeconds += Time.deltaTime;
 
             _sampleTimer += Time.deltaTime;
@@ -144,6 +152,21 @@ namespace EscapeFire.Analytics
             var ap = EscapeFire.Scenario.AssemblyPoint.Instance;
             f.RollCallPresent = ap != null && ap.Arrived;
             f.RollCallCorrect = ap != null && ap.AnswerCorrect;
+
+            // VL evidence
+            foreach (var n in FindObjectsByType<EscapeFire.NPC.NPCSimulator>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (n.Role != EscapeFire.NPC.NPCRole.HoaFaint) continue;
+                f.HoaTracked = true;
+                f.HoaOut = n.IsRescued && !n.gameObject.activeInHierarchy; // she left through the exit
+            }
+            foreach (var e in FindObjectsByType<EscapeFire.Interactions.FireExtinguisher>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (e.HasLowPressure) f.LowPressureApplied = true;
+            var fm = EscapeFire.Hazards.FM200System.Instance;
+            f.Fm200Started = fm != null && (fm.IsCountdownActive || fm.HasDischarged);
+            f.VictimMaxHeadHeight = -1f;
+            foreach (var v in victims)
+                if (v.DragDistance > 0.1f) f.VictimMaxHeadHeight = Mathf.Max(f.VictimMaxHeadHeight, v.MaxHeadHeight);
         }
 
         private void OnPhase(PhaseChangedEvent e)
