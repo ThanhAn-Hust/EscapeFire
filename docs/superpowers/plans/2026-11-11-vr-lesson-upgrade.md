@@ -34,7 +34,8 @@ Mục lục:
 | GVHD [00:47] | "từ dễ đến khó… bài giảng trước, sau đó thực hành" | Bài giảng tương tác → Thực hành có hướng dẫn → Sát hạch → AAR | V1 |
 | GVHD [03:05] | "thao tác cơ bản, chưa có gì mới" | Thao tác thật bằng tay (Phần B), kỹ thuật đo động tác (PASS sweep, kéo Rautek…) | V0, V3 |
 | GVHD [03:50, 07:08] | "prompt… sinh lớp học, môi trường học, object filler" | Prompt → ScenarioSpec → sinh cảnh có validator an toàn | V4 |
-| GVHD [06:28, 12:09] | "chiều sâu… mô-đun hoá… người khác dùng được" | Gói UPM độc lập + API + sample | V5 |
+| GVHD [06:28, 12:09] | "chiều sâu… mô-đun hoá… người khác dùng được" | **Bỏ** theo quyết định người dùng 12/11: không tách gói; ưu tiên game chạy ngon. Mã vẫn giữ thiết kế lỏng (EventBus, validator thuần logic) trong một assembly | — |
+| Người dùng 12/11 | "đừng mô-đun hoá, quan trọng là game chạy ngon" | V5 đổi thành **game chạy ngon**: chơi trọn luồng không kẹt, sửa lỗi đã biết, ổn định, hiệu năng Quest 2, thoải mái VR | V5 |
 | GVHD [09:07, 10:16] | "wow factor", "show trong 15 phút" | Hình ảnh, âm thanh, hiệu năng, kịch bản trình diễn | V6 |
 | Người dùng 11/11 | demo không phải VR thật | Test/video chỉ đi qua input XR giả lập | V0 |
 | Người dùng 11/11 | chưa có cầu thang | Tòa nhà nhiều tầng, cầu thang bộ, thang máy mồi bẫy | V2 |
@@ -434,15 +435,19 @@ trong học tập (Csikszentmihalyi; các nghiên cứu GVHD nhắc là flow có
 **Không làm (ghi lý do để trả lời hội đồng):** imitation learning cho NPC — cần dữ liệu hành vi người thật trong đám cháy,
 không có trong phạm vi đồ án; NPC có "tâm lý" bằng LLM (Minh hoảng loạn trò chuyện thật) để V6, tuỳ chọn.
 
-### V5 — Mô-đun hoá
+### V5 — Game chạy ngon (thay cho "Mô-đun hoá", quyết định người dùng 12/11)
 
-| Phase | Việc | Xong khi |
-| :-: | :--- | :--- |
-| V5.1 | Vẽ sơ đồ phụ thuộc, cắt vòng phụ thuộc | không còn asmdef vòng |
-| V5.2 | Gói `com.escapefire.pccc-interactions` (Phần B: bình, chốt, loa, Aptomat, cửa, báo cháy, khăn, lan can, nạn nhân) | sample scene chạy trong project trống |
-| V5.3 | Gói `com.escapefire.adaptive-director` + `com.escapefire.aar` | sample + test riêng |
-| V5.4 | Gói `com.escapefire.scenario-gen` + edge server Python package | sample prompt → cảnh |
-| V5.5 | README, API docs, hướng dẫn tích hợp cho nhóm (thêm bằng git URL) | project Unity trống thêm từng gói chạy được |
+**Mục tiêu:** một người cầm kính vào là chơi trọn từ menu tới AAR, không kẹt, không lỗi, không giật, không say.
+Mô-đun hoá đã thử ngày 12/11 rồi hoàn tác (không commit): không đáng rủi ro so với lợi ích cho đồ án.
+
+| Phase | Việc | File chính | Xong khi |
+| :-: | :--- | :--- | :--- |
+| V5.1 | **Chơi trọn luồng**: Menu → Bài giảng → Có hướng dẫn (Lab + tòa nhà) → Sát hạch → AAR → Thử lại / Về menu, và Menu → phòng sinh (V4). Thêm nút chọn phòng sinh vào menu; mọi màn đều có đường ra | `MainMenuController`, `AARController`, `SceneFlow`, menu builder | 1 test PlayMode đi hết luồng chỉ bằng input VR, qua cả chuyển scene; không màn nào bị kẹt |
+| V5.2 | **Sửa lỗi đã biết**: HUD cổ tay chồng chữ; khói hành lang bài giảng là khối tối; Hoa / Minh biến mất rồi "hiện" ở điểm tập kết (cho đi theo xuống cầu thang hoặc giải thích rõ); kiểm tra lại độ tối khi mất điện hành lang; giá sách trống trong phòng sinh; ảnh chặn Minh lệch khung | `VRWristHUD`, `LessonRoomBuilder`, `NPCSimulator`, `PanicRunner`, `ScenarioBuilder` | mỗi lỗi có ảnh trước/sau hoặc test |
+| V5.3 | **Ổn định**: Console sạch lỗi / cảnh báo trong cả luồng; chơi 3 ván liên tiếp không rò sự kiện (EventBus) hay vật thể; tải lại scene không nhân đôi hook / singleton; server LLM tắt giữa chừng vẫn chơi được (fallback) | toàn bộ | test "3 ván liên tiếp" + log Console = 0 lỗi |
+| V5.4 | **Hiệu năng Quest 2** (chuyển từ V6.3): ≥ 72 FPS, < 5 % khung hình vượt 13,8 ms; giảm đèn điểm trong tòa nhà (đèn thang, ExitGlow), tắt bóng thừa, static batching, gộp vật liệu, ngân sách particle lửa/khói, culling giữa tầng | `QuestPerformanceSettings`, `BuildingBuilder`, `FrameTimeMonitor` | số liệu khung hình trên luồng chơi (Editor cấu hình Quest; kính khi có) |
+| V5.5 | **Thoải mái VR**: vignette khi di chuyển, snap turn, đi cầu thang không giật, hiệu chỉnh chiều cao đầu buổi, chế độ ngồi (tuỳ chọn) | rig, `PostureLocomotion`, `VRHeightDetector` | checklist thoải mái; test hiệu chỉnh chiều cao |
+| V5.6 | **Build APK + checklist cài lên kính** (khi kính sửa xong): build Android, cấu hình OpenXR Meta, kết nối server LAN | build settings, `Server/README.md` | APK build không lỗi; checklist cài đặt |
 
 ### V6 — Wow factor, hiệu năng, trình diễn
 
@@ -450,8 +455,8 @@ không có trong phạm vi đồ án; NPC có "tâm lý" bằng LLM (Minh hoản
 | :-: | :--- | :--- |
 | V6.1 | Hình ảnh: lửa/khói đúng quy mô, đèn sự cố xoay, phản chiếu, tay XR Hands, hiệu ứng thiếu oxy | bộ ảnh trước/sau |
 | V6.2 | Âm thanh không gian: lửa, còi, xả CO2, cửa, ho, bộ đàm | checklist âm thanh |
-| V6.3 | Hiệu năng Quest 2: ≥ 72 FPS, < 5 % frame vượt 13,8 ms; LOD, gộp vật liệu, occlusion, ngân sách particle | số liệu `FrameTimeMonitor` (Editor; kính khi có) |
-| V6.4 | Kịch bản bảo vệ 15 phút: 1' vấn đề, 3' bài giảng, 5' Sát hạch với AI, 2' prompt sinh cảnh trực tiếp, 2' AAR, 2' mô-đun + số liệu | `docs/defense_demo_script.md`, tập thử đúng giờ |
+| V6.3 | (đã chuyển sang V5.4 — hiệu năng là điều kiện "game chạy ngon") | — |
+| V6.4 | Kịch bản bảo vệ 15 phút: 1' vấn đề, 3' bài giảng, 5' Sát hạch với AI, 2' prompt sinh cảnh trực tiếp, 2' AAR, 2' số liệu học tập (VL: kỹ năng, ghi nhớ, chuyển giao) | `docs/defense_demo_script.md`, tập thử đúng giờ |
 | V6.5 | Video 3–5 phút + ảnh quay bằng `XRInputDriver`, tay ảo hiện rõ | video + timeline |
 | V6.6 | Pilot 5–10 sinh viên (Guided vs Exam vs Exam+LLM) nếu có kính | dữ liệu `TelemetryReports` |
 | V6.7 | Checklist kính thật: từng thao tác B.1, cảm giác, say VR, FPS | biên bản thử |
@@ -521,7 +526,7 @@ Yêu cầu cứng:
 | V3 | ✅ xong (2026-11-12) | xem `git log` "feat(rescue): V3" | Dựng bằng `EscapeFire > V3 > Build Rescue Scenario`. Bồn rửa + vòi vặn ¼ vòng (`WaterTap`) + khăn (`WetTowel`: ướt sau ~2 s dưới nước, che mũi miệng ≤ 10 cm → oxy giảm còn 30%); bộ đàm (`Radio`: cầm sát miệng ≤ 15 cm + giữ nút nói) → trực ban 114 (`Call114Dialogue`/`Call114Checker`: đủ 4 ý địa chỉ, tầng, đám cháy, người mắc kẹt; thiếu thì hỏi lại; không phân biệt dấu); nạn nhân bất tỉnh Nam (`VictimBody`: Rautek bắt buộc 2 tay dưới nách, kéo lê kiểu rơ-moóc, đầu cao theo tay, tuột tay nếu đi nhanh, an toàn khi vào buồng thang A, giữ cửa chống cháy mở khi đang kéo qua); Minh hoảng loạn ở thang máy (`PanicRunner`: nắm vai trước khi cửa mở → đi thang bộ, không thì kẹt thang máy); điểm tập kết (`AssemblyPoint`: đội trưởng hỏi, ấn bảng báo cáo, đáp án theo diễn biến thật); lần tường/lan can (`WallFollowTracker`). Thang điểm 7 mục (thêm Cứu nạn, Thoát nạn; báo động gồm 114). Vùng teleport chỉ nhận tia teleport (trước đây nắm gần sàn sẽ "nắm" luôn sàn). Test giới hạn 72 fps (batchmode quá nhanh làm bước đi khi khom nhỏ hơn `minMoveDistance`). Cả ván chỉ bằng input VR: 100/100. Còn: kéo nạn nhân xuống cầu thang nhiều tầng, kéo bằng chăn, nhận giọng nói thật (STT đang giả lập trong test), Hoa/Minh chỉ "hiện" ở điểm tập kết chứ không đi theo xuống, ảnh chặn Minh hơi lệch khung (V6) |
 | V4 | 🟡 phần code xong (2026-11-12), còn số liệu LLM thật | xem `git log` "feat(generation): V4" | Danh mục dùng chung `V4Catalog.json` (server + kính, test kiểm khớp). **Challenge Composer**: 7 mảnh có tham số (khói, tắt đèn theo vùng, hỏng thiết bị, điểm cháy, chặn buồng thang, hành vi NPC, FM-200 + hẹn giờ), Gemma sinh `ChallengeSpec`; validator tầng 1 (`challenge.py`) và tầng 1 lặp lại trên kính (`ChallengeValidator.cs`) **cùng mã lỗi, cùng 19 ca dùng chung** (`Server/tests/fixtures/`); tầng 2 cảnh thật (`ChallengeRunner.cs`: tuyến/vùng/thiết bị tồn tại, luôn còn một buồng thang, không chặn buồng thang người học đang đứng, ngân sách FPS). 3 chế độ đạo diễn `--director-mode rules|enum|composer` (enum giữ làm baseline/fallback). **Prompt → phòng**: `POST /scenario/generate` (Gemma + 1 lần sửa theo lỗi validator + mẫu dự phòng), `ScenarioValidator.cs` cùng 13 ca dùng chung, `LayoutSolver` (lưới 0,25 m, chừa lối 1,5 m trước cửa, kiểm tra đường tới lối ra cho lửa/bình/NPC/điểm xuất phát và ≥ 90 % sàn — thay NavMesh), `ScenarioBuilder` + scene `03_Generated`, thư viện 21 nhóm / 62 prefab PolygonOffice, bình và lửa thật lấy từ Lab. Test: 5 phòng mẫu dựng được + ảnh; thư viện cháy lớp A dập bằng bình nước rồi ra EXIT, phòng máy xịt nước vào cháy điện → trượt (đều chỉ qua input VR); buồng thang A bị chặn → người học đi thang B xuống điểm tập kết. Công cụ `Server/bench/` (ablation 3 chế độ, benchmark 20 prompt). **Còn**: chạy 2 benchmark với Gemma thật (cần bật Ollama), so Gemma 4B và 12B, nút chọn phòng trong menu chính, prompt bằng giọng nói, 5 phòng mẫu hiện là mẫu viết tay/mẫu dự phòng, chưa phải đầu ra Gemma, hiệu lực chất chữa cháy theo lớp chỉ có: nước vào điện = trượt, CO2 vào lớp A = cháy lại 1 lần |
 | VL | 🟡 phần code xong (2026-11-12); còn việc của người dùng: gặp nhóm game design, GVHD duyệt giao thức, chạy pilot | xem `git log` "feat(learning): VL" | **VL.1** `SkillEvidence` (mỗi buổi → đạt/chưa theo R01–R12, chỉ khi buổi đó có cơ hội thể hiện), `SkillModel` (BKT, tham số mặc định = giả định cần hiệu chỉnh), `SkillStore` theo học viên; nguồn bằng chứng: diễn tập, trạm bài giảng, phòng sinh (R03). **VL.2** `docs/vl_scoring_loopholes.md`: vá 4 lỗ (báo động muộn vẫn đủ điểm, nói "địa chỉ" thay cho địa chỉ, đỡ Hoa rồi bỏ lại, đứng thẳng trong khói hành lang/buồng thang không bị tính); AAR hiện ĐẠT/CHƯA + mức thành thạo từng kỹ năng; LMS có `skill_observations`, `skill_mastery`. **VL.3** mỗi mảnh/directive ghi kỹ năng nó luyện (catalog `skills`, `option_skills`, `directive_skills`); telemetry gửi `weak_skills`; composer ưu tiên kỹ năng yếu và báo `targets_weak_skill`; đạo diễn cục bộ ưu tiên directive luyện kỹ năng yếu; **CF giữ nguyên** (quyết định *khi nào / mức nào*); ablation có cột "nhắm đúng kỹ năng yếu". **VL.4** 12 câu trắc nghiệm trong `PcccRules.json`, `Server/bench/make_quiz.py` → `docs/vl_quiz_forms.md` (3 đề trước/sau/1 tuần), `Server/bench/learning_report.py` → CSV, `docs/evaluation_protocol.md`. **VL.5** Mentor hỏi trước rồi mới chỉ, kỹ năng đã vững chỉ được hỏi; đầu buổi có hướng dẫn nhắc kỹ năng còn yếu buổi trước. **VL.6** `docs/vl_game_design_meeting.md` (câu hỏi + chỗ ghi kết quả). **Còn**: buổi gặp nhóm game design, GVHD duyệt giao thức, pilot với người thật, hiệu chỉnh tham số BKT bằng dữ liệu pilot, trạm trắc nghiệm trong VR (hiện dùng đề giấy / form), số liệu ablation với Gemma thật |
-| V5 | ⏳ | | |
+| V5 | ⏳ đổi nội dung 12/11: **game chạy ngon** (bỏ mô-đun hoá theo quyết định người dùng; bản thử tách gói đã hoàn tác, không commit) | | Bắt đầu từ V5.1 (chơi trọn luồng) |
 | V6 | ⏳ | | |
 
 Lệnh hay dùng: `bash Tools/verify.sh --unity` (toàn bộ), `bash Tools/run_playmode.sh "<filter>" <log>` (chạy chọn lọc, có GPU, ảnh ở `Logs/Demo/<giờ>_xr`).
