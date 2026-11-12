@@ -5,6 +5,7 @@
 
 **Đầu vào:**
 - góp ý GVHD 08/10 ([transcript](../../Feedback_8.10_Transcript.md));
+- góp ý GVHD 12/11 ([transcript](../../Feedback_12_11_26_Transcript.md)) → mốc **VL** (học thật), làm trước V5;
 - góp ý người dùng sau demo 11/11;
 - tài liệu tham khảo (Phần E);
 - code hiện tại.
@@ -19,7 +20,7 @@ Mục lục:
 - A. Góp ý → yêu cầu
 - B. Đặc tả thao tác "như đời thực"
 - C. Kiểm chứng không cần kính
-- D. Lộ trình V0 → V6 (từng phase)
+- D. Lộ trình V0 → V6 (từng phase), thêm mốc VL giữa V4 và V5
 - E. Nguồn
 - F. Quy tắc làm việc và prompt giao việc
 
@@ -38,6 +39,12 @@ Mục lục:
 | Người dùng 11/11 | demo không phải VR thật | Test/video chỉ đi qua input XR giả lập | V0 |
 | Người dùng 11/11 | chưa có cầu thang | Tòa nhà nhiều tầng, cầu thang bộ, thang máy mồi bẫy | V2 |
 | Người dùng 11/11 | cứu NPC chưa chuẩn | Dìu (tỉnh) / kéo Rautek (bất tỉnh), giữ đầu thấp | V3 |
+| GVHD 12/11 [02:31–03:07, 08:21–08:52] | "không ai dám nói làm game khó hơn hay dễ đi thì hay hơn… phù hợp rất khó biết"; flow cũng có nghiên cứu cho là có hại | **Giữ** chỉnh độ khó theo CF (quyết định của người dùng 12/11); bổ sung để AI phục vụ **việc học**: CF quyết định *khi nào / nặng tới đâu*, mô hình kỹ năng quyết định *luyện kỹ năng nào*; báo cáo không lấy "độ khó phù hợp" làm bằng chứng học | VL.3 |
+| GVHD 12/11 [03:20–03:41, 09:03–09:45] | "điểm số chỉ là công cụ… rốt cuộc còn bao nhiêu thứ đọng lại"; lớp vui, đánh giá cao nhưng kiến thức không còn | Đo **ghi nhớ và chuyển giao** (trước/sau, sau 1 tuần, phòng chưa gặp), không lấy điểm 100 làm bằng chứng | VL.4 |
+| GVHD 12/11 [06:30–06:44] | AI tối ưu phần thưởng chứ không tối ưu hành vi; phần thưởng sai → hành vi sai | Bảng điểm là "phần thưởng": rà xem có thể "lách điểm" mà không biết làm không; chấm theo bằng chứng hành vi từng kỹ năng | VL.1, VL.4 |
+| GVHD 12/11 [10:48–11:03] | đưa kiến thức còn hổng vào "dồn dập… thêm dần dần, thỉnh thoảng nhắc lại"; biết kiến thức nào đang hổng chứ không phải xem độ khó | Mô hình kỹ năng R01–R12 theo từng người; đạo diễn **nhắm vào kỹ năng yếu**; luyện giãn cách, xen kẽ | VL.1–VL.3, VL.5 |
+| GVHD 12/11 [12:05–15:52] (bản ghi nhiễu, hiểu ~60%) | AI còn dùng được: xác định người học đang học gì; imitation learning / mô phỏng để NPC cư xử giống người | Ưu tiên AI cho chẩn đoán kỹ năng (VL); NPC có "tâm lý" bằng LLM để sau (V6, tuỳ chọn); imitation learning ngoài phạm vi (thiếu dữ liệu người thật) | VL, V6 |
+| GVHD 12/11 [00:51–02:14, 08:10–08:21] | gặp nhóm game design (2 bạn) qua online, 15–30 phút | Chuẩn bị câu hỏi, ghi kết quả vào kế hoạch | VL.6 |
 | Người dùng 11/11 | thao tác phải chính xác như ngoài đời | Phần B | mọi mốc |
 
 ---
@@ -395,9 +402,37 @@ Mỗi phase:
 | V4.5b | Validator 2 tầng cho `ChallengeSpec`, **dùng chung schema, catalog và validator với Prompt → ScenarioSpec**: tầng 1 (server) whitelist mảnh + tham số trong giới hạn + tiến độ theo bậc + không dồn thử thách khi CF cao; tầng 2 (kính) luôn còn lối thoát (NavMesh), ngân sách FPS. Spec bị chặn → rơi về bản enum | `challenge_validator.py`, `ChallengeValidator.cs` | test mỗi luật chặn có ca âm/dương |
 | V4.5c | Giữ **AI Director enum hiện tại làm fallback / baseline** (cờ cấu hình chọn chế độ: luật cứng / enum / composer) | `director.py`, `MicroAIGovernor.cs` | test chuyển chế độ + fallback khi LLM lỗi/timeout |
 | V4.6 | Đánh giá cho báo cáo: tỉ lệ hợp lệ, thời gian sinh, đa dạng, % qua validator; Gemma 4B vs 12B | `Server/bench/scenario_benchmark.py` | bảng số liệu trong `docs/` |
-| V4.7 | **Ablation AI Director** — 3 phiên bản: (1) bộ luật cứng if-else, (2) Gemma chọn enum (hiện tại), (3) Gemma ghép mảnh. Chỉ số: độ đa dạng tình huống (số tổ hợp khác nhau / entropy trên N phiên mô phỏng), tỉ lệ hợp lệ qua validator, độ trễ, và khi có pilot: điểm + CF người học. Là số liệu chứng minh đóng góp của LLM cho luận văn | `Server/bench/director_ablation.py` | bảng + biểu đồ trong `docs/`, chạy với Ollama thật khi người dùng bật |
+| V4.7 | **Ablation AI Director** — 3 phiên bản: (1) bộ luật cứng if-else, (2) Gemma chọn enum (hiện tại), (3) Gemma ghép mảnh. Chỉ số kỹ thuật: độ đa dạng tình huống (số tổ hợp khác nhau / entropy trên N phiên mô phỏng), tỉ lệ hợp lệ qua validator, độ trễ. **Sau góp ý 12/11, chỉ số chính chuyển sang VL**: tỉ lệ thử thách nhắm đúng kỹ năng yếu (VL.3), và khi có pilot: ghi nhớ / chuyển giao (VL.4) — đa dạng hay điểm số không chứng minh được việc học. Là số liệu chứng minh đóng góp của LLM cho luận văn | `Server/bench/director_ablation.py` | bảng + biểu đồ trong `docs/`, chạy với Ollama thật khi người dùng bật |
 
 > Lý do V4.5a–c, V4.7 (bổ sung 2026-11-12, người dùng đồng ý): hiện Gemma chỉ chọn trong whitelist 7 directive và các lần chạy 11/11 luôn chọn đúng thứ tự bậc (PIN_JAM → SMOKE_SURGE → ALARM_CABLE_CUT/BLACKOUT → FM200) — một luật if-else làm được y hệt; dòng prompt "Lượt này CHỈ được chọn trong…" càng khiến nó giống luật cứng. Không trả lời được "sao phải dùng LLM" (GVHD: "chưa có gì mới"). Ghép mảnh có tham số + validator an toàn + ablation có số liệu là câu trả lời.
+
+### VL — Học thật: chẩn đoán kỹ năng, nhắm điểm yếu, đo ghi nhớ và chuyển giao (góp ý GVHD 12/11)
+
+**Vì sao:** GVHD chỉ ra rằng "độ khó phù hợp" không phải mục tiêu và điểm số chỉ là công cụ; thứ cần chứng minh là người học
+còn nhớ và làm đúng trong tình huống thật. Câu hỏi nghiên cứu mở rộng từ *"AI làm game khó vừa phải"* thành
+*"AI giữ nhịp độ khó theo trạng thái người học (CF — giữ nguyên) **và** tìm ra kỹ năng PCCC còn hổng để thiết kế tình huống
+luyện đúng kỹ năng đó; người học có nhớ lâu hơn và làm đúng trong phòng chưa từng gặp không?"*. Chỉnh độ khó theo CF được
+giữ (quyết định của người dùng 12/11); điều thay đổi là cách chứng minh: bằng ghi nhớ và chuyển giao, không bằng điểm. Làm **trước V5**, vì nó quyết định luận văn chứng minh được gì.
+
+**Đã có sẵn để tận dụng:** mỗi mảnh thử thách (V4) gắn một luật R01–R12; mỗi luật đã có bằng chứng đo từ hành vi VR
+(`SessionFacts`: giây đứng thẳng trong khói, tỉ lệ phun vào gốc / quét, thử cửa bằng mu bàn tay, gọi 114 đủ ý, lần tường,
+không dùng thang máy, Rautek, điểm danh…); phòng sinh từ prompt (V4) dùng làm **bài kiểm tra chuyển giao**.
+
+**Cơ sở lý thuyết (bổ sung Phần E khi viết):** knowledge tracing (Corbett & Anderson 1995, BKT); desirable difficulties
+(Bjork & Bjork 2011: giãn cách, xen kẽ, buộc nhớ lại); retrieval practice (Roediger & Karpicke 2006); tranh luận flow
+trong học tập (Csikszentmihalyi; các nghiên cứu GVHD nhắc là flow có thể không phục vụ việc học) — hỏi thêm nhóm game design.
+
+| Phase | Việc | File chính | Xong khi |
+| :-: | :--- | :--- | :--- |
+| VL.1 | **Mô hình kỹ năng**: bảng bằng chứng luật → quan sát đúng/sai mỗi buổi (vd R07: đứng thẳng trong khói < 2 s; R04: rút chốt + gốc ≥ 60 % + quét ≥ 50 %; R08: mu bàn tay ≥ 1 s trước khi mở…); ước lượng mức thành thạo từng kỹ năng bằng BKT (tham số mặc định từ tài liệu, ghi rõ là giả định); lưu theo người học qua nhiều buổi | `Assets/Resources/SkillEvidence.json`, `SkillModel.cs` (thuần logic), `ProgressionStore` | test EditMode: chuỗi buổi giả lập → mức thành thạo tăng/giảm đúng; không luật nào thiếu bằng chứng |
+| VL.2 | **Rà "lách điểm"** (góp ý phần thưởng sai → hành vi sai): với từng mục bảng điểm, tìm cách được điểm mà không làm đúng (vd khom cả buổi kể cả khi không có khói, xịt bừa đủ giây); sửa bằng chấm theo bằng chứng hành vi, AAR hiện theo kỹ năng thay vì tổng điểm | `AfterActionReport.cs`, `AARController.cs` | danh sách lỗ hổng + test cho từng lỗ đã vá; AAR có thanh thành thạo R01–R12 |
+| VL.3 | **Đạo diễn nhắm điểm yếu**: telemetry gửi `weak_skills` (thành thạo thấp nhất, có giãn cách: kỹ năng đã vững thì lâu lâu mới hỏi lại); prompt composer yêu cầu mảnh có luật thuộc `weak_skills`; chế độ `rules` chọn theo bảng cố định để so sánh; **giữ nguyên cơ chế CF** (CF thấp → được thêm thử thách / tăng cấp, CF cao → giữ nhịp + trấn an), CF vẫn quyết định *khi nào* và *mấy mảnh, cấp nào*, `weak_skills` chỉ quyết định *mảnh nào* | `schema.py`, `challenge.py`, `director.py`, `EdgeDirectorClient.cs`, `MicroAIGovernor.cs` | pytest + test kính: với `weak_skills=[R08]` thử thách đưa ra luyện được R08; chỉ số "nhắm đúng kỹ năng yếu" trong `Server/bench/director_ablation.py` |
+| VL.4 | **Thiết kế đánh giá** (để báo cáo, không cần code nhiều): bài trắc nghiệm 12 câu theo R01–R12 (trước / ngay sau / sau 1 tuần); bài chuyển giao trong **phòng sinh mới chưa gặp** (V4) chấm bằng bằng chứng hành vi; 2 nhóm nhỏ (đạo diễn nhắm điểm yếu vs kịch bản cố định); bảng hỏi trải nghiệm ngắn; đồng ý tham gia | `docs/evaluation_protocol.md`, câu hỏi trong `PcccRules.json`, `QuizStation` ở phòng bài giảng | GVHD duyệt protocol; công cụ xuất số liệu mỗi người học (JSON/CSV) |
+| VL.5 | **Khó có chủ đích trong bài học**: Mentor hỏi trước khi gợi ý (buộc nhớ lại), giảm dần gợi ý qua các buổi, xen kẽ kỹ năng giữa các buổi, nhắc lại kỹ năng yếu ở đầu buổi sau | `SocraticRules.cs`, `LessonController.cs`, `MentorVoice.cs` | test: buổi 2 bắt đầu bằng kỹ năng yếu của buổi 1; số gợi ý giảm theo mức thành thạo |
+| VL.6 | **Trao đổi với nhóm game design** (online 15–30 phút). Câu hỏi: (1) đo "học được" trong game bằng chỉ số nào? (2) flow và desirable difficulty mâu thuẫn ở đâu, nên chọn gì cho huấn luyện an toàn? (3) thiết kế thử nghiệm với ít người tham gia thế nào cho có giá trị? | ghi kết quả vào Phần A | đã gặp, kết luận ghi lại, VL.3–VL.5 điều chỉnh theo |
+
+**Không làm (ghi lý do để trả lời hội đồng):** imitation learning cho NPC — cần dữ liệu hành vi người thật trong đám cháy,
+không có trong phạm vi đồ án; NPC có "tâm lý" bằng LLM (Minh hoảng loạn trò chuyện thật) để V6, tuỳ chọn.
 
 ### V5 — Mô-đun hoá
 
@@ -485,6 +520,7 @@ Yêu cầu cứng:
 | V2 | ✅ xong (2026-11-12) | xem `git log` "feat(building): V2" | `BuildingBuilder` (menu `EscapeFire > V2 > Build Building`): hành lang tầng 3 khoét 2 lối ra buồng thang A/B + thang máy; mỗi buồng thang 2 tầng (11 bậc × 2,8 m mỗi vế, dốc 35° cho CharacterController, chiếu nghỉ, lan can `Handrail`, biển số tầng, đèn); cửa chống cháy panic bar + tay co thủy lực (`PushBarDoor`); thang máy bẫy (`ElevatorTrap`: bấm gọi −20, Sát hạch bước vào = trượt); khói theo vùng (`SmokeZone` + `SmokeFog` một chủ sở hữu fog); mặt tiền + sân + điểm tập kết (vùng thắng dời ra đây). Cả ván diễn tập đi thang bộ bằng thumbstick xuống 2 tầng tới điểm tập kết (100/100). Còn: chỉ 2 tầng (kế hoạch 5 tầng), chưa dùng asset PolygonOffice (hộp xám), Hoa tự đi ra sau cửa Lab rồi biến mất (V3: điểm danh tại điểm tập kết), `docs/building_spec.md` chưa viết, chưa đo FPS / occlusion giữa tầng (V6), điểm lan can chưa đưa vào AAR (V3) |
 | V3 | ✅ xong (2026-11-12) | xem `git log` "feat(rescue): V3" | Dựng bằng `EscapeFire > V3 > Build Rescue Scenario`. Bồn rửa + vòi vặn ¼ vòng (`WaterTap`) + khăn (`WetTowel`: ướt sau ~2 s dưới nước, che mũi miệng ≤ 10 cm → oxy giảm còn 30%); bộ đàm (`Radio`: cầm sát miệng ≤ 15 cm + giữ nút nói) → trực ban 114 (`Call114Dialogue`/`Call114Checker`: đủ 4 ý địa chỉ, tầng, đám cháy, người mắc kẹt; thiếu thì hỏi lại; không phân biệt dấu); nạn nhân bất tỉnh Nam (`VictimBody`: Rautek bắt buộc 2 tay dưới nách, kéo lê kiểu rơ-moóc, đầu cao theo tay, tuột tay nếu đi nhanh, an toàn khi vào buồng thang A, giữ cửa chống cháy mở khi đang kéo qua); Minh hoảng loạn ở thang máy (`PanicRunner`: nắm vai trước khi cửa mở → đi thang bộ, không thì kẹt thang máy); điểm tập kết (`AssemblyPoint`: đội trưởng hỏi, ấn bảng báo cáo, đáp án theo diễn biến thật); lần tường/lan can (`WallFollowTracker`). Thang điểm 7 mục (thêm Cứu nạn, Thoát nạn; báo động gồm 114). Vùng teleport chỉ nhận tia teleport (trước đây nắm gần sàn sẽ "nắm" luôn sàn). Test giới hạn 72 fps (batchmode quá nhanh làm bước đi khi khom nhỏ hơn `minMoveDistance`). Cả ván chỉ bằng input VR: 100/100. Còn: kéo nạn nhân xuống cầu thang nhiều tầng, kéo bằng chăn, nhận giọng nói thật (STT đang giả lập trong test), Hoa/Minh chỉ "hiện" ở điểm tập kết chứ không đi theo xuống, ảnh chặn Minh hơi lệch khung (V6) |
 | V4 | 🟡 phần code xong (2026-11-12), còn số liệu LLM thật | xem `git log` "feat(generation): V4" | Danh mục dùng chung `V4Catalog.json` (server + kính, test kiểm khớp). **Challenge Composer**: 7 mảnh có tham số (khói, tắt đèn theo vùng, hỏng thiết bị, điểm cháy, chặn buồng thang, hành vi NPC, FM-200 + hẹn giờ), Gemma sinh `ChallengeSpec`; validator tầng 1 (`challenge.py`) và tầng 1 lặp lại trên kính (`ChallengeValidator.cs`) **cùng mã lỗi, cùng 19 ca dùng chung** (`Server/tests/fixtures/`); tầng 2 cảnh thật (`ChallengeRunner.cs`: tuyến/vùng/thiết bị tồn tại, luôn còn một buồng thang, không chặn buồng thang người học đang đứng, ngân sách FPS). 3 chế độ đạo diễn `--director-mode rules|enum|composer` (enum giữ làm baseline/fallback). **Prompt → phòng**: `POST /scenario/generate` (Gemma + 1 lần sửa theo lỗi validator + mẫu dự phòng), `ScenarioValidator.cs` cùng 13 ca dùng chung, `LayoutSolver` (lưới 0,25 m, chừa lối 1,5 m trước cửa, kiểm tra đường tới lối ra cho lửa/bình/NPC/điểm xuất phát và ≥ 90 % sàn — thay NavMesh), `ScenarioBuilder` + scene `03_Generated`, thư viện 21 nhóm / 62 prefab PolygonOffice, bình và lửa thật lấy từ Lab. Test: 5 phòng mẫu dựng được + ảnh; thư viện cháy lớp A dập bằng bình nước rồi ra EXIT, phòng máy xịt nước vào cháy điện → trượt (đều chỉ qua input VR); buồng thang A bị chặn → người học đi thang B xuống điểm tập kết. Công cụ `Server/bench/` (ablation 3 chế độ, benchmark 20 prompt). **Còn**: chạy 2 benchmark với Gemma thật (cần bật Ollama), so Gemma 4B và 12B, nút chọn phòng trong menu chính, prompt bằng giọng nói, 5 phòng mẫu hiện là mẫu viết tay/mẫu dự phòng, chưa phải đầu ra Gemma, hiệu lực chất chữa cháy theo lớp chỉ có: nước vào điện = trượt, CO2 vào lớp A = cháy lại 1 lần |
+| VL | ⏳ chưa bắt đầu (thêm 2026-11-12 sau góp ý GVHD 12/11) | | Làm trước V5. Bắt đầu từ VL.1 + VL.6 (hẹn nhóm game design) |
 | V5 | ⏳ | | |
 | V6 | ⏳ | | |
 
