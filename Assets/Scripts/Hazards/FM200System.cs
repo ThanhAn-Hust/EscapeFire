@@ -62,6 +62,14 @@ namespace EscapeFire.Hazards
             if (_burnTime >= autoTriggerAfterBurnSeconds) TriggerCountdown();
         }
 
+        /// <summary>V4 FM200 piece: countdown of a given length (catalog bounds 20-45 s).</summary>
+        public void TriggerCountdown(float seconds)
+        {
+            if (IsCountdownActive || HasDischarged) return;
+            countdownSeconds = Mathf.Clamp(seconds, 10f, 60f);
+            TriggerCountdown();
+        }
+
         public void TriggerCountdown()
         {
             if (IsCountdownActive || HasDischarged) return;

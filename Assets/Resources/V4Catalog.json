@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "note": "Shared V4 catalog: the edge server (Server/escapefire_edge/v4_catalog.json) and the headset load identical copies; a test checks they match.",
+  "rules": ["R01_ALARM_EARLY", "R02_POWER_OFF_FIRST", "R03_RIGHT_AGENT", "R04_PASS", "R05_CO2_CHARGE", "R06_EVACUATE_IF_EMPTY",
+            "R07_STAY_LOW", "R08_DOOR_BACK_OF_HAND", "R09_RESCUE_KEEP_LOW", "R10_NO_ELEVATOR", "R11_FM200_EVACUATE", "R12_FIRE_TRIANGLE"],
+  "challenge": {
+    "max_pieces": 3,
+    "max_pieces_when_cf_above": {"cf": 0.15, "max": 2},
+    "max_delay_s": 30,
+    "max_tier": 4,
+    "pieces": {
+      "SMOKE_SURGE": {
+        "tier": 1, "rule": "R07_STAY_LOW",
+        "desc": "Khói đen tràn xuống thấp hơn (drop_m) và dày nhanh hơn (speed lần)",
+        "params": {"drop_m": {"min": 0.3, "max": 1.0}, "speed": {"min": 1.0, "max": 2.5}}
+      },
+      "LIGHTS_OFF": {
+        "tier": 2, "rule": "R10_NO_ELEVATOR",
+        "desc": "Mất điện chiếu sáng một vùng, chỉ còn đèn sự cố và biển EXIT",
+        "params": {"zone": {"options": ["lab", "corridor", "stairwell_a", "stairwell_b"]}}
+      },
+      "DEVICE_FAULT": {
+        "tier": 1, "rule": "R04_PASS",
+        "desc": "Hỏng thiết bị: chốt bình CO2 kẹt / bình CO2 yếu áp / đứt cáp chuông báo cháy",
+        "params": {"device": {"options": ["co2_pin_jam", "co2_low_pressure", "alarm_cable_cut"]}},
+        "option_tiers": {"device": {"co2_pin_jam": 1, "alarm_cable_cut": 2, "co2_low_pressure": 3}}
+      },
+      "FIRE_SPOT": {
+        "tier": 3, "rule": "R03_RIGHT_AGENT",
+        "desc": "Cháy lan sang một điểm khác (khay hóa chất / bàn cáp), cường độ 0.4-1.0",
+        "params": {"slot": {"options": ["chemical_tray", "cable_desk"]}, "intensity": {"min": 0.4, "max": 1.0}}
+      },
+      "BLOCK_ROUTE": {
+        "tier": 3, "rule": "R10_NO_ELEVATOR",
+        "desc": "Một buồng thang bộ bị khói dày chặn, phải dùng buồng thang còn lại",
+        "params": {"route": {"options": ["stairwell_a", "stairwell_b"]}}
+      },
+      "NPC_BEHAVIOUR": {
+        "tier": 2, "rule": "R10_NO_ELEVATOR",
+        "desc": "Hành vi NPC: Minh hoảng loạn chạy tới thang máy",
+        "params": {"behaviour": {"options": ["minh_to_lift"]}}
+      },
+      "FM200": {
+        "tier": 4, "rule": "R11_FM200_EVACUATE", "alone": true,
+        "desc": "Còi xả khí FM-200 đếm ngược (giây), bắt buộc sơ tán",
+        "params": {"countdown_s": {"min": 20, "max": 45}}
+      }
+    },
+    "routes": ["stairwell_a", "stairwell_b"]
+  },
+  "scenario": {
+    "width_m": {"min": 6, "max": 16},
+    "depth_m": {"min": 6, "max": 14},
+    "max_exits": 3,
+    "two_exits_above_m2": 50,
+    "max_furniture_cover": 0.35,
+    "max_npcs": 3,
+    "npc_roles": ["weak", "unconscious", "panic"],
+    "walls": ["north", "south", "east", "west"],
+    "extinguishers": {
+      "CO2": {"classes": ["B", "C", "E"]},
+      "WaterFoam": {"classes": ["A", "B"]}
+    },
+    "fire_classes": {"A": "chất rắn (giấy, gỗ, vải)", "B": "chất lỏng dễ cháy", "C": "chất khí", "E": "thiết bị điện đang có điện"},
+    "categories": {
+      "desk":             {"w": 1.4, "d": 0.7, "wall": false},
+      "computer_desk":    {"w": 1.4, "d": 0.7, "wall": false},
+      "chair":            {"w": 0.55, "d": 0.55, "wall": false},
+      "table":            {"w": 1.6, "d": 0.9, "wall": false},
+      "round_table":      {"w": 1.1, "d": 1.1, "wall": false},
+      "conference_table": {"w": 3.0, "d": 1.2, "wall": false},
+      "drafting_table":   {"w": 1.3, "d": 0.9, "wall": false},
+      "bookshelf":        {"w": 1.1, "d": 0.4, "wall": true},
+      "cabinet":          {"w": 0.9, "d": 0.5, "wall": true},
+      "server_rack":      {"w": 0.7, "d": 1.0, "wall": true},
+      "chemical_cabinet": {"w": 1.0, "d": 0.5, "wall": true},
+      "kitchen_counter":  {"w": 1.8, "d": 0.65, "wall": true},
+      "fridge":           {"w": 0.8, "d": 0.7, "wall": true},
+      "vending_machine":  {"w": 1.0, "d": 0.8, "wall": true},
+      "couch":            {"w": 2.0, "d": 0.9, "wall": true},
+      "printer":          {"w": 0.7, "d": 0.6, "wall": true},
+      "trash_bin":        {"w": 0.45, "d": 0.45, "wall": true},
+      "cardboard_boxes":  {"w": 0.7, "d": 0.7, "wall": true},
+      "cart":             {"w": 0.9, "d": 0.5, "wall": false},
+      "divider":          {"w": 1.5, "d": 0.15, "wall": false},
+      "plant":            {"w": 0.5, "d": 0.5, "wall": true}
+    },
+    "fire_sources": {
+      "computer_desk": "E", "server_rack": "E", "printer": "E",
+      "trash_bin": "A", "bookshelf": "A", "cardboard_boxes": "A", "couch": "A",
+      "kitchen_counter": "B", "chemical_cabinet": "B"
+    },
+    "room_types": {
+      "lab":      {"name": "phòng thí nghiệm / phòng máy", "categories": ["computer_desk", "chair", "server_rack", "cabinet", "printer", "trash_bin", "chemical_cabinet", "divider", "plant"]},
+      "library":  {"name": "thư viện", "categories": ["bookshelf", "table", "round_table", "chair", "trash_bin", "plant", "couch"]},
+      "office":   {"name": "văn phòng", "categories": ["desk", "computer_desk", "chair", "cabinet", "printer", "trash_bin", "conference_table", "divider", "plant", "couch", "cardboard_boxes"]},
+      "canteen":  {"name": "căng-tin", "categories": ["table", "round_table", "chair", "kitchen_counter", "fridge", "vending_machine", "trash_bin", "plant"]},
+      "workshop": {"name": "xưởng thực hành", "categories": ["drafting_table", "cabinet", "chemical_cabinet", "cardboard_boxes", "cart", "trash_bin", "bookshelf", "chair"]}
+    }
+  }
+}

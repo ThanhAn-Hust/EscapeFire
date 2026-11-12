@@ -77,6 +77,8 @@ class TelemetryMessage(BaseModel):
     emergency_elapsed: float = Field(default=0, ge=0)  # seconds since the fire started
     prior_challenges: list[str] = Field(default_factory=list)  # applied + permanently refused (never propose again)
     accepted_challenges: int | None = Field(default=None, ge=0)  # actually applied on the headset (drives the tier)
+    prior_pieces: list[str] = Field(default_factory=list)    # composer piece codes already applied (V4)
+    blocked_routes: list[str] = Field(default_factory=list)  # stairwells already blocked (V4)
 
     @property
     def challenges_given(self) -> int:
@@ -91,6 +93,17 @@ class DirectiveMessage(BaseModel):
     pccc_rule_reference: str = ""
     pedagogical_reason: str = ""
     source: Literal["llm", "rule", "fallback"] = "fallback"
+    latency_ms: float = 0.0
+
+
+class ChallengeMessage(BaseModel):
+    """V4 composer: a challenge built from catalog pieces (validated Tier-1; the headset re-validates)."""
+    type: Literal["challenge"] = "challenge"
+    pieces: list[dict] = Field(default_factory=list)
+    tier: int = 0
+    pccc_rule_reference: str = ""
+    pedagogical_reason: str = ""
+    source: Literal["llm"] = "llm"
     latency_ms: float = 0.0
 
 

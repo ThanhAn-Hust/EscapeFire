@@ -33,6 +33,17 @@ namespace EscapeFire.Interactions
         public static readonly System.Collections.Generic.List<Transform> DoorwayOccupants = new System.Collections.Generic.List<Transform>();
 
         public bool IsOpen => _angle > 30f;
+        /// <summary>Jammed / blocked (V4 BLOCK_ROUTE): pushing the bar does nothing but tells the learner why.</summary>
+        public bool Locked { get; private set; }
+        private string _lockedMessage = "";
+        private float _lockedHintAt = -100f;
+
+        public void Lock(string message)
+        {
+            Locked = true;
+            _lockedMessage = message ?? "";
+            _lastActivity = -100f;
+        }
         public float Angle => _angle;
         /// <summary>Total seconds this door has stood open (smoke leak into the stairs).</summary>
         public float OpenSeconds { get; private set; }
@@ -56,9 +67,19 @@ namespace EscapeFire.Interactions
                 if (origin != null && origin.Camera != null) _head = origin.Camera.transform;
             }
             bool pushed = BarPushed();
+            if (Locked)
+            {
+                if (pushed && Time.time - _lockedHintAt > 4f && _lockedMessage.Length > 0)
+                {
+                    _lockedHintAt = Time.time;
+                    EscapeFire.Core.EventBus<EscapeFire.Core.MentorMessageEvent>.Publish(new EscapeFire.Core.MentorMessageEvent(_lockedMessage));
+                }
+                pushed = false;
+                _lastActivity = -100f;
+            }
             bool someoneInDoorway = _head != null && InDoorway(_head.position);
             foreach (var o in DoorwayOccupants) if (o != null && InDoorway(o.position + Vector3.up * 0.3f)) someoneInDoorway = true;
-            if (pushed || (someoneInDoorway && _angle > 5f)) _lastActivity = Time.time;
+            if (!Locked && (pushed || (someoneInDoorway && _angle > 5f))) _lastActivity = Time.time;
             bool wantOpen = pushed || Time.time - _lastActivity < holdOpenSeconds;
             float before = _angle;
             _angle = wantOpen

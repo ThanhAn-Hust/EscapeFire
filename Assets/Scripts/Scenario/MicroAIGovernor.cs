@@ -168,6 +168,31 @@ namespace EscapeFire.Scenario
             return result;
         }
 
+        /// <summary>
+        /// V4 composed challenge from the edge server: the shared Tier-1 rules again on the headset, then the scene
+        /// checks of <see cref="ChallengeRunner"/>. Returns null when it runs, else the rejection reason.
+        /// </summary>
+        public string TryExecuteChallenge(Newtonsoft.Json.Linq.JToken spec, string source)
+        {
+            var runner = ChallengeRunner.Instance != null ? ChallengeRunner.Instance : gameObject.AddComponent<ChallengeRunner>();
+            var tracker = CognitiveFrictionTracker.Instance;
+            string why = null;
+            if (!IsEmergencyActive()) why = "wrong_phase";
+            else if (tracker != null && tracker.State == CognitiveState.Panic) why = "learner_panicking";
+            else if (_escalationCount >= maxEscalationsPerSession) why = "max_challenges";
+            var check = EscapeFire.Generation.ChallengeValidator.Validate(spec, runner.Context(_escalationCount, tracker != null ? tracker.CurrentCF : 0f));
+            if (why == null) why = runner.SceneCheck(check);
+            if (why == null)
+            {
+                runner.Run(check);
+                _escalationCount++;
+                _lastEscalation = Time.time;
+            }
+            Debug.Log($"[MicroAIGovernor] {source}:challenge[{string.Join("+", check.Codes)}] -> {why ?? "Accepted"}");
+            EventBus<ChallengeResolvedEvent>.Publish(new ChallengeResolvedEvent(string.Join("+", check.Codes), why ?? "Accepted", source));
+            return why;
+        }
+
         /// <summary>Wire-format overload for the edge server: unknown codes are rejected, never guessed.</summary>
         public DirectiveResult TryExecute(string directiveCode, string source)
         {

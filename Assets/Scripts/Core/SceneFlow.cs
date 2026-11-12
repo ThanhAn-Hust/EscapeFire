@@ -11,6 +11,7 @@ namespace EscapeFire.Core
         public const string AAR = "02_AAR_Evaluation";
         /// <summary>Interactive lesson room: theory + hands-on practice before the drill (plan V1.4).</summary>
         public const string LESSON = "01_Lesson";
+        public const string GENERATED = "03_Generated"; // V4: room built from a teacher prompt (ScenarioSpec)
     }
 
     /// <summary>

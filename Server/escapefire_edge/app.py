@@ -17,7 +17,8 @@ from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconn
 from pydantic import ValidationError
 
 from .aar import DebriefRequest, DebriefResponse, generate_debrief
-from .director import Director
+from .director import MODES, Director
+from .scenario import ScenarioRequest, ScenarioResponse, generate_scenario
 from .llm import LLMClient, OllamaClient, ScriptedLLM
 from .schema import DirectiveResultMessage, TelemetryMessage
 
@@ -38,15 +39,21 @@ DEMO_OUTPUTS = [  # one challenge per tier, in order (scripted stand-in for the 
 
 def create_app(llm: LLMClient | None = None, log_dir: Path | None = Path("logs"),
                min_observation_s: float | None = None, llm_timeout_s: float = 6.0,
-               debrief_timeout_s: float = 8.0) -> FastAPI:
+               debrief_timeout_s: float = 8.0, director_mode: str = "enum",
+               scenario_timeout_s: float = 30.0) -> FastAPI:
     app = FastAPI(title="EscapeFire Edge AI Director")
-    director = Director(llm or OllamaClient(), log_dir=log_dir, timeout_s=llm_timeout_s,
+    director = Director(llm or OllamaClient(), log_dir=log_dir, timeout_s=llm_timeout_s, mode=director_mode,
                         **({} if min_observation_s is None else {"min_observation_s": min_observation_s}))
     app.state.director = director
 
     @app.get("/health")
     async def health() -> dict:
-        return {"status": "ok", "llm": type(director.llm).__name__}
+        return {"status": "ok", "llm": type(director.llm).__name__, "director_mode": director.mode}
+
+    @app.post("/scenario/generate", response_model=ScenarioResponse)
+    async def scenario_generate(req: ScenarioRequest) -> ScenarioResponse:
+        """V4: teacher prompt -> validated ScenarioSpec (LLM, one repair round, template fallback)."""
+        return await generate_scenario(director.llm, req, timeout_s=scenario_timeout_s)
 
     @app.post("/aar/debrief", response_model=DebriefResponse)
     async def aar_debrief(req: DebriefRequest) -> DebriefResponse:
@@ -111,6 +118,8 @@ def main() -> None:
                         help="seconds of emergency to observe before any escalation (default 15)")
     parser.add_argument("--llm-timeout", type=float, default=6.0,
                         help="seconds the director waits for the LLM before falling back (default 6)")
+    parser.add_argument("--director-mode", choices=MODES, default="enum",
+                        help="rules = fixed if-else, enum = LLM picks one of 7 (baseline), composer = LLM composes pieces (V4)")
     parser.add_argument("--debrief-timeout", type=float, default=8.0,
                         help="seconds the AAR debrief waits for the LLM before using the template (default 8)")
     args = parser.parse_args()
@@ -119,7 +128,8 @@ def main() -> None:
     http_timeout = max(args.llm_timeout, args.debrief_timeout) + 2.0
     llm: LLMClient = ScriptedLLM(DEMO_OUTPUTS) if args.fake_llm else OllamaClient(timeout_s=http_timeout)
     uvicorn.run(create_app(llm, min_observation_s=args.min_observation, llm_timeout_s=args.llm_timeout,
-                           debrief_timeout_s=args.debrief_timeout), host=args.host, port=args.port)
+                           debrief_timeout_s=args.debrief_timeout, director_mode=args.director_mode),
+                host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

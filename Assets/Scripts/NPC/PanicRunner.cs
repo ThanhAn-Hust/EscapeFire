@@ -35,6 +35,11 @@ namespace EscapeFire.NPC
         public bool InBuilding => _state != State.Gone;
         public Vector3 ShoulderPoint => _shoulder != null ? _shoulder.position : transform.position + Vector3.up * 1.35f;
 
+        private bool _armed;
+
+        /// <summary>V4 NPC_BEHAVIOUR piece: Minh rushes to the lift now, wherever the learner is.</summary>
+        public void Arm() => _armed = true;
+
         public void Configure(ElevatorTrap lift, Transform stairs, Bounds trigger)
         {
             elevator = lift; stairsDoor = stairs; triggerSpace = trigger;
@@ -67,7 +72,7 @@ namespace EscapeFire.NPC
             switch (_state)
             {
                 case State.Waiting:
-                    if (!emergency || !triggerSpace.Contains(_head.position)) return;
+                    if (!emergency || (!_armed && !triggerSpace.Contains(_head.position))) return;
                     _state = State.AtButton;
                     SetVisible(true);
                     if (elevator != null) elevator.CallByNpc(carArrivesAfter - 2f);

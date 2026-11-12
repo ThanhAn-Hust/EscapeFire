@@ -1,0 +1,49 @@
+{
+  "title": "Văn phòng khoa — máy in chập điện",
+  "room_type": "office",
+  "width_m": 9,
+  "depth_m": 7,
+  "exits": [
+    {
+      "wall": "west",
+      "position": 0.5
+    },
+    {
+      "wall": "east",
+      "position": 0.5
+    }
+  ],
+  "furniture": [
+    {
+      "category": "desk",
+      "count": 4
+    },
+    {
+      "category": "chair",
+      "count": 4
+    },
+    {
+      "category": "printer",
+      "count": 1
+    },
+    {
+      "category": "cabinet",
+      "count": 2
+    }
+  ],
+  "fire": {
+    "source": "printer",
+    "class": "E"
+  },
+  "extinguishers": [
+    {
+      "type": "CO2",
+      "count": 1
+    }
+  ],
+  "npcs": [],
+  "learning_goals": [
+    "R02_POWER_OFF_FIRST"
+  ],
+  "level": 1
+}

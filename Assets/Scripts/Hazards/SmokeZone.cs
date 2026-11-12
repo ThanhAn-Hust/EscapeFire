@@ -36,6 +36,10 @@ namespace EscapeFire.Hazards
             space = b; roomSource = room; zoneSource = upstream; exitDoors = exits; fireDoors = doors; layer = smokeLayer;
         }
 
+        /// <summary>V4 LIGHTS_OFF: normal lights in this space are out; only a few metres stay visible.</summary>
+        public bool Dark { get; private set; }
+        public void SetDark(bool dark) => Dark = dark;
+
         /// <summary>AI challenge: smoke pours into this space (e.g. a stairwell) regardless of the doors.</summary>
         public void Flood(float thickness) => Thickness = Mathf.Max(Thickness, thickness);
 
@@ -68,6 +72,8 @@ namespace EscapeFire.Hazards
                 var origin = FindFirstObjectByType<XROrigin>();
                 if (origin != null && origin.Camera != null) _head = origin.Camera.transform;
             }
+            if (Dark && _head != null && space.Contains(_head.position))
+                SmokeFog.Request(0.22f + 0.1f * Thickness, new Color(0.02f, 0.02f, 0.025f));
             if (_head != null && space.Contains(_head.position) && Thickness > 0.02f)
             {
                 bool inSmoke = _head.position.y > LayerBottom;

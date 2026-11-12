@@ -121,6 +121,15 @@ namespace EscapeFire.Scenario
 
         private void HandleServerMessage(string message)
         {
+            if (EdgeProtocol.TryParseChallenge(message, out var challenge))
+            {
+                var gov = MicroAIGovernor.Instance;
+                string why = gov != null ? gov.TryExecuteChallenge(challenge, "edge") : "no_governor";
+                if (why == null) _acceptedChallenges++;
+                Debug.Log($"[EdgeDirector] challenge ({(string)challenge["pccc_rule_reference"]}) -> {why ?? "Accepted"}");
+                _outbox.Enqueue(EdgeProtocol.SerializeResult("CHALLENGE", why == null ? DirectiveResult.Accepted : DirectiveResult.RejectedPrerequisiteMissing));
+                return;
+            }
             if (!EdgeProtocol.TryParseDirective(message, out var reply)) return;
             if (reply.Directive == DirectiveCodes.ToCode(Directive.MaintainCurrentPace)) return;
 
@@ -171,6 +180,12 @@ namespace EscapeFire.Scenario
             };
             payload.PriorChallenges.AddRange(_priorChallenges);
             payload.AcceptedChallenges = _acceptedChallenges;
+            var runner = ChallengeRunner.Instance;
+            if (runner != null)
+            {
+                payload.PriorPieces.AddRange(runner.AppliedCodes);
+                payload.BlockedRoutes.AddRange(runner.BlockedRoutes);
+            }
             return payload;
         }
 

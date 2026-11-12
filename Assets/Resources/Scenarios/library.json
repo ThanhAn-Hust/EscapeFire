@@ -1,0 +1,53 @@
+{
+  "title": "Thư viện tầng 2 — cháy giá sách",
+  "room_type": "library",
+  "width_m": 12,
+  "depth_m": 9,
+  "exits": [
+    {
+      "wall": "south",
+      "position": 0.3
+    },
+    {
+      "wall": "east",
+      "position": 0.6
+    }
+  ],
+  "furniture": [
+    {
+      "category": "bookshelf",
+      "count": 6
+    },
+    {
+      "category": "table",
+      "count": 3
+    },
+    {
+      "category": "chair",
+      "count": 8
+    }
+  ],
+  "fire": {
+    "source": "bookshelf",
+    "class": "A"
+  },
+  "extinguishers": [
+    {
+      "type": "WaterFoam",
+      "count": 1
+    }
+  ],
+  "npcs": [
+    {
+      "role": "panic"
+    },
+    {
+      "role": "weak"
+    }
+  ],
+  "learning_goals": [
+    "R03_RIGHT_AGENT",
+    "R07_STAY_LOW"
+  ],
+  "level": 1
+}

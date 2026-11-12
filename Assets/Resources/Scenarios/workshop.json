@@ -1,0 +1,54 @@
+{
+  "title": "Xưởng thực hành — tủ hóa chất",
+  "room_type": "workshop",
+  "width_m": 11,
+  "depth_m": 8,
+  "exits": [
+    {
+      "wall": "south",
+      "position": 0.5
+    },
+    {
+      "wall": "west",
+      "position": 0.4
+    }
+  ],
+  "furniture": [
+    {
+      "category": "drafting_table",
+      "count": 3
+    },
+    {
+      "category": "chemical_cabinet",
+      "count": 2
+    },
+    {
+      "category": "cardboard_boxes",
+      "count": 3
+    },
+    {
+      "category": "chair",
+      "count": 3
+    }
+  ],
+  "fire": {
+    "source": "chemical_cabinet",
+    "class": "B"
+  },
+  "extinguishers": [
+    {
+      "type": "CO2",
+      "count": 1
+    }
+  ],
+  "npcs": [
+    {
+      "role": "unconscious"
+    }
+  ],
+  "learning_goals": [
+    "R03_RIGHT_AGENT",
+    "R09_RESCUE_KEEP_LOW"
+  ],
+  "level": 2
+}

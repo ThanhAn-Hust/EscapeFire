@@ -1,0 +1,53 @@
+{
+  "title": "Căng-tin — cháy chảo dầu",
+  "room_type": "canteen",
+  "width_m": 12,
+  "depth_m": 10,
+  "exits": [
+    {
+      "wall": "south",
+      "position": 0.5
+    },
+    {
+      "wall": "north",
+      "position": 0.5
+    }
+  ],
+  "furniture": [
+    {
+      "category": "table",
+      "count": 4
+    },
+    {
+      "category": "chair",
+      "count": 10
+    },
+    {
+      "category": "kitchen_counter",
+      "count": 2
+    },
+    {
+      "category": "fridge",
+      "count": 1
+    }
+  ],
+  "fire": {
+    "source": "kitchen_counter",
+    "class": "B"
+  },
+  "extinguishers": [
+    {
+      "type": "CO2",
+      "count": 1
+    }
+  ],
+  "npcs": [
+    {
+      "role": "weak"
+    }
+  ],
+  "learning_goals": [
+    "R03_RIGHT_AGENT"
+  ],
+  "level": 2
+}

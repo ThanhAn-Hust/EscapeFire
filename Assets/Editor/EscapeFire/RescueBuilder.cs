@@ -115,6 +115,8 @@ namespace EscapeFire.EditorTools
             g.movementType = XRBaseInteractable.MovementType.Instantaneous;
             g.throwOnDetach = false;
             RigRealismSetup.EnsureNearOnly(g, 0.12f);
+            rb.isKinematic = true;
+            g.gameObject.AddComponent<DropsWhenReleased>();
             towel.AddComponent<WetTowel>();
 
             BuildingBuilder.Box(sink, "SignPlate", new Vector3(c.x, 1.55f, wallBase.z + 0.11f), Quaternion.identity, new Vector3(0.62f, 0.26f, 0.015f), BuildingBuilder.Mat("EF_SignBlue", new Color(0.1f, 0.25f, 0.6f)), false);
@@ -152,6 +154,8 @@ namespace EscapeFire.EditorTools
             g.movementType = XRBaseInteractable.MovementType.Instantaneous;
             g.throwOnDetach = false;
             RigRealismSetup.EnsureNearOnly(g, 0.12f);
+            rb.isKinematic = true;
+            g.gameObject.AddComponent<DropsWhenReleased>();
             var r = radio.AddComponent<Radio>();
             var so = new SerializedObject(r);
             so.FindProperty("txLight").objectReferenceValue = led.GetComponent<Renderer>();

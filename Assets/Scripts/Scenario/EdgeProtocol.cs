@@ -19,6 +19,8 @@ namespace EscapeFire.Scenario
         [JsonProperty("prior_challenges")] public List<string> PriorChallenges = new List<string>();
         /// <summary>Challenges actually applied (prior_challenges also lists permanently refused ones). Drives the tier.</summary>
         [JsonProperty("accepted_challenges")] public int AcceptedChallenges;
+        [JsonProperty("prior_pieces")] public List<string> PriorPieces = new List<string>();
+        [JsonProperty("blocked_routes")] public List<string> BlockedRoutes = new List<string>();
     }
 
     /// <summary>Edge server → headset decision.</summary>
@@ -49,6 +51,24 @@ namespace EscapeFire.Scenario
                 { "directive", directiveCode },
                 { "result", result.ToString() }
             });
+        }
+
+        /// <summary>V4: a composed challenge ({"type": "challenge", "pieces": [...], ...}); returns the whole object.</summary>
+        public static bool TryParseChallenge(string json, out JObject challenge)
+        {
+            challenge = null;
+            if (string.IsNullOrWhiteSpace(json)) return false;
+            try
+            {
+                var obj = JObject.Parse(json);
+                if ((string)obj["type"] != "challenge") return false;
+                challenge = obj;
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
         }
 
         /// <summary>Parses a server message. Returns false for errors, other message types or malformed JSON.</summary>

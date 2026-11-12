@@ -125,6 +125,15 @@ namespace EscapeFire.Core
         public Call114CompletedEvent(int askBacks) { AskBacks = askBacks; }
     }
 
+    /// <summary>A composed (V4) challenge was accepted ("Accepted") or rejected (reason) on the headset.</summary>
+    public readonly struct ChallengeResolvedEvent
+    {
+        public readonly string Codes;
+        public readonly string Result;
+        public readonly string Source;
+        public ChallengeResolvedEvent(string codes, string result, string source) { Codes = codes; Result = result; Source = source; }
+    }
+
     /// <summary>An unconscious victim was dragged into a protected space (stairwell).</summary>
     public readonly struct VictimSafeEvent { }
 

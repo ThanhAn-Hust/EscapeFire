@@ -1,0 +1,57 @@
+{
+  "title": "Phòng máy B1-302 — chập tủ server",
+  "room_type": "lab",
+  "width_m": 10,
+  "depth_m": 8,
+  "exits": [
+    {
+      "wall": "south",
+      "position": 0.5
+    },
+    {
+      "wall": "north",
+      "position": 0.8
+    }
+  ],
+  "furniture": [
+    {
+      "category": "computer_desk",
+      "count": 6
+    },
+    {
+      "category": "chair",
+      "count": 6
+    },
+    {
+      "category": "server_rack",
+      "count": 2
+    },
+    {
+      "category": "cabinet",
+      "count": 1
+    }
+  ],
+  "fire": {
+    "source": "server_rack",
+    "class": "E"
+  },
+  "extinguishers": [
+    {
+      "type": "CO2",
+      "count": 1
+    }
+  ],
+  "npcs": [
+    {
+      "role": "weak"
+    },
+    {
+      "role": "unconscious"
+    }
+  ],
+  "learning_goals": [
+    "R02_POWER_OFF_FIRST",
+    "R03_RIGHT_AGENT"
+  ],
+  "level": 1
+}

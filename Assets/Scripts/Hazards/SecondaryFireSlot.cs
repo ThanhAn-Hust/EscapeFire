@@ -34,6 +34,16 @@ namespace EscapeFire.Hazards
             if (flames != null) flames.localPosition = new Vector3(0f, flames.localPosition.y > 0.3f ? 0.3f : flames.localPosition.y, 0f);
         }
 
+        /// <summary>V4 FIRE_SPOT piece: ignite with a strength relative to the template fire (0.4-1.0).</summary>
+        public bool Ignite(FireHazard template, float intensityScale)
+        {
+            if (!IsAvailable) return false;
+            if (_fire == null && !Ignite(template)) return false;
+            _fire.InitialIntensity = (template != null ? template.InitialIntensity : _fire.InitialIntensity) * Mathf.Clamp(intensityScale, 0.1f, 1f);
+            _fire.ResetFire();
+            return _fire.isActiveAndEnabled && !_fire.IsSuppressed;
+        }
+
         public bool Ignite(FireHazard template)
         {
             if (!IsAvailable) return false;
