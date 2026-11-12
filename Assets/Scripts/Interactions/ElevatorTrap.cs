@@ -23,6 +23,7 @@ namespace EscapeFire.Interactions
         private float _calledAt = -1f;
         private Transform _head;
         private bool _failed;
+        private bool _learnerCalled;
 
         public bool Called => _calledAt >= 0f;
         public bool DoorsOpen { get; private set; }
@@ -40,11 +41,20 @@ namespace EscapeFire.Interactions
             if (rightDoor != null) _r0 = rightDoor.position;
         }
 
+        public Bounds Car => car;
+        /// <summary>Someone else (a panicking NPC) called the lift: no penalty for the learner; the car takes longer.</summary>
+        public void CallByNpc(float extraDelay)
+        {
+            if (Called) return;
+            _calledAt = Time.time + extraDelay;
+        }
+
         /// <summary>Call button pressed (fingertip poke).</summary>
         public void CallPressed()
         {
-            if (Called) return;
-            _calledAt = Time.time;
+            if (_learnerCalled) return;
+            _learnerCalled = true;
+            _calledAt = Called ? Mathf.Min(_calledAt, Time.time) : Time.time;
             ElevatorUsedThisSession = true;
             if (ScoringManager.Instance != null) ScoringManager.Instance.DeductScore(20, "Gọi thang máy khi đang có cháy (-20đ)");
             if (GameSession.Mode == TrainingMode.Guided)

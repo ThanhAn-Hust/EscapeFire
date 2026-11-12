@@ -37,6 +37,14 @@ namespace EscapeFire.Hazards
 
         public void SetViewer(Transform t) => viewer = t;
 
+        /// <summary>True if the point is inside this room's footprint (the smoke volume).</summary>
+        public bool ContainsXZ(Vector3 p)
+        {
+            if (smokeVolumeTransform == null || !smokeVolumeTransform.TryGetComponent<Renderer>(out var room)) return true;
+            Bounds rb = room.bounds;
+            return p.x >= rb.min.x && p.x <= rb.max.x && p.z >= rb.min.z && p.z <= rb.max.z;
+        }
+
         public float CurrentSmokeHeight { get; private set; }
         public bool HasSurged { get; private set; }
 

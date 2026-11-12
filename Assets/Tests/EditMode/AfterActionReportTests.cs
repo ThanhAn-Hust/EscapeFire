@@ -27,7 +27,7 @@ namespace EscapeFire.Tests
         {
             var f = Perfect();
             var items = AfterActionReport.BuildScorecard(f);
-            Assert.AreEqual(6, items.Count);
+            Assert.AreEqual(7, items.Count);
             Assert.AreEqual(100, AfterActionReport.Total(items));
 
             var radar = AfterActionReport.BuildRadar(f, items);
@@ -42,8 +42,8 @@ namespace EscapeFire.Tests
             var f = Perfect();
             f.StandingInSmokeSeconds = 8f;
             var items = AfterActionReport.BuildScorecard(f);
-            Assert.AreEqual(12, items.Find(i => i.Key == "crouch").Points);
-            Assert.AreEqual(92, AfterActionReport.Total(items));
+            Assert.AreEqual(7, items.Find(i => i.Key == "crouch").Points);
+            Assert.AreEqual(92, AfterActionReport.Total(items)); // crouch 15 - 8
         }
 
         [Test]
@@ -51,7 +51,7 @@ namespace EscapeFire.Tests
         {
             var f = Perfect();
             f.PowerCutAt = 50f;
-            Assert.AreEqual(8, AfterActionReport.BuildScorecard(f).Find(i => i.Key == "power_cut").Points);
+            Assert.AreEqual(6, AfterActionReport.BuildScorecard(f).Find(i => i.Key == "power_cut").Points);
         }
 
         [Test]

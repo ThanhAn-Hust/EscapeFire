@@ -27,7 +27,15 @@ namespace EscapeFire.Interactions
             if (controller == null) return;
             if (requireEmergency && controller.CurrentPhase < ScenarioPhase.Phase2_ServerExplosionFire) return;
 
-            controller.TriggerHallwayEvacuationWin();
+            Reached(controller);
+        }
+
+        /// <summary>At the assembly point the warden's roll call comes first (V3.5); without one, reaching it wins.</summary>
+        private static void Reached(LabProgressiveScenarioController controller)
+        {
+            var ap = AssemblyPoint.Instance;
+            if (ap != null) ap.LearnerArrived();
+            else controller.TriggerHallwayEvacuationWin();
         }
 
         private Collider _zone;
@@ -49,7 +57,7 @@ namespace EscapeFire.Interactions
             var controller = LabProgressiveScenarioController.Instance;
             if (controller == null || (requireEmergency && controller.CurrentPhase < ScenarioPhase.Phase2_ServerExplosionFire)) return;
             if (controller.CurrentPhase >= ScenarioPhase.Phase4_CompletedWin) return;
-            if (_zone.bounds.Contains(_head.position)) controller.TriggerHallwayEvacuationWin();
+            if (_zone.bounds.Contains(_head.position)) Reached(controller);
         }
 
         private static bool IsPlayer(Collider other)

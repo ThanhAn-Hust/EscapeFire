@@ -59,7 +59,8 @@ namespace EscapeFire.Player
                                                    heightDetector.IsCrouching);
 
             float before = _model.Current;
-            bool justDepleted = _model.Tick(Time.deltaTime, breathingSmoke, depletionRateInSmoke, recoveryRate);
+            // A towel over nose and mouth (wet: much better) slows the loss (plan Phần B.1-7).
+            bool justDepleted = _model.Tick(Time.deltaTime, breathingSmoke, depletionRateInSmoke * EscapeFire.Interactions.WetTowel.BreathingFactor(), recoveryRate);
 
             if (!Mathf.Approximately(before, _model.Current))
             {

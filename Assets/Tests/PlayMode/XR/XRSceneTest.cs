@@ -27,10 +27,14 @@ namespace EscapeFire.Tests.PlayMode.XR
             Xr?.Dispose();
             Xr = null;
             Time.timeScale = 1f;
+            Application.targetFrameRate = -1;
         }
 
         protected IEnumerator LoadLab(TrainingMode mode = TrainingMode.Guided, bool stayInLab = true)
         {
+            // Run at a Quest-like frame rate: in batchmode the editor renders hundreds of frames per second, and a slow
+            // (crouched) thumbstick step per frame then falls under CharacterController.minMoveDistance (1 mm).
+            Application.targetFrameRate = 72;
             GameSession.Reset();
             GameSession.Begin(mode, "XRTEST");
             SessionResult.Reset();

@@ -120,7 +120,30 @@ namespace EscapeFire.Analytics
                 f.PassBaseRatio = atBase / spraying;
                 f.PassSweepRatio = sweeping / spraying;
             }
+            CollectV3(ref f);
             return f;
+        }
+
+        /// <summary>114 call, rescue and evacuation facts (V3), read from the scene's components at the end.</summary>
+        private static void CollectV3(ref SessionFacts f)
+        {
+            var call = EscapeFire.Scenario.Call114Dialogue.Instance;
+            f.Call114Present = call != null;
+            f.Call114Complete = call != null && call.IsComplete;
+            f.Call114AskBacks = call != null ? call.AskBacks : 0;
+            var victims = EscapeFire.NPC.VictimBody.All;
+            f.VictimPresent = victims.Count > 0;
+            f.VictimSafe = f.VictimPresent;
+            foreach (var v in victims) if (!v.IsSafe) f.VictimSafe = false;
+            var minh = FindFirstObjectByType<EscapeFire.NPC.PanicRunner>();
+            f.PanicNpcPresent = minh != null && minh.Active;
+            f.PanicNpcStopped = minh != null && minh.Stopped;
+            f.ElevatorUsed = EscapeFire.Interactions.ElevatorTrap.ElevatorUsedThisSession;
+            var wall = EscapeFire.Player.WallFollowTracker.Instance;
+            f.WallFollowRatio = wall != null ? wall.Ratio : -1f;
+            var ap = EscapeFire.Scenario.AssemblyPoint.Instance;
+            f.RollCallPresent = ap != null && ap.Arrived;
+            f.RollCallCorrect = ap != null && ap.AnswerCorrect;
         }
 
         private void OnPhase(PhaseChangedEvent e)

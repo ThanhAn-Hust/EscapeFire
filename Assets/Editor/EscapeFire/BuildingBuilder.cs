@@ -76,6 +76,7 @@ namespace EscapeFire.EditorTools
             Facade();
             AssemblyPoint(new Vector3(-7f, GroundY, -23f));
             ApplyFont();
+            RescueBuilder.Build(Log); // V3 props (sink + towel, radio, victim, Minh at the lift, roll call)
             Log.Add($"stairwells A/B down to y={GroundY}, fire doors {a.Count + b.Count}, elevator decoy, smoke zones, yard + assembly point");
         }
 
@@ -102,11 +103,11 @@ namespace EscapeFire.EditorTools
                 float y = -f * Storey;
                 // landings start 0.4 m back so they close the gap under the doorway / wall thickness
                 var land = Box(root, $"Landing_F{3 - f}", L(0f, y - 0.1f, (Landing - 0.4f) * 0.5f), rot, new Vector3(HalfWidth * 2f, 0.2f, Landing + 0.4f), concrete, true);
-                land.AddComponent<TeleportationArea>();
+                TeleportOnly(land);
                 if (f < 2)
                 {
                     var mid = Box(root, $"MidLanding_{3 - f}", L(0f, y - Storey * 0.5f - 0.1f, far - Landing * 0.5f), rot, new Vector3(HalfWidth * 2f, 0.2f, Landing), concrete, true);
-                    mid.AddComponent<TeleportationArea>();
+                    TeleportOnly(mid);
                 }
                 // on the inside of the near wall, readable for someone in the stairwell looking back at it
                 FloorSign(root, L(0f, y + 2.2f, 0.03f), rot * Quaternion.Euler(0f, 180f, 0f), f == 2 ? "TẦNG 1 — LỐI RA" : $"TẦNG {3 - f}", f == 2);
@@ -143,7 +144,7 @@ namespace EscapeFire.EditorTools
                 ramp.transform.SetPositionAndRotation((top + bottom) * 0.5f + Vector3.down * 0.03f, Quaternion.LookRotation(bottom - top, Vector3.up));
                 var rc = ramp.AddComponent<BoxCollider>();
                 rc.size = new Vector3(HalfWidth - 0.05f, 0.06f, (bottom - top).magnitude + 0.1f);
-                ramp.AddComponent<TeleportationArea>();
+                TeleportOnly(ramp);
                 // handrail on the wall side, 0.9 m above the nosings
                 float rx = away ? -HalfWidth + 0.05f : HalfWidth - 0.05f;
                 Vector3 r0 = L(rx, yTop + 0.9f, zStart), r1 = L(rx, yTop - h + 0.9f, zStart + dz * FlightRun);
@@ -246,7 +247,7 @@ namespace EscapeFire.EditorTools
             Box(_root, "Facade_Lab", new Vector3(0f, GroundY + h * 0.5f - 0.2f, 0f), Quaternion.identity, new Vector3(18.4f, h, 14.4f), concrete, true);
             Box(_root, "Facade_Corridor", new Vector3(-0.1f, GroundY + h * 0.5f - 0.2f, -10.1f), Quaternion.identity, new Vector3(6.1f, h, 6.2f), concrete, true);
             var yard = Box(_root, "Yard", new Vector3(0f, GroundY - 0.1f, -10f), Quaternion.identity, new Vector3(140f, 0.2f, 140f), Mat("EF_Grass", new Color(0.32f, 0.5f, 0.28f)), true);
-            yard.AddComponent<TeleportationArea>();
+            TeleportOnly(yard);
             Box(_root, "Path", new Vector3(-3.5f, GroundY + 0.005f, -19f), Quaternion.identity, new Vector3(3f, 0.01f, 12f), Mat("EF_Path", new Color(0.6f, 0.58f, 0.55f)), false);
         }
 
@@ -317,7 +318,17 @@ namespace EscapeFire.EditorTools
             if (wall.TryGetComponent<Collider>(out var wc)) wc.enabled = false;
         }
 
-        private static GameObject Box(Transform parent, string name, Vector3 pos, Quaternion rot, Vector3 size, Material mat, bool collider)
+        /// <summary>
+        /// Teleport target reachable only by the teleport ray ("Teleport" interaction layer), so a hand gripping near
+        /// the floor (e.g. under a victim's arms) does not grab the floor.
+        /// </summary>
+        private static void TeleportOnly(GameObject go)
+        {
+            var area = go.AddComponent<TeleportationArea>();
+            area.interactionLayers = UnityEngine.XR.Interaction.Toolkit.InteractionLayerMask.GetMask("Teleport");
+        }
+
+        internal static GameObject Box(Transform parent, string name, Vector3 pos, Quaternion rot, Vector3 size, Material mat, bool collider)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = name;
@@ -330,7 +341,7 @@ namespace EscapeFire.EditorTools
             return go;
         }
 
-        private static GameObject Cylinder(Transform parent, string name, Vector3 a, Vector3 b, float diameter, Material mat)
+        internal static GameObject Cylinder(Transform parent, string name, Vector3 a, Vector3 b, float diameter, Material mat)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             go.name = name;
@@ -361,7 +372,7 @@ namespace EscapeFire.EditorTools
             glow.transform.position = pos - rot * Vector3.forward * 0.3f;
         }
 
-        private static void Label(Transform parent, string name, Vector3 pos, Quaternion rot, Vector2 size, float fontSize, string text)
+        internal static void Label(Transform parent, string name, Vector3 pos, Quaternion rot, Vector2 size, float fontSize, string text)
         {
             var go = new GameObject(name, typeof(RectTransform));
             var rt = (RectTransform)go.transform;
@@ -386,7 +397,7 @@ namespace EscapeFire.EditorTools
 
         private static Vector3 Abs(Vector3 v) => new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
 
-        private static Material Mat(string name, Color c, float smooth = 0.3f, float metal = 0f)
+        internal static Material Mat(string name, Color c, float smooth = 0.3f, float metal = 0f)
         {
             string path = "Assets/Settings/" + name + ".mat";
             var m = AssetDatabase.LoadAssetAtPath<Material>(path);

@@ -4,7 +4,7 @@
       "id": "R01_ALARM_EARLY",
       "title": "Báo cháy sớm",
       "statement": "Phát hiện cháy phải báo ngay cho mọi người xung quanh (hô hoán, nhấn nút báo cháy) và gọi 114.",
-      "usedBy": ["score:alarm", "socratic:AlarmNotRaised", "lesson:station4"],
+      "usedBy": ["score:alarm", "socratic:AlarmNotRaised", "lesson:station4", "radio:Call114Dialogue"],
       "sources": [
         { "name": "Luật PCCC và CNCH số 55/2024/QH15 (hiệu lực 01/7/2025), Điều 6 Báo cháy", "url": "https://luatvietnam.vn/tin-van-ban-moi/da-co-luat-phong-chay-chua-chay-va-cuu-nan-cuu-ho-cua-quoc-hoi-so-55-2024-qh15-186-100286-article.html" },
         { "name": "OSHA eTool: Emergency action – alarm & evacuation", "url": "https://osha.prod.pace.dol.gov/etools/evacuation-plans-procedures/emergency-standards/portable-extinguishers/use" }
@@ -86,7 +86,7 @@
       "id": "R09_RESCUE_KEEP_LOW",
       "title": "Hỗ trợ người bị nạn trong khói",
       "statement": "Người còn tỉnh: dìu đi, cả hai giữ thấp. Người bất tỉnh: kéo sát sàn (Rautek / kéo bằng chăn), giữ đầu thấp, bảo vệ đầu cổ khi xuống cầu thang.",
-      "usedBy": ["score:rescue", "npc:EscortGrip"],
+      "usedBy": ["score:rescue", "npc:EscortGrip", "npc:VictimBody"],
       "sources": [
         { "name": "Fire Engineering – Civilian Rescue: Removing the Occupant", "url": "https://www.fireengineering.com/firefighting/civilian-rescue-removing-the-occupant/" },
         { "name": "Miami-Dade – Victim Removal Techniques", "url": "https://mdsceh.miamidade.gov/mobi/moms/section%2006%20-%20victim%20removal%20techniques.pdf" }
@@ -96,7 +96,7 @@
       "id": "R10_NO_ELEVATOR",
       "title": "Không dùng thang máy, đi cầu thang bộ theo biển EXIT",
       "statement": "Khi cháy không dùng thang máy; đi cầu thang bộ theo biển EXIT, tay tựa tường/lan can, thấy nóng thì quay lại.",
-      "usedBy": ["lesson:station5", "building:ElevatorTrap"],
+      "usedBy": ["score:evacuation", "lesson:station5", "building:ElevatorTrap", "npc:PanicRunner"],
       "sources": [
         { "name": "TDI Texas – High-rise buildings Q&A (NFPA 101 §7.14)", "url": "https://Www.Tdi.Texas.Gov/pubs/videoresource/qahighrisebldge.pdf" },
         { "name": "SGGP – Thoát nạn khi cháy cao ốc", "url": "https://www.sggp.org.vn/thoat-nan-khi-chay-cao-oc-post471983.html" }

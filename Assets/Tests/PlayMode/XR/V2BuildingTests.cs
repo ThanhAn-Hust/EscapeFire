@@ -14,78 +14,8 @@ namespace EscapeFire.Tests.PlayMode.XR
     /// V2 — floor 3 corridor, push-bar fire doors, elevator decoy, two storeys of stairs walked down with the
     /// thumbstick (real XRI locomotion + gravity on the ramps), out to the assembly point.
     /// </summary>
-    public class V2BuildingTests : XRSceneTest
+    public class V2BuildingTests : BuildingSceneTest
     {
-        private static readonly Vector3 HeadLocal = new Vector3(0f, 1.6f, 0f);
-        private XROrigin _origin;
-
-        private IEnumerator Setup(TrainingMode mode, Vector3 originPos, float yaw)
-        {
-            yield return LoadLab(mode);
-            Assert.IsNotNull(GameObject.Find("[BUILDING_V2]"), "Run EscapeFire > V2 > Build Building");
-            LabProgressiveScenarioController.Instance.SetPhase(ScenarioPhase.Phase2_ServerExplosionFire);
-            _origin = Xr.Origin;
-            // Scenario setup: the learner starts this test already in the corridor (not a learner action).
-            var cc = _origin.GetComponent<CharacterController>();
-            if (cc != null) cc.enabled = false;
-            _origin.transform.SetPositionAndRotation(originPos, Quaternion.identity);
-            if (cc != null) cc.enabled = true;
-            Body(yaw);
-            yield return Xr.Wait(0.3f);
-        }
-
-        /// <summary>Head at the centre of the play area looking along <paramref name="yaw"/>, hands relaxed in front.</summary>
-        private void Body(float yaw, float headY = 1.6f)
-        {
-            // Head height above the rig's floor: the camera offset object may sit above the origin (Device mode).
-            headY -= Xr.TrackingSpace.position.y - Xr.Origin.transform.position.y;
-            Xr.SetHeadTracking(new Vector3(0f, headY, 0f), yaw);
-            Quaternion q = Quaternion.Euler(0f, yaw, 0f);
-            Vector3 tl = Xr.TrackingSpace.InverseTransformDirection(q * new Vector3(-0.2f, -0.5f, 0.25f));
-            Vector3 tr = Xr.TrackingSpace.InverseTransformDirection(q * new Vector3(0.2f, -0.5f, 0.25f));
-            Xr.SetHandTracking(Hand.Left, new Vector3(0f, headY, 0f) + tl, q);
-            Xr.SetHandTracking(Hand.Right, new Vector3(0f, headY, 0f) + tr, q);
-        }
-
-        /// <summary>Walks with the left thumbstick (head-relative) to each waypoint; returns false if stuck.</summary>
-        private IEnumerator StickWalk(params Vector3[] waypoints)
-        {
-            foreach (var wp in waypoints)
-            {
-                float t = 0f;
-                while (true)
-                {
-                    Vector3 head = Xr.Camera.transform.position;
-                    Vector3 d = wp - head;
-                    d.y = 0f;
-                    if (d.magnitude < 0.25f) break;
-                    t += Time.deltaTime;
-                    Assert.Less(t, 20f, $"stuck walking to {wp} (head at {head})");
-                    Body(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg);
-                    Xr.Thumbstick(Hand.Left, new Vector2(0f, 1f));
-                    yield return null;
-                }
-            }
-            Xr.Thumbstick(Hand.Left, Vector2.zero);
-            yield return Xr.Wait(0.2f);
-        }
-
-        /// <summary>Pushes a door's bar with the right hand (4 cm in) and holds a moment.</summary>
-        private IEnumerator PushBar(PushBarDoor door)
-        {
-            var bar = door.GetComponentInChildren<Collider>(true);
-            foreach (var c in door.GetComponentsInChildren<Collider>(true)) if (c.name == "PushBar") bar = c;
-            Vector3 push = door.transform.forward;
-            Vector3 face = bar.bounds.center - push * 0.03f;
-            Quaternion rot = Quaternion.LookRotation(push);
-            yield return Xr.MoveHand(Hand.Right, face - push * 0.15f, rot, 0.3f);
-            yield return Xr.MoveHand(Hand.Right, face + push * 0.04f, rot, 0.3f);
-            yield return Xr.Wait(0.6f);
-        }
-
-        private static PushBarDoor Door(string stairwell, string name) =>
-            GameObject.Find("[BUILDING_V2]").transform.Find(stairwell + "/" + name).GetComponent<PushBarDoor>();
-
         /// <summary>Screenshots of the new spaces from good viewpoints (rig placed directly: setup, not a learner action).</summary>
         [UnityTest]
         public IEnumerator Tour_Screenshots()
@@ -190,7 +120,16 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return StickWalk(W(2.4f, 0.7f), new Vector3(-6f, 0f, -18f), new Vector3(-7f, 0f, -22.5f));
             yield return Xr.Wait(0.3f);
             Shot("assembly_point");
-            Assert.AreEqual(ScenarioPhase.Phase4_CompletedWin, LabProgressiveScenarioController.Instance.CurrentPhase, "reaching the assembly point completes the evacuation");
+            var ap = AssemblyPoint.Instance;
+            Assert.IsTrue(ap != null && ap.Arrived, "the warden asks for the roll call at the assembly point");
+            Assert.AreNotEqual(ScenarioPhase.Phase4_CompletedWin, LabProgressiveScenarioController.Instance.CurrentPhase, "not over before reporting");
+            // Nam was left in the corridor and Minh went into the lift: report people still inside, corridor / lift.
+            Assert.AreEqual(AssemblyPoint.Report.StillInsideCorridorOrLift, ap.Expected);
+            yield return StickWalk(new Vector3(-7f, 0f, -23.5f)); // up to the warden's board
+            Body(180f);
+            yield return PressReport("Report_CorridorLift");
+            Assert.IsTrue(ap.AnswerCorrect, "correct roll-call report");
+            Assert.AreEqual(ScenarioPhase.Phase4_CompletedWin, LabProgressiveScenarioController.Instance.CurrentPhase, "reported: the evacuation is complete");
         }
 
         [UnityTest]

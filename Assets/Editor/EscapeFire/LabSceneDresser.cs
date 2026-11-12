@@ -42,7 +42,7 @@ namespace EscapeFire.EditorTools
                 return floor != null && floor.TryGetComponent<Renderer>(out var r) ? r.bounds.max.y : 0f;
             }
         }
-        private const float HUMAN_HEIGHT = 1.7f;
+        internal const float HUMAN_HEIGHT = 1.7f;
 
         [MenuItem("EscapeFire/M6/Dress Lab With Real Assets")]
         public static void DressLab()
@@ -531,7 +531,7 @@ namespace EscapeFire.EditorTools
         }
 
         /// <summary>Synty characters import in T-pose and the pack has no animations: set a relaxed standing pose via humanoid muscles.</summary>
-        private static void ApplyStandingPose(GameObject model, List<string> log)
+        internal static void ApplyStandingPose(GameObject model, List<string> log)
         {
             var animator = model.GetComponentInChildren<Animator>();
             if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
@@ -791,7 +791,7 @@ namespace EscapeFire.EditorTools
         private static Transform NearestNamed(Vector3 p, string name) =>
             AllNamed(n => n == name).OrderBy(t => Vector3.Distance(t.position, p)).FirstOrDefault();
 
-        private static GameObject InstantiateNatural(string path, string name, Transform parent)
+        internal static GameObject InstantiateNatural(string path, string name, Transform parent)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (prefab == null)
@@ -832,7 +832,7 @@ namespace EscapeFire.EditorTools
         }
 
         /// <summary>Moves the object so its world-bounds bottom-centre sits exactly at <paramref name="bottomCentre"/>.</summary>
-        private static void PlaceOnSurface(GameObject go, Vector3 bottomCentre)
+        internal static void PlaceOnSurface(GameObject go, Vector3 bottomCentre)
         {
             Bounds b = WorldBounds(go);
             Vector3 delta = bottomCentre - new Vector3(b.center.x, b.min.y, b.center.z);

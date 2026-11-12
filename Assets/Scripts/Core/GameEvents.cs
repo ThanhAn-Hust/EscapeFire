@@ -118,4 +118,20 @@ namespace EscapeFire.Core
         public readonly float RemainingSeconds;
         public Fm200CountdownEvent(Fm200Stage stage, float remaining) { Stage = stage; RemainingSeconds = remaining; }
     }
+    /// <summary>A 114 call over the radio has all four items (address, floor, what is burning, people trapped).</summary>
+    public readonly struct Call114CompletedEvent
+    {
+        public readonly int AskBacks;
+        public Call114CompletedEvent(int askBacks) { AskBacks = askBacks; }
+    }
+
+    /// <summary>An unconscious victim was dragged into a protected space (stairwell).</summary>
+    public readonly struct VictimSafeEvent { }
+
+    /// <summary>The learner answered the warden's roll call at the assembly point.</summary>
+    public readonly struct RollCallAnsweredEvent
+    {
+        public readonly bool Correct;
+        public RollCallAnsweredEvent(bool correct) { Correct = correct; }
+    }
 }

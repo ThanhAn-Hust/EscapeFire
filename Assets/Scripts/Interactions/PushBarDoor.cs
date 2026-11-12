@@ -29,6 +29,9 @@ namespace EscapeFire.Interactions
         private float _lastActivity = -100f;
         private Transform _head;
 
+        /// <summary>Things that hold a door open while they are in the doorway (e.g. a victim being dragged through).</summary>
+        public static readonly System.Collections.Generic.List<Transform> DoorwayOccupants = new System.Collections.Generic.List<Transform>();
+
         public bool IsOpen => _angle > 30f;
         public float Angle => _angle;
         /// <summary>Total seconds this door has stood open (smoke leak into the stairs).</summary>
@@ -54,6 +57,7 @@ namespace EscapeFire.Interactions
             }
             bool pushed = BarPushed();
             bool someoneInDoorway = _head != null && InDoorway(_head.position);
+            foreach (var o in DoorwayOccupants) if (o != null && InDoorway(o.position + Vector3.up * 0.3f)) someoneInDoorway = true;
             if (pushed || (someoneInDoorway && _angle > 5f)) _lastActivity = Time.time;
             bool wantOpen = pushed || Time.time - _lastActivity < holdOpenSeconds;
             float before = _angle;

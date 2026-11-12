@@ -48,6 +48,8 @@ namespace EscapeFire.Tests.PlayMode
                 yield return Wait(rec, "Fire erupts", 0.5f);
 
                 rec.Action("Press fire alarm"); Object.FindFirstObjectByType<FireAlarmButton>().PushAlarmButton();
+                rec.Action("Call 114 with all four items");
+                Call114Dialogue.Instance?.Hear("Cháy tủ server phòng Lab 302 tầng 3 tòa B1 Đại học Bách Khoa, có người bị ngất");
                 rec.Action("Cut main breaker (Aptomat)"); Object.FindFirstObjectByType<CircuitBreakerSwitch>().SetPowerState(false);
                 var co2 = Extinguisher(ExtinguisherType.CO2);
                 rec.Action("Pull CO2 safety pin"); co2.PullSafetyPin();
@@ -59,6 +61,12 @@ namespace EscapeFire.Tests.PlayMode
                 hoa.TriggerEmergencyReaction();
                 rec.Action("Rescue Hoa"); hoa.RescueNPC();
                 rec.Action("Check door handle with back of hand"); Object.FindFirstObjectByType<DoorHeatChecker>().CheckDoorHeatWithHand();
+                foreach (var v in EscapeFire.NPC.VictimBody.All)
+                {
+                    rec.Action("Move unconscious Nam into stairwell A (logic shortcut; the VR drag is in V3RescueTests)");
+                    v.transform.SetPositionAndRotation(new Vector3(0f, 0f, -13.6f), Quaternion.LookRotation(Vector3.back));
+                }
+                yield return Wait(rec, "Nam safe", 0.2f);
                 rec.Action("Walk into the hallway"); c.TriggerHallwayEvacuationWin();
                 yield return Wait(rec, "Debrief", 0.5f);
 
