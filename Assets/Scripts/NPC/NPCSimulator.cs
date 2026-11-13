@@ -218,6 +218,9 @@ namespace EscapeFire.NPC
             if (toTarget.sqrMagnitude <= arriveDistance * arriveDistance)
             {
                 _state = State.Gone;
+                // V5.2: say where she went (she reappears with the group at the assembly point)
+                if (role == NPCRole.HoaFaint && IsRescued)
+                    EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent("Hoa đã ra khỏi phòng và tự đi tiếp xuống cầu thang bộ cùng mọi người."));
                 gameObject.SetActive(false); // left the room through the door
                 return;
             }

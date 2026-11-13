@@ -85,8 +85,37 @@ namespace EscapeFire.Tests.PlayMode.XR
             for (int i = 0; i < 3 && Xr.Origin != null; i++) yield return null;
         }
 
+        private readonly System.Collections.Generic.List<string> _problems = new System.Collections.Generic.List<string>();
+
+        /// <summary>V5.3: errors, exceptions and the warnings that point at real problems, seen during the whole flow.</summary>
+        private void OnLog(string message, string stack, LogType type)
+        {
+            if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)
+            {
+                if (message.Contains("haptic")) return; // simulated controllers have no haptics
+                _problems.Add(type + ": " + message);
+            }
+            else if (type == LogType.Warning && (message.Contains("multiple active and enabled XR Interaction Manager") || message.Contains("was not found in the")))
+                _problems.Add("Warning: " + message.Split('\n')[0]);
+        }
+
         [UnityTest, Timeout(600000)]
         public IEnumerator WholeFlow_FingertipOnly_NoDeadEnds()
+        {
+            _problems.Clear();
+            Application.logMessageReceived += OnLog;
+            try
+            {
+            yield return WholeFlow();
+            }
+            finally
+            {
+                Application.logMessageReceived -= OnLog;
+            }
+            Assert.IsEmpty(_problems, "console during the flow:\n" + string.Join("\n", _problems));
+        }
+
+        private IEnumerator WholeFlow()
         {
             Application.targetFrameRate = 72;
             ProgressionStore.KeyPrefix = "EF_test_progress_";

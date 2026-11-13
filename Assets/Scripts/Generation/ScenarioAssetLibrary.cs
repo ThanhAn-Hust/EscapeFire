@@ -20,6 +20,8 @@ namespace EscapeFire.Generation
             public GameObject[] prefabs = new GameObject[0];
             [Tooltip("Optional things put on top (computer on a computer desk).")]
             public GameObject[] toppers = new GameObject[0];
+            [Tooltip("V5.2: things placed on the shelf levels (books on a bookshelf).")]
+            public GameObject[] shelfFill = new GameObject[0];
         }
 
         public List<Entry> categories = new List<Entry>();

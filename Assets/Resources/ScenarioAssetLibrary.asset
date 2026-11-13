@@ -20,6 +20,7 @@ MonoBehaviour:
     - {fileID: 1738513454615862, guid: 2cbdb7aa28ac8494484bc599cc1df917, type: 3}
     - {fileID: 1440611451762170, guid: 7916be8eb63d3124c9b8f2789c8e284f, type: 3}
     toppers: []
+    shelfFill: []
   - category: computer_desk
     prefabs:
     - {fileID: 1673286946664930, guid: d32f89611c5289c498c49885d9e7cd91, type: 3}
@@ -27,6 +28,7 @@ MonoBehaviour:
     toppers:
     - {fileID: 1048865767074944, guid: 33af453d4902e2442b719d9987401e21, type: 3}
     - {fileID: 1229623506149016, guid: 050f0cb108ae74e4c826afdb611ecb07, type: 3}
+    shelfFill: []
   - category: chair
     prefabs:
     - {fileID: 1743707620356134, guid: 51bf789fc9fa2e44499d7c3d307e53f5, type: 3}
@@ -35,27 +37,32 @@ MonoBehaviour:
     - {fileID: 1776605243872454, guid: ab77ddfb12a0d0b4483ddbb53202bcc2, type: 3}
     - {fileID: 1639133898463432, guid: d1fc99d1fc5715c4da4882d0721692ee, type: 3}
     toppers: []
+    shelfFill: []
   - category: table
     prefabs:
     - {fileID: 1013625887911676, guid: 0d25925436c2e3049827349748fb9d1e, type: 3}
     - {fileID: 1019674744241470, guid: 7a990801c8b837e42aa5e4f8dfea2bba, type: 3}
     - {fileID: 1115191835829234, guid: 60059935fc5d69f4786f8c8627d5d329, type: 3}
     toppers: []
+    shelfFill: []
   - category: round_table
     prefabs:
     - {fileID: 1944276128519222, guid: 3323d26f477e9684e9c32005b3043078, type: 3}
     - {fileID: 1887552898740122, guid: ab2c041051091844c976095522d97e14, type: 3}
     toppers: []
+    shelfFill: []
   - category: conference_table
     prefabs:
     - {fileID: 1405234640939864, guid: 587289a1c70745b489e23d3f55238ca5, type: 3}
     - {fileID: 1189045428574336, guid: 2cab21a5507d8ae489a11a8116fbe421, type: 3}
     - {fileID: 1801038587664054, guid: d567edefea61e5a4e8eda9fa3855a49b, type: 3}
     toppers: []
+    shelfFill: []
   - category: drafting_table
     prefabs:
     - {fileID: 1086867930000170, guid: f9dccd985176a8d44968919da0aa3455, type: 3}
     toppers: []
+    shelfFill: []
   - category: bookshelf
     prefabs:
     - {fileID: 1916341488776606, guid: 8ec164872d71a434d8b0ceaf0036f441, type: 3}
@@ -63,39 +70,51 @@ MonoBehaviour:
     - {fileID: 1374604018226924, guid: 3397d8b7b0bb1844890ea1fb8302a1da, type: 3}
     - {fileID: 1412280565620340, guid: 91fb0d151b33a394492640229f6b248a, type: 3}
     toppers: []
+    shelfFill:
+    - {fileID: 1333485811181878, guid: 3e50ad8d5b8ed4143ad2f6882db1dcb3, type: 3}
+    - {fileID: 1678797560971030, guid: a75d54721660055458ad1b98221ba023, type: 3}
+    - {fileID: 1011409703358838, guid: 035611dae95ce32489d2e82edd88366a, type: 3}
+    - {fileID: 1330891398512194, guid: 8f0587a2938cc0641ba7cba661d83bbe, type: 3}
+    - {fileID: 1728305430736548, guid: c141e5639a58b864db32e1b33025ea6f, type: 3}
   - category: cabinet
     prefabs:
     - {fileID: 1227193648296024, guid: 15fa9e280fc90fe408f14660ac85d0f8, type: 3}
     - {fileID: 1609770412431588, guid: cdde662d641d7dd4fa1082279978472b, type: 3}
     - {fileID: 1168567906988528, guid: 504ddc0712bae274aa47df4601826d55, type: 3}
     toppers: []
+    shelfFill: []
   - category: server_rack
     prefabs:
     - {fileID: 1832510419397202, guid: 7d1ab1afe627d24439d8dc51aee708c4, type: 3}
     - {fileID: 1495341872947402, guid: 660bc4c6b1f4b024a8447ffe0af22720, type: 3}
     - {fileID: 1655390188902338, guid: b79b23745fd26fc4da21c875f8b5d5cb, type: 3}
     toppers: []
+    shelfFill: []
   - category: chemical_cabinet
     prefabs:
     - {fileID: 1354747032192406, guid: fd78abefc2a7dac4cadd2725034d55cf, type: 3}
     - {fileID: 1020571830120370, guid: 9b79236471f466d4493063b6bb7c1ce1, type: 3}
     - {fileID: 1574774173835446, guid: acb8028c6738c8642b20c2f467061501, type: 3}
     toppers: []
+    shelfFill: []
   - category: kitchen_counter
     prefabs:
     - {fileID: 1679496536904426, guid: 859fb1081cf847c46bb9f3873f572d95, type: 3}
     - {fileID: 1631404053280436, guid: 2dcbd72587e28b644a827a45fc987b91, type: 3}
     - {fileID: 1521813792959976, guid: 650ab387a200feb4f9c054b3d874cb86, type: 3}
     toppers: []
+    shelfFill: []
   - category: fridge
     prefabs:
     - {fileID: 1079244487273070, guid: 294846ac9d8117143af186bb96c898b7, type: 3}
     - {fileID: 1137500251436412, guid: e4c6f660ae6b78848843fec55a87c90f, type: 3}
     toppers: []
+    shelfFill: []
   - category: vending_machine
     prefabs:
     - {fileID: 1859815766705116, guid: 44d9af18099fee6479d9452e6e11791a, type: 3}
     toppers: []
+    shelfFill: []
   - category: couch
     prefabs:
     - {fileID: 1252590852865766, guid: 88eeba5740346094a952e5fbeeccd7d2, type: 3}
@@ -103,11 +122,13 @@ MonoBehaviour:
     - {fileID: 1289289775441498, guid: 89a2f5dca3a597f4f8f4ab7be04660c5, type: 3}
     - {fileID: 1517905921537994, guid: 11bececf6299b2b44bbf91e9287ff06c, type: 3}
     toppers: []
+    shelfFill: []
   - category: printer
     prefabs:
     - {fileID: 1810212851818822, guid: 5805ea9f4f3be384fbcc157d4d9f35f3, type: 3}
     - {fileID: 1467095614957650, guid: 5fbecf6373353854893f75b135c5a327, type: 3}
     toppers: []
+    shelfFill: []
   - category: trash_bin
     prefabs:
     - {fileID: 1611205932882152, guid: 1eba00bb7ff8a8c4ab365a633bdf469b, type: 3}
@@ -115,23 +136,27 @@ MonoBehaviour:
     - {fileID: 1327925162409870, guid: ab25458a76835ce4f8a8b5b80c8af591, type: 3}
     - {fileID: 1922078477673230, guid: e90f3565c0687a74db2ed0504ebd6243, type: 3}
     toppers: []
+    shelfFill: []
   - category: cardboard_boxes
     prefabs:
     - {fileID: 1570604980380462, guid: 6c58b9fbb6ab1ca4399843d44a681bbb, type: 3}
     - {fileID: 1604850509592136, guid: f0bfb58546547264682d6066f7947e72, type: 3}
     - {fileID: 1169506447384916, guid: e572dd11dee7eb14794803f02e8d0714, type: 3}
     toppers: []
+    shelfFill: []
   - category: cart
     prefabs:
     - {fileID: 1915310369252484, guid: 60a79ae782001844fa05346e8c8bd19e, type: 3}
     - {fileID: 1718072438747442, guid: 2e58cb4b8c8f88b449a324dd5c95f113, type: 3}
     - {fileID: 1866648633962160, guid: 66620cb2508cb9f4fa964848b1c604ff, type: 3}
     toppers: []
+    shelfFill: []
   - category: divider
     prefabs:
     - {fileID: 1992897880895982, guid: fbe9cf2653057f44097eeddd318b5848, type: 3}
     - {fileID: 1381466202903604, guid: 5e8a166929e85ed46b6e9e83374d120f, type: 3}
     toppers: []
+    shelfFill: []
   - category: plant
     prefabs:
     - {fileID: 1234377832396472, guid: 78b0424b512800649b2febdd53bcc97d, type: 3}
@@ -140,6 +165,7 @@ MonoBehaviour:
     - {fileID: 1389249516748214, guid: 1dd1177e0d61d794ba8753dba0199b03, type: 3}
     - {fileID: 1172397810951134, guid: 5eb49df45ea314a43b304e8399bbdbdd, type: 3}
     toppers: []
+    shelfFill: []
   co2Extinguisher: {fileID: 4745073576424296577, guid: 2778ec9397799204395ba9d2f438fe17, type: 3}
   waterExtinguisher: {fileID: 2401538715602100524, guid: 42012fdd464258047aad9ae410f89353, type: 3}
   fire: {fileID: 719647068807729020, guid: d3fb44da905ca6446a6005dcd273a269, type: 3}

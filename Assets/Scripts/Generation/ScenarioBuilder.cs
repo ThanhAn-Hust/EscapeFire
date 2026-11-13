@@ -197,6 +197,7 @@ namespace EscapeFire.Generation
             var go = Instantiate(entry.prefabs[_rng.Next(entry.prefabs.Length)], Root);
             go.name = item.Category;
             Fit(go, item.W, item.D, new Vector3(item.X, 0f, item.Z), rot);
+            if (entry.shelfFill != null && entry.shelfFill.Length > 0) FillShelves(go, item, entry.shelfFill);
             if (entry.toppers.Length > 0)
             {
                 var top = Bounds(go);
@@ -206,6 +207,54 @@ namespace EscapeFire.Generation
                 t.transform.position += Vector3.up * (top.max.y - tb.min.y);
             }
             return go;
+        }
+
+        /// <summary>
+        /// V5.2: books on a bookshelf — finds the shelf boards by casting down inside the shelf (the model gets temporary
+        /// mesh colliders) and puts two groups on each board, so nothing floats or sinks into a board.
+        /// </summary>
+        private void FillShelves(GameObject shelf, LayoutSolver.Item item, GameObject[] fill)
+        {
+            // the prefab's own collider is one box around the whole shelf: switch it off and probe the real boards
+            var own = new List<Collider>();
+            foreach (var c in shelf.GetComponentsInChildren<Collider>()) if (c.enabled) { c.enabled = false; own.Add(c); }
+            var temp = new List<MeshCollider>();
+            foreach (var mf in shelf.GetComponentsInChildren<MeshFilter>())
+            {
+                if (mf.sharedMesh == null) continue;
+                var mc = mf.gameObject.AddComponent<MeshCollider>();
+                mc.sharedMesh = mf.sharedMesh;
+                temp.Add(mc);
+            }
+            Physics.SyncTransforms();
+            var b = Bounds(shelf);
+            Quaternion rot = Quaternion.Euler(0f, item.Yaw, 0f);
+            Vector3 side = rot * Vector3.right;
+            float w = Mathf.Min(item.W, b.size.x > b.size.z ? b.size.x : b.size.z);
+            foreach (float off in new[] { -w / 4f, w / 4f })
+            {
+                Vector3 start = new Vector3(b.center.x, b.max.y - 0.05f, b.center.z) + side * off;
+                float y = start.y;
+                for (int level = 0; level < 6; level++)
+                {
+                    if (!Physics.Raycast(new Vector3(start.x, y, start.z), Vector3.down, out var hit, y - b.min.y + 0.01f, ~0, QueryTriggerInteraction.Ignore)) break;
+                    if (!temp.Exists(c => c == hit.collider)) break;
+                    float clearance = y - hit.point.y;
+                    if (clearance > 0.18f || level == 0)
+                    {
+                        var g = Instantiate(fill[_rng.Next(fill.Length)], shelf.transform);
+                        g.transform.SetPositionAndRotation(hit.point, rot * Quaternion.Euler(0f, _rng.Next(2) * 180f, 0f));
+                        var gb = Bounds(g);
+                        float s = Mathf.Min(1f, (w / 2.3f) / Mathf.Max(0.05f, Mathf.Max(gb.size.x, gb.size.z)), Mathf.Max(0.1f, clearance - 0.03f) / Mathf.Max(0.05f, gb.size.y));
+                        g.transform.localScale *= s;
+                        gb = Bounds(g);
+                        g.transform.position += Vector3.up * (hit.point.y - gb.min.y);
+                    }
+                    y = hit.point.y - 0.03f; // continue below this board
+                }
+            }
+            foreach (var c in temp) Destroy(c);
+            foreach (var c in own) c.enabled = true;
         }
 
         /// <summary>Uniform scale so the model's footprint fits w x d, bottom on the floor, centred on the spot.</summary>

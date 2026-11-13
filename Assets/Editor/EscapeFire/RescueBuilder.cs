@@ -36,6 +36,7 @@ namespace EscapeFire.EditorTools
             BuildingBuilder.Build(); // calls Build(log) below at its end
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
+            FlowScenesBuilder.BakeOcclusion(); // V5.4: the shell changed, so the occlusion data is stale
         }
 
         public static void Build(List<string> log)
@@ -64,7 +65,44 @@ namespace EscapeFire.EditorTools
                 fixedAreas++;
             }
             log.Add($"teleport areas set to the Teleport layer: {fixedAreas}");
+            log.Add($"static-batched building pieces: {MarkStatic()}");
             log.Add("V3: sink + tap + towel, radio + 114 dialogue, victim Nam (Rautek), Minh at the lift, roll call board, wall-follow tracker");
+        }
+
+        /// <summary>
+        /// V5.4: the building shell never moves — mark it static so Unity batches it (the yard view drew ~385 batches).
+        /// Moving parts stay dynamic: fire-door leaves, elevator doors, smoke layers, NPCs, victims, grabbables.
+        /// </summary>
+        private static int MarkStatic()
+        {
+            int n = 0;
+            // chairs an NPC knocks over move at runtime
+            var moving = new HashSet<GameObject>();
+            foreach (var npc in Object.FindObjectsByType<NPCSimulator>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var chair = new SerializedObject(npc).FindProperty("chairToKnockOver");
+                if (chair != null && chair.objectReferenceValue is GameObject g) moving.Add(g);
+            }
+            foreach (var root in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects())
+            {
+                if (root.GetComponentInChildren<Unity.XR.CoreUtils.XROrigin>(true) != null) continue;
+                foreach (var r in root.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    var t = r.transform;
+                    bool movingChair = false;
+                    foreach (var m in moving) if (m != null && t.IsChildOf(m.transform)) movingChair = true;
+                    if (movingChair || t.GetComponentInParent<NPCSimulator>() != null || t.GetComponentInParent<EscapeFire.Hazards.FireHazard>() != null ||
+                        t.GetComponentInParent<EscapeFire.Hazards.SecondaryFireSlot>() != null) continue;
+                    if (t.GetComponentInParent<PushBarDoor>() != null || t.GetComponentInParent<ElevatorTrap>() != null ||
+                        t.GetComponentInParent<EscapeFire.Hazards.SmokeZone>() != null || t.GetComponentInParent<VictimBody>() != null ||
+                        t.GetComponentInParent<PanicRunner>() != null || t.GetComponentInParent<UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable>() != null ||
+                        t.GetComponentInParent<HingeGrab>() != null || t.GetComponentInParent<Rigidbody>() != null || t.name == "Layer")
+                        continue;
+                    GameObjectUtility.SetStaticEditorFlags(r.gameObject, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccluderStatic | StaticEditorFlags.OccludeeStatic);
+                    n++;
+                }
+            }
+            return n;
         }
 
         // ------------------------------------------------------------------ lab: sink, tap, towel

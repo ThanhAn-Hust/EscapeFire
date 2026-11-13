@@ -33,7 +33,9 @@ namespace EscapeFire.UI
                 return;
             }
 
-            float height = headTransform.localPosition.y;
+            // head above the rig's floor: correct whether the camera offset carries a height (Device mode) or not (Floor)
+            var origin = headTransform.GetComponentInParent<Unity.XR.CoreUtils.XROrigin>();
+            float height = origin != null ? headTransform.position.y - origin.transform.position.y : headTransform.localPosition.y;
             try
             {
                 GameSession.SetCalibratedHeight(height);

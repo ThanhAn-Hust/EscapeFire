@@ -73,7 +73,10 @@ namespace EscapeFire.Hazards
                 if (origin != null && origin.Camera != null) _head = origin.Camera.transform;
             }
             if (Dark && _head != null && space.Contains(_head.position))
-                SmokeFog.Request(0.22f + 0.1f * Thickness, new Color(0.02f, 0.02f, 0.025f));
+            {
+                SmokeFog.RequestDarkness(0.06f); // lights out: only emergency lights and EXIT signs
+                SmokeFog.Request(0.12f + 0.1f * Thickness, new Color(0.02f, 0.02f, 0.025f));
+            }
             if (_head != null && space.Contains(_head.position) && Thickness > 0.02f)
             {
                 bool inSmoke = _head.position.y > LayerBottom;

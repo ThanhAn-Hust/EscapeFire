@@ -39,7 +39,7 @@ namespace EscapeFire.EditorTools
             _font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FONT);
 
             Room();
-            new GameObject("XR Interaction Manager").AddComponent<XRInteractionManager>();
+            // V5.3: no scene-level XR Interaction Manager — XRI keeps one across scenes (two managers split interactors from interactables)
             new GameObject("EventSystem", typeof(EventSystem), typeof(XRUIInputModule));
             var rig = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(XR_RIG));
             rig.transform.SetPositionAndRotation(new Vector3(0f, 0f, -1f), Quaternion.identity);
@@ -211,6 +211,7 @@ namespace EscapeFire.EditorTools
             var wallMat = Mat("EF_LessonWall", new Color(0.78f, 0.78f, 0.76f));
             Prim(PrimitiveType.Cube, "CorridorWall_E", root.transform, new Vector3(-3.45f, 1.5f, -2.5f), new Vector3(0.1f, 3f, 3.0f), wallMat).AddComponent<BoxCollider>();
             var smoke = Prim(PrimitiveType.Cube, "SmokeLayer", root.transform, new Vector3(-4.5f, 2.1f, -2.5f), new Vector3(2.0f, 1.8f, 3.0f), SmokeMat());
+            smoke.AddComponent<EscapeFire.Hazards.SmokeLayerVisual>(); // V5.2: haze + drifting puffs instead of a dark box
             var check = root.AddComponent<SmokeCorridorCheck>();
             check.Configure(entry, exit, 2.0f, 1.2f);
             Vector3 p = new Vector3(-3.0f, 0f, -4.4f);

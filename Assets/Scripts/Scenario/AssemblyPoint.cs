@@ -51,14 +51,21 @@ namespace EscapeFire.Scenario
             if (Arrived) return;
             _arrivedAt = Time.time;
             if (board != null) board.SetActive(true);
-            bool hoaOut = false, minhOut = true;
+            // V5.2: only people who really got out are here (Hoa: helped up AND out of the room)
+            bool hoaTracked = false, hoaOut = false, minhOut = true;
             foreach (var n in FindObjectsByType<NPCSimulator>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (n.Role == NPCRole.HoaFaint) hoaOut = n.IsRescued;
+                if (n.Role == NPCRole.HoaFaint) { hoaTracked = true; hoaOut = n.IsRescued && !n.gameObject.activeInHierarchy; }
             var minh = FindFirstObjectByType<PanicRunner>();
             if (minh != null) minhOut = !minh.Trapped;
             if (hoaHere != null) hoaHere.SetActive(hoaOut);
             if (minhHere != null) minhHere.SetActive(minhOut);
-            Say("[Đội trưởng PCCC] Bạn ra rồi, tốt! Đã đủ người chưa? Còn ai trong tòa nhà không, ở đâu? Báo cho tôi trên bảng.");
+            var here = new System.Collections.Generic.List<string>();
+            var missing = new System.Collections.Generic.List<string>();
+            if (hoaTracked) (hoaOut ? here : missing).Add("Hoa");
+            if (minh != null) (minhOut ? here : missing).Add("Minh");
+            string roll = (here.Count > 0 ? string.Join(" và ", here) + " đã xuống tới đây. " : "") +
+                          (missing.Count > 0 ? "Chưa thấy " + string.Join(", ", missing) + ". " : "");
+            Say("[Đội trưởng PCCC] Bạn ra rồi, tốt! " + roll + "Còn ai trong tòa nhà không, ở đâu? Báo cho tôi trên bảng.");
         }
 
         public void ReportAllOut() => Answer(Report.AllOut);

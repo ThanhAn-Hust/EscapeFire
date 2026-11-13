@@ -84,7 +84,11 @@ namespace EscapeFire.EditorTools
                 var models = kv.Value.models.Select(Load).Where(g => g != null).ToArray();
                 var toppers = kv.Value.toppers.Select(Load).Where(g => g != null).ToArray();
                 missing += kv.Value.models.Length - models.Length;
-                lib.categories.Add(new ScenarioAssetLibrary.Entry { category = kv.Key, prefabs = models, toppers = toppers });
+                var entry = new ScenarioAssetLibrary.Entry { category = kv.Key, prefabs = models, toppers = toppers };
+                if (kv.Key == "bookshelf") // V5.2: books on the shelves
+                    entry.shelfFill = new[] { "SM_Prop_Book_Group_01", "SM_Prop_Book_Group_02", "SM_Prop_Book_Group_03", "SM_Prop_Book_Group_04", "SM_Prop_Book_Group_05" }
+                        .Select(Load).Where(g => g != null).ToArray();
+                lib.categories.Add(entry);
             }
             lib.co2Extinguisher = co2;
             lib.waterExtinguisher = water;
@@ -96,7 +100,7 @@ namespace EscapeFire.EditorTools
             log.Add($"library: {lib.categories.Count} categories, {lib.PrefabCount} prefabs ({missing} names not found), {lib.people.Length} people");
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            new GameObject("XR Interaction Manager").AddComponent<XRInteractionManager>();
+            // V5.3: no scene-level XR Interaction Manager — XRI keeps one across scenes (two managers split interactors from interactables)
             new GameObject("EventSystem", typeof(EventSystem), typeof(XRUIInputModule));
             var sun = new GameObject("Sun").AddComponent<Light>();
             sun.type = LightType.Directional;
