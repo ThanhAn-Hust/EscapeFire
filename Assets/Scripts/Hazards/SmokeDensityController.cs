@@ -78,6 +78,8 @@ namespace EscapeFire.Hazards
         private void Awake()
         {
             CurrentSmokeHeight = initialSmokeHeight;
+            // no smoke before the fire: the volume would grey out the ceiling (its bounds still mark the room)
+            if (smokeVolumeTransform != null && smokeVolumeTransform.TryGetComponent<Renderer>(out var vr)) vr.forceRenderingOff = true;
         }
 
 
@@ -122,6 +124,7 @@ namespace EscapeFire.Hazards
             {
                 _volumeMaterial = RuntimeVisuals.ParticleMaterial(new Color(smokeColor.r, smokeColor.g, smokeColor.b, 0.35f));
                 vr.sharedMaterial = _volumeMaterial;
+                vr.forceRenderingOff = false;
             }
         }
 

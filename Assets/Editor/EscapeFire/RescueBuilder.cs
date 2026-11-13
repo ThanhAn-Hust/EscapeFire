@@ -65,6 +65,7 @@ namespace EscapeFire.EditorTools
                 fixedAreas++;
             }
             log.Add($"teleport areas set to the Teleport layer: {fixedAreas}");
+            BuildingDressing.Build(log); // V6 graphics: ceilings, frames, signs, facade, yard
             log.Add($"static-batched building pieces: {MarkStatic()}");
             log.Add("V3: sink + tap + towel, radio + 114 dialogue, victim Nam (Rautek), Minh at the lift, roll call board, wall-follow tracker");
         }

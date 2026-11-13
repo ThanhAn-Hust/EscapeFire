@@ -110,7 +110,7 @@ namespace EscapeFire.EditorTools
                     TeleportOnly(mid);
                 }
                 // on the inside of the near wall, readable for someone in the stairwell looking back at it
-                FloorSign(root, L(0f, y + 2.2f, 0.03f), rot * Quaternion.Euler(0f, 180f, 0f), f == 2 ? "TẦNG 1 — LỐI RA" : $"TẦNG {3 - f}", f == 2);
+                FloorSign(root, L(0f, y + 2.62f, 0.03f), rot * Quaternion.Euler(0f, 180f, 0f), f == 2 ? "TẦNG 1 — LỐI RA" : $"TẦNG {3 - f}", f == 2);
                 var lamp = new GameObject($"EmergencyLight_F{3 - f}").AddComponent<Light>();
                 lamp.transform.SetParent(root, false);
                 lamp.type = LightType.Point;
@@ -265,8 +265,7 @@ namespace EscapeFire.EditorTools
             disc.transform.localScale = new Vector3(5f, 0.01f, 5f);
             disc.GetComponent<Renderer>().sharedMaterial = green;
             Box(root, "SignPost", p + new Vector3(0f, 1.2f, 2.6f), Quaternion.identity, new Vector3(0.08f, 2.4f, 0.08f), Mat("EF_Rail", new Color(0.75f, 0.75f, 0.78f), 0.7f, 0.9f), true);
-            Box(root, "SignBoard", p + new Vector3(0f, 2.3f, 2.6f), Quaternion.identity, new Vector3(1.6f, 0.7f, 0.05f), green, false);
-            Label(root, "SignText", p + new Vector3(0f, 2.3f, 2.57f), Quaternion.identity, new Vector2(1.5f, 0.6f), 1.4f, "<b>ĐIỂM TẬP KẾT</b>\nASSEMBLY POINT");
+            BuildingDressing.Sign(root, "SignBoard", "EF_Sign_Assembly", p + new Vector3(0f, 2.2f, 2.56f), Vector3.back, 0.8f, 1.0f, false, true);
             var zone = Object.FindFirstObjectByType<EvacuationExitZone>(FindObjectsInactive.Include);
             if (zone != null)
             {
@@ -361,14 +360,15 @@ namespace EscapeFire.EditorTools
 
         private static void ExitSign(Vector3 pos, Quaternion rot, string text)
         {
-            Box(_root, "ExitSignBox_" + text, pos, rot, new Vector3(0.9f, 0.22f, 0.06f), Mat("EF_ExitGreen", new Color(0.05f, 0.75f, 0.3f)), false);
-            Label(_root, "ExitSign_" + text, pos - rot * Vector3.forward * 0.04f, rot, new Vector2(0.88f, 0.2f), 0.8f, "<b>" + text + "</b>");
+            // backlit LỐI THOÁT / EXIT lightbox (V6 graphics); the arrow follows the direction in the text
+            string tex = text.Contains("→") ? "EF_Sign_Exit_Right" : text.Contains("←") ? "EF_Sign_Exit_Left" : "EF_Sign_Exit_Down";
+            BuildingDressing.Sign(_root, "ExitSign_" + text, tex, pos, -(rot * Vector3.forward), 0.8f, 0.3f, true);
             var glow = new GameObject("ExitGlow").AddComponent<Light>();
             glow.transform.SetParent(_root, false);
             glow.type = LightType.Point;
             glow.color = new Color(0.2f, 1f, 0.4f);
-            glow.range = 2.5f;
-            glow.intensity = 0.6f;
+            glow.range = 2.0f;
+            glow.intensity = 0.25f;
             glow.transform.position = pos - rot * Vector3.forward * 0.3f;
         }
 

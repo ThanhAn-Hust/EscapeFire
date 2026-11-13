@@ -68,8 +68,8 @@ namespace EscapeFire.Tests.PlayMode.XR
                     Vector3 d = wp - head;
                     d.y = 0f;
                     if (d.magnitude < 0.25f) break;
-                    t += Time.deltaTime;
-                    Assert.Less(t, 20f, $"stuck walking to {wp} (head at {head})");
+                    t += Time.unscaledDeltaTime; // real time: a paused game must fail here, not hang the run
+                    Assert.Less(t, 20f, $"stuck walking to {wp} (head at {head}, timeScale {Time.timeScale})");
                     Body(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg);
                     Xr.Thumbstick(Hand.Left, new Vector2(0f, 1f));
                     yield return null;

@@ -85,7 +85,9 @@ namespace EscapeFire.EditorTools
                         bool inHallway = path.ToLowerInvariant().Contains("hallway");
                         bool horizontallyInside = b.center.x > room.min.x - 0.5f && b.center.x < room.max.x + 0.5f &&
                                                   b.center.z > room.min.z - 0.5f && b.center.z < room.max.z + 0.5f;
-                        if (horizontallyInside && (b.max.y < room.min.y - 0.05f || b.min.y > ceilingY + 0.05f))
+                        // the storeys under the lab (facade windows of the V6 dressing) are outside the building, not in the room
+                        bool exterior = path.StartsWith("[DRESSING]/Facade") || path.StartsWith("[DRESSING]/StairWindows");
+                        if (horizontallyInside && !exterior && (b.max.y < room.min.y - 0.05f || b.min.y > ceilingY + 0.05f))
                             errors.Add($"'{path}' is below the floor or above the ceiling (y {b.min.y:F2}..{b.max.y:F2}).");
                         if (!horizontallyInside && !inHallway && b.size.magnitude < 5f && b.center.y > -1f)
                             warnings.Add($"'{path}' is outside the lab footprint at ({b.center.x:F1}, {b.center.y:F1}, {b.center.z:F1}).");
