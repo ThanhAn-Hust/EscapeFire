@@ -126,8 +126,12 @@ namespace EscapeFire.Tests.PlayMode.XR
         protected static Vector3 Flat(Vector3 v) { v.y = 0f; return v.sqrMagnitude < 1e-6f ? Vector3.forward : v.normalized; }
 
         /// <summary>Saves what the learner sees right now (rig camera) as a PNG.</summary>
+        /// <summary>Raised at every step screenshot (the gameplay video uses it for its captions).</summary>
+        public static System.Action<string> ShotTaken;
+
         protected void Shot(string name)
         {
+            ShotTaken?.Invoke(name);
             if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null || Xr == null) return;
             if (_shotDir == null)
             {
