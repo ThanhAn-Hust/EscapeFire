@@ -119,14 +119,28 @@ namespace EscapeFire.UI
             SceneFlowManager.Load(SceneNames.LAB);
         }
 
+        /// <summary>The final quiz opens once the lesson is done (it tests what the lesson taught).</summary>
+        public bool CanTakeQuiz
+        {
+            get
+            {
+                if (!requireProgression || ProgressionStore.LessonDone) return true;
+                SetStatus("Hãy học BÀI GIẢNG trước khi làm trắc nghiệm tổng.");
+                return false;
+            }
+        }
+
+        public void Refresh() => RefreshStatus();
+
         private void RefreshStatus()
         {
             string mode = _selectedMode == TrainingMode.Guided ? "Huấn luyện có Hướng dẫn" : "Sát hạch Thực chiến";
             string height = GameSession.IsCalibrated
-                ? $"H₀ = {GameSession.CalibratedHeight:F2}m (khom khi < {GameSession.CalibratedHeight * 0.7f:F2}m)"
+                ? $"H₀ = {GameSession.CalibratedHeight:F2}m (khom khi < {GameSession.CalibratedHeight * EscapeFire.Player.PostureRules.CrouchFraction:F2}m)"
                 : "Chưa hiệu chuẩn chiều cao";
             // plain words: the Vietnamese font has no check-mark / circle glyphs (they showed as blanks)
-            string ladder = $"Bài giảng: {(ProgressionStore.LessonDone ? "xong" : "chưa")}  ·  Có hướng dẫn: {(ProgressionStore.GuidedPassed ? "đạt" : "chưa")}  ·  Sát hạch: {(ProgressionStore.ExamUnlocked ? "mở" : "khoá")}";
+            string quiz = ProgressionStore.QuizBest < 0 ? "chưa làm" : $"{ProgressionStore.QuizBest}/12";
+            string ladder = $"Bài giảng: {(ProgressionStore.LessonDone ? "xong" : "chưa")}  ·  Có hướng dẫn: {(ProgressionStore.GuidedPassed ? "đạt" : "chưa")}  ·  Trắc nghiệm: {quiz}  ·  Sát hạch: {(ProgressionStore.ExamUnlocked ? "mở" : "khoá")}";
             SetStatus($"Chế độ: {mode}\n{height}\n{ladder}");
         }
 

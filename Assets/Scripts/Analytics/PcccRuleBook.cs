@@ -13,8 +13,18 @@ namespace EscapeFire.Analytics
     }
 
     [Serializable]
+    public sealed class PcccQuiz
+    {
+        [JsonProperty("question")] public string Question;
+        [JsonProperty("options")] public List<string> Options = new List<string>();
+        [JsonProperty("answer")] public int Answer;
+        [JsonProperty("why")] public string Why;
+    }
+
+    [Serializable]
     public sealed class PcccRule
     {
+        [JsonProperty("quiz")] public PcccQuiz Quiz;
         [JsonProperty("id")] public string Id;
         [JsonProperty("title")] public string Title;
         [JsonProperty("statement")] public string Statement;

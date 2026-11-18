@@ -23,6 +23,13 @@ namespace EscapeFire.Core
             set { PlayerPrefs.SetInt(KeyPrefix + "guided", value ? 1 : 0); PlayerPrefs.Save(); }
         }
 
+        /// <summary>Best score in the final quiz (number of correct answers out of 12), -1 = never taken.</summary>
+        public static int QuizBest
+        {
+            get => PlayerPrefs.GetInt(KeyPrefix + "quiz_best", -1);
+            set { PlayerPrefs.SetInt(KeyPrefix + "quiz_best", value); PlayerPrefs.Save(); }
+        }
+
         public static bool GuidedUnlocked => LessonDone;
         public static bool ExamUnlocked => LessonDone && GuidedPassed;
 
@@ -30,6 +37,7 @@ namespace EscapeFire.Core
         {
             PlayerPrefs.DeleteKey(KeyPrefix + "lesson");
             PlayerPrefs.DeleteKey(KeyPrefix + "guided");
+            PlayerPrefs.DeleteKey(KeyPrefix + "quiz_best");
             PlayerPrefs.Save();
         }
     }

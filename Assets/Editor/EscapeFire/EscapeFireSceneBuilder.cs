@@ -49,21 +49,53 @@ namespace EscapeFire.EditorTools
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             CreateEnvironment("Lobby (5m x 5m)", new Color(0.82f, 0.80f, 0.76f));
-            var canvas = CreateWorldCanvas("MainMenuCanvas", new Vector3(0f, 1.45f, 1.2f), new Vector2(1000f, 860f));
+            var canvas = CreateWorldCanvas("MainMenuCanvas", new Vector3(0f, 1.45f, 1.2f), new Vector2(1000f, 980f));
 
             var controllerGo = new GameObject("[MainMenu]");
             var menu = controllerGo.AddComponent<MainMenuController>();
 
-            CreateText(canvas, "Title", "DIỄN TẬP PCCC THỰC TẾ ẢO\nPhòng Lab Máy tính", 54, new Vector2(0f, 330f), new Vector2(950f, 150f));
-            var status = CreateText(canvas, "Status", "", 32, new Vector2(0f, 190f), new Vector2(950f, 110f));
+            // V6: the menu and the final quiz share the board; one panel is shown at a time
+            var menuPanel = CreatePanel(canvas, "MenuPanel", new Color(0f, 0f, 0f, 0f));
+            CreateText(menuPanel, "Title", "DIỄN TẬP PCCC THỰC TẾ ẢO\nPhòng Lab Máy tính", 54, new Vector2(0f, 395f), new Vector2(950f, 150f));
+            var status = CreateText(menuPanel, "Status", "", 30, new Vector2(0f, 255f), new Vector2(980f, 120f));
             SetPrivateField(menu, "statusText", status);
 
-            CreateButton(canvas, "XÁC NHẬN CHIỀU CAO (đứng thẳng)", new Vector2(0f, 65f), menu.CalibrateHeight);
-            CreateButton(canvas, "1. BÀI GIẢNG (bắt đầu từ đây)", new Vector2(0f, -30f), menu.StartLesson, 700f, new Color(0.15f, 0.45f, 0.75f));
-            CreateButton(canvas, "2. CHẾ ĐỘ: CÓ HƯỚNG DẪN", new Vector2(-240f, -125f), menu.SelectGuidedMode, 440f);
-            CreateButton(canvas, "3. CHẾ ĐỘ: SÁT HẠCH", new Vector2(240f, -125f), menu.SelectExamMode, 440f);
-            CreateButton(canvas, "BẮT ĐẦU BÀI TẬP PHÒNG LAB", new Vector2(0f, -230f), menu.StartDrill, 700f, new Color(0.75f, 0.15f, 0.12f));
-            CreateButton(canvas, "4. PHÒNG MỚI (sinh từ mô tả)", new Vector2(0f, -335f), menu.StartGeneratedRoom, 700f, new Color(0.45f, 0.25f, 0.65f));
+            CreateButton(menuPanel, "XÁC NHẬN CHIỀU CAO (đứng thẳng)", new Vector2(0f, 135f), menu.CalibrateHeight);
+            CreateButton(menuPanel, "1. BÀI GIẢNG (bắt đầu từ đây)", new Vector2(0f, 35f), menu.StartLesson, 700f, new Color(0.15f, 0.45f, 0.75f));
+            CreateButton(menuPanel, "2. CHẾ ĐỘ: CÓ HƯỚNG DẪN", new Vector2(-240f, -65f), menu.SelectGuidedMode, 440f);
+            CreateButton(menuPanel, "3. CHẾ ĐỘ: SÁT HẠCH", new Vector2(240f, -65f), menu.SelectExamMode, 440f);
+            CreateButton(menuPanel, "BẮT ĐẦU BÀI TẬP PHÒNG LAB", new Vector2(0f, -165f), menu.StartDrill, 700f, new Color(0.75f, 0.15f, 0.12f));
+
+            var quizGo = new GameObject("[FinalQuiz]");
+            var quiz = quizGo.AddComponent<FinalQuizController>();
+            CreateButton(menuPanel, "4. TRẮC NGHIỆM TỔNG (12 câu)", new Vector2(0f, -265f), quiz.Begin, 700f, new Color(0.1f, 0.5f, 0.45f));
+            CreateButton(menuPanel, "5. PHÒNG MỚI (sinh từ mô tả)", new Vector2(0f, -365f), menu.StartGeneratedRoom, 700f, new Color(0.45f, 0.25f, 0.65f));
+
+            var quizPanel = CreatePanel(canvas, "QuizPanel", new Color(0.05f, 0.08f, 0.12f, 0.92f));
+            var progress = CreateText(quizPanel, "Progress", "TRẮC NGHIỆM TỔNG", 30, new Vector2(0f, 420f), new Vector2(960f, 60f));
+            progress.color = new Color(0.65f, 0.85f, 1f);
+            var question = CreateText(quizPanel, "Question", "", 36, new Vector2(0f, 300f), new Vector2(960f, 170f));
+            var options = new Button[3];
+            UnityAction[] choose = { quiz.Choose0, quiz.Choose1, quiz.Choose2 };
+            for (int i = 0; i < 3; i++)
+                options[i] = CreateButton(quizPanel, "PHƯƠNG ÁN " + (char)('A' + i), new Vector2(0f, 150f - i * 105f), choose[i], 940f);
+            var feedback = CreateText(quizPanel, "Feedback", "", 25, new Vector2(0f, -205f), new Vector2(960f, 200f), TextAlignmentOptions.TopLeft);
+            CreateButton(quizPanel, "CÂU TIẾP THEO", new Vector2(220f, -390f), quiz.Next, 440f, new Color(0.1f, 0.5f, 0.45f));
+            var next = quizPanel.Find("Button_CÂU TIẾP THEO").gameObject;
+            CreateButton(quizPanel, "VỀ MENU (thoát trắc nghiệm)", new Vector2(-250f, -390f), quiz.BackToMenu, 440f, new Color(0.3f, 0.32f, 0.36f));
+            SetPrivateField(quiz, "menuPanel", menuPanel.gameObject);
+            SetPrivateField(quiz, "quizPanel", quizPanel.gameObject);
+            SetPrivateField(quiz, "progressText", progress);
+            SetPrivateField(quiz, "questionText", question);
+            SetPrivateField(quiz, "feedbackText", feedback);
+            SetPrivateField(quiz, "nextButton", next);
+            SetPrivateField(quiz, "menu", menu);
+            var so = new SerializedObject(quiz);
+            var arr = so.FindProperty("optionButtons");
+            arr.arraySize = 3;
+            for (int i = 0; i < 3; i++) arr.GetArrayElementAtIndex(i).objectReferenceValue = options[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+            quizPanel.gameObject.SetActive(false);
 
             SaveScene(scene, MenuPath);
         }
@@ -354,7 +386,23 @@ namespace EscapeFire.EditorTools
             return tmp;
         }
 
-        private static void CreateButton(RectTransform parent, string label, Vector2 pos, UnityAction onClick,
+        /// <summary>A full-size panel on a canvas (to swap groups of controls).</summary>
+        private static RectTransform CreatePanel(RectTransform canvas, string name, Color background)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(canvas, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var img = go.GetComponent<Image>();
+            img.color = background;
+            img.raycastTarget = background.a > 0f;
+            return rt;
+        }
+
+        private static Button CreateButton(RectTransform parent, string label, Vector2 pos, UnityAction onClick,
             float width = 700f, Color? color = null)
         {
             var go = new GameObject($"Button_{label}", typeof(Image), typeof(Button));
@@ -376,6 +424,7 @@ namespace EscapeFire.EditorTools
 
             var text = CreateText(rt, "Label", label, 30, Vector2.zero, new Vector2(width - 20f, 80f));
             text.raycastTarget = false;
+            return button;
         }
 
         private static void SetPrivateField(Object target, string field, Object value)

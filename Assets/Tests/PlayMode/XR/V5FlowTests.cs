@@ -18,73 +18,6 @@ namespace EscapeFire.Tests.PlayMode.XR
     /// </summary>
     public class V5FlowTests : BuildingSceneTest
     {
-        private IEnumerator WaitForScene(string name, float timeout = 20f)
-        {
-            for (float t = 0f; SceneManager.GetActiveScene().name != name; t += Time.unscaledDeltaTime)
-            {
-                Assert.Less(t, timeout, $"scene {name} never loaded (still in {SceneManager.GetActiveScene().name})");
-                yield return null;
-            }
-            yield return null;
-            yield return null;
-            Xr?.Dispose(); // the rig of the previous scene is gone
-            Xr = XRInputDriver.Create();
-            PlayAreaSpot = Vector3.zero;
-            yield return Xr.Wait(0.5f);
-            Debug.Log($"[Flow] {name}: origin {Xr.Origin.transform.position} yaw {Xr.Origin.transform.eulerAngles.y:F0}, camera {Xr.Camera.transform.position} fwd {Xr.Camera.transform.forward}");
-        }
-
-        /// <summary>Learner turns to face the menu / result board (for the screenshot).</summary>
-        private IEnumerator FaceBoard()
-        {
-            var canvas = Object.FindFirstObjectByType<Canvas>();
-            if (canvas == null) yield break;
-            Vector3 d = canvas.transform.position - Xr.Camera.transform.position;
-            Body(Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg, 1.6f, 5f);
-            yield return Xr.Wait(0.3f);
-        }
-
-        /// <summary>Walks up to a canvas button and presses it with the right fingertip.</summary>
-        private IEnumerator PressUi(string label)
-        {
-            UIButtonPoke target = null;
-            foreach (var b in Object.FindObjectsByType<UIButtonPoke>(FindObjectsSortMode.None))
-                if (b.name.Contains(label)) target = b;
-            Assert.IsNotNull(target, "button " + label);
-            Vector3 into = target.transform.forward; // into the canvas
-            Vector3 stand = target.transform.position - Flat(into) * 0.45f;
-            yield return StickWalk(new Vector3(stand.x, 0f, stand.z));
-            Body(Mathf.Atan2(into.x, into.z) * Mathf.Rad2Deg, 1.6f, 20f);
-            yield return Xr.Wait(0.2f);
-            int before = target.Presses;
-            Vector3 face = target.GetComponent<Collider>().ClosestPoint(target.transform.position - into * 0.2f);
-            yield return PressAndHold(Hand.Right, face, into);
-            Assert.Greater(target.Presses, before, "fingertip pressed " + label);
-        }
-
-        /// <summary>
-        /// Fingertip press that stays on the button: these buttons change the scene, so the hand must not move again
-        /// afterwards (the rig is destroyed with the old scene).
-        /// </summary>
-        private IEnumerator PressAndHold(Hand hand, Vector3 surfacePoint, Vector3 into)
-        {
-            Quaternion rot = Quaternion.LookRotation(into, Vector3.up);
-            Xr.SetHand(hand, surfacePoint - into * 0.25f, rot);
-            yield return Xr.Wait(0.05f);
-            var tip = PokeTip(hand);
-            Vector3 tipOffset = tip != null ? tip.position - Xr.HandPosition(hand) : Vector3.zero;
-            Vector3 from = surfacePoint - into * 0.06f - tipOffset, to = surfacePoint + into * 0.015f - tipOffset;
-            Xr.SetHand(hand, from, rot);
-            yield return Xr.Wait(0.1f);
-            for (float t = 0f; t < 0.4f; t += Time.deltaTime)
-            {
-                if (Xr.Origin == null) yield break; // the press already changed the scene
-                Xr.SetHand(hand, Vector3.Lerp(from, to, t / 0.4f), rot);
-                yield return null;
-            }
-            for (int i = 0; i < 3 && Xr.Origin != null; i++) yield return null;
-        }
-
         private readonly System.Collections.Generic.List<string> _problems = new System.Collections.Generic.List<string>();
 
         /// <summary>V5.3: errors, exceptions and the warnings that point at real problems, seen during the whole flow.</summary>
@@ -161,7 +94,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return WaitForScene(SceneNames.MAIN_MENU);
 
             // Menu -> a generated room -> leave by the EXIT -> AAR
-            yield return PressUi("4. PHÒNG MỚI");
+            yield return PressUi("5. PHÒNG MỚI");
             yield return WaitForScene(SceneNames.GENERATED);
             var builder = Object.FindFirstObjectByType<ScenarioBuilder>();
             Assert.IsTrue(builder.Built, string.Join(",", builder.Errors));
