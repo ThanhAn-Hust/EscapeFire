@@ -31,7 +31,7 @@ namespace EscapeFire.EditorTools
 
             Palette();
             // light bouncing off the pale floors: ceilings (faces looking down) were lit by a dark ground colour
-            RenderSettings.ambientGroundColor = new Color(0.5f, 0.49f, 0.47f);
+            RenderSettings.ambientGroundColor = new Color(0.6f, 0.59f, 0.57f);
             Ceiling("Lab", -9f, 9f, -7f, 7f, 4.5f, new[] { new Vector2(-5f, -3.5f), new Vector2(0f, -3.5f), new Vector2(5f, -3.5f), new Vector2(-5f, 2.5f), new Vector2(0f, 2.5f), new Vector2(5f, 2.5f) });
             Ceiling("Corridor", -2.95f, 2.95f, -13.15f, -7f, 4.5f, new[] { new Vector2(0f, -8.6f), new Vector2(0f, -11.6f) });
             Corridor();
@@ -151,7 +151,9 @@ namespace EscapeFire.EditorTools
             int nx = Mathf.CeilToInt((x1 - x0) / 2.5f), nz = Mathf.CeilToInt((z1 - z0) / 2.5f);
             float sx = (x1 - x0) / (nx * 2.5f), sz = (z1 - z0) / (nz * 2.5f);
             // the atlas colour of the Synty tile is a dark grey: paint the tiles off-white (their bevels keep the grid)
-            var tileMat = M("EF_CeilingTile", new Color(0.9f, 0.9f, 0.87f), 0.15f);
+            var tileMat = M("EF_CeilingTile", new Color(0.95f, 0.95f, 0.93f), 0.15f);
+            tileMat.SetColor("_BaseColor", new Color(0.95f, 0.95f, 0.93f));
+            EditorUtility.SetDirty(tileMat);
             for (int i = 0; i < nx; i++)
                 for (int j = 0; j < nz; j++) // tile pivot: max-x / min-z corner, top face
                 {
@@ -163,7 +165,9 @@ namespace EscapeFire.EditorTools
             foreach (var l in lights)
             {
                 Place("Buildings/SM_Bld_Ceiling_Panel_Light_02", new Vector3(l.x, top - 0.045f, l.y), Quaternion.identity, g);
-                BuildingBuilder.Box(g, "Diffuser", new Vector3(l.x, top - 0.08f, l.y), Quaternion.identity, new Vector3(0.95f, 0.01f, 2.0f), glow, false);
+                var diffuser = BuildingBuilder.Box(g, "Diffuser", new Vector3(l.x, top - 0.08f, l.y), Quaternion.identity, new Vector3(0.95f, 0.01f, 2.0f), glow, false);
+                // goes dark in a blackout like the room lights (it is drawn unlit)
+                diffuser.AddComponent<EscapeFire.Hazards.LampFixture>().Configure(glow, M("EF_LightDiffuserOff", new Color(0.55f, 0.55f, 0.53f), 0.6f));
             }
             // sprinklers on a ~3 m grid, smoke detectors one per ~30 m2
             for (float x = x0 + 1.5f; x < x1 - 0.5f; x += 3f)
@@ -282,9 +286,9 @@ namespace EscapeFire.EditorTools
         private static void CorridorLight()
         {
             CeilingLight("CorridorCeilingLight", new Vector3(0f, 4.1f, -10.1f), 8f, 1.2f);
-            // the lab ceiling was only lit from below by the window: two lamps under the light panels
-            CeilingLight("LabCeilingLight_W", new Vector3(-4.5f, 4.0f, -0.5f), 10f, 0.9f);
-            CeilingLight("LabCeilingLight_E", new Vector3(4.5f, 4.0f, -0.5f), 10f, 0.9f);
+            // the lab ceiling was only lit from the window: one lamp under each pair of light panels
+            foreach (var p in new[] { new Vector2(-5f, -3.5f), new Vector2(5f, -3.5f), new Vector2(-5f, 2.5f), new Vector2(5f, 2.5f) })
+                CeilingLight($"LabCeilingLight_{p.x:+0;-0}_{p.y:+0.0;-0.0}", new Vector3(p.x, 4.05f, p.y), 7.5f, 1.0f);
         }
 
         private static void CeilingLight(string name, Vector3 pos, float range, float intensity)

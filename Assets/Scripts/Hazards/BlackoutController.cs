@@ -33,6 +33,7 @@ namespace EscapeFire.Hazards
             }
             _ambientBefore = RenderSettings.ambientIntensity;
             RenderSettings.ambientIntensity = ambientDuringBlackout;
+            foreach (var lamp in FindObjectsByType<LampFixture>(FindObjectsSortMode.None)) lamp.SetOn(false);
 
             CreateEmergencyLight("EmergencyLight_Ceiling", new Vector3(0f, 4.2f, 0f), new Color(1f, 0.15f, 0.1f), 1.6f, 14f);
             var door = GameObject.Find("Main_Exit_Door_Double");
@@ -47,6 +48,7 @@ namespace EscapeFire.Hazards
             if (!IsBlackout) return;
             foreach (var (light, intensity) in _normalLights) if (light != null) light.intensity = intensity;
             RenderSettings.ambientIntensity = _ambientBefore;
+            foreach (var lamp in FindObjectsByType<LampFixture>(FindObjectsSortMode.None)) lamp.SetOn(true);
             foreach (Transform child in transform) if (child.name.StartsWith("Emergency")) Destroy(child.gameObject);
             IsBlackout = false;
         }
