@@ -12,6 +12,7 @@ namespace EscapeFire.Generation
     /// Rules of a generated room (plan V4.4): the fire burns from the start; the learner may fight it with the right
     /// extinguisher or leave. Water / foam on an electrical (class E) fire = electrocution (fail, rule R03 / NFPA 75);
     /// CO2 on a solid (class A) fire knocks the flames down but the embers re-ignite once (CO2 cools very little).
+    /// Water / foam on burning oil (class B) boils over and flares up (fail).
     /// Reaching an exit corridor ends the drill.
     /// </summary>
     public class GeneratedDrill : MonoBehaviour
@@ -65,6 +66,12 @@ namespace EscapeFire.Generation
             if (e.Type == ExtinguisherType.CO2) _co2Used = true; else _waterUsed = true;
             if (e.Type == ExtinguisherType.WaterFoam && _spec.FireClass == "E" && _fire != null && !_fire.IsExtinguished && HeadNear(_fire.BasePoint, shockDistance))
                 End(State.Failed, "Điện giật: phun nước/bọt vào thiết bị điện đang cháy (dùng bình CO2, ngắt điện trước).");
+            // Course level 3: water on burning oil boils over and throws the fire out (class B)
+            else if (e.Type == ExtinguisherType.WaterFoam && _spec.FireClass == "B" && _fire != null && !_fire.IsExtinguished && HeadNear(_fire.BasePoint, shockDistance))
+            {
+                _fire.FlareUp(3f);
+                End(State.Failed, "Dầu bùng cháy dữ dội: nước gặp dầu nóng sôi trào, bắn lửa ra xung quanh. Cháy dầu (lớp B): dùng bình CO2 hoặc chăn chữa cháy, KHÔNG dùng nước.");
+            }
         }
 
         private void OnExtinguished()
@@ -113,7 +120,7 @@ namespace EscapeFire.Generation
             Say(outcome);
             // VL.1: an unseen generated room is the transfer test of "right agent for the fire class" (R03)
             var observations = new List<EscapeFire.Analytics.SkillObservation>();
-            bool rightAgent = !(_spec.FireClass == "E" && _waterUsed) && !_reignited;
+            bool rightAgent = !((_spec.FireClass == "E" || _spec.FireClass == "B") && _waterUsed) && !_reignited;
             if (_co2Used || _waterUsed)
                 observations.Add(new EscapeFire.Analytics.SkillObservation { Skill = "R03_RIGHT_AGENT", Correct = rightAgent, Why = "phòng sinh: " + _spec.Title });
             var model = observations.Count > 0 ? EscapeFire.Analytics.SkillStore.Record(observations) : EscapeFire.Analytics.SkillStore.Load();
@@ -144,6 +151,7 @@ namespace EscapeFire.Generation
             SessionResult.RecordReview(facts, items, new EscapeFire.Analytics.SkillRadar(), Outcome, null, null);
             SessionResult.RecordSkills(observations, model);
             SessionResult.DrillScene = SceneNames.GENERATED;
+            Course.Record(total, won);
         }
 
         private IEnumerator GoToAAR()

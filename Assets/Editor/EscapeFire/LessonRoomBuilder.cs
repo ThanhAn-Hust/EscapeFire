@@ -46,6 +46,7 @@ namespace EscapeFire.EditorTools
 
             var stations = new List<LessonStation>
             {
+                Station0_Controls(),
                 Station1_FireTriangle(new Vector3(-4f, 0f, 4.4f)),
                 Station2_RightAgent(new Vector3(-1.35f, 0f, 4.4f)),
                 Station3_Pass(new Vector3(1.35f, 0f, 4.4f)),
@@ -77,6 +78,34 @@ namespace EscapeFire.EditorTools
         }
 
         // ------------------------------------------------------------------ stations
+
+        /// <summary>
+        /// Station 0 (playtest 18/11): learn the controllers before anything else — grip a block, poke a button,
+        /// crouch, walk with the thumbstick. On the west wall next to the start, laid out like station 5.
+        /// </summary>
+        private static LessonStation Station0_Controls()
+        {
+            var root = new GameObject("Station0_Controls");
+            Vector3 p = new Vector3(-4.9f, 0f, 2.3f);
+            var (board, feedback, lamp) = Board(root.transform, new Vector3(-5.95f, 0f, 2.3f), Quaternion.Euler(0f, -90f, 0f));
+            Table("Table", p, new Vector3(0.6f, TableTop, 1.2f), root.transform);
+            var block = Prim(PrimitiveType.Cube, "GrabBlock", root.transform, p + new Vector3(0.05f, TableTop + 0.06f, -0.45f), Vector3.one * 0.1f, Mat("EF_BlockYellow", new Color(0.95f, 0.75f, 0.1f)));
+            Grabbable(block, 0.3f);
+            var btn = Button("TryButton", p + new Vector3(0.05f, TableTop + 0.015f, 0.45f), "ẤN", new Color(0.2f, 0.7f, 0.3f), root.transform, 90f);
+            var poke = btn.AddComponent<PokeAction>();
+            UnityEventTools.AddVoidPersistentListener(btn.GetComponent<XRSimpleInteractable>().selectEntered, poke.Press);
+            var circle = Prim(PrimitiveType.Cylinder, "WalkCircle", root.transform, new Vector3(-3.3f, 0.005f, 2.3f), new Vector3(0.9f, 0.004f, 0.9f), Mat("EF_CircleGreen", new Color(0.2f, 0.75f, 0.35f)));
+            Object.DestroyImmediate(circle.GetComponent<Collider>());
+            var check = root.AddComponent<ControlsCheck>();
+            check.Configure(block.transform, poke, circle.transform);
+            return Station(root, p, board, feedback, lamp, check,
+                "0. Làm quen tay cầm",
+                "• Bóp nút HÔNG (ngón giữa) = nắm, cầm; thả ra = buông.\n• Bóp CÒ (ngón trỏ) = bóp cò bình, nói qua bộ đàm.\n• Chạm đầu ngón trỏ vào nút = bấm.\n• Cần analog TRÁI = đi; cần PHẢI gạt ngang = quay 45°.\n• Muốn xuống thấp: khom hoặc ngồi thật bằng người.",
+                "",
+                "Muốn cầm một vật (bình, khăn, tay nắm cửa), bạn dùng nút nào?",
+                new[] { "Nút hông tay cầm (ngón giữa)", "Cần analog", "Nút menu" }, 0,
+                "Bóp nút hông để nắm, thả ra là buông vật.", sideways: true);
+        }
 
         private static LessonStation Station1_FireTriangle(Vector3 p)
         {

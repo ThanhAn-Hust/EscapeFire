@@ -30,11 +30,11 @@ namespace EscapeFire.Tests.PlayMode.XR
             var quiz = Object.FindFirstObjectByType<FinalQuizController>();
             Assert.IsNotNull(quiz, "the menu has the final quiz (run EscapeFire > V5 > Rebuild Menu Flow Scenes)");
 
-            yield return PressUi("4. TRẮC NGHIỆM TỔNG");
+            yield return PressUi("3. TRẮC NGHIỆM TỔNG");
             Assert.IsFalse(quiz.Running, "locked before the lesson");
 
             ProgressionStore.LessonDone = true; // scenario setup: lesson finished (V1LessonTests)
-            yield return PressUi("4. TRẮC NGHIỆM TỔNG");
+            yield return PressUi("3. TRẮC NGHIỆM TỔNG");
             Assert.IsTrue(quiz.Running, "quiz started");
             Assert.AreEqual(12, quiz.Count, "one question per PCCC rule");
             yield return FaceBoard();

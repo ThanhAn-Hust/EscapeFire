@@ -176,3 +176,15 @@ MonoBehaviour:
   - {fileID: 1207000675054372, guid: 93e1de5d7ab0d25408e36ac4a41850db, type: 3}
   - {fileID: 1099670560160142, guid: 72eac7e5c7348c94d8915f3dcaa2f5eb, type: 3}
   font: {fileID: 11400000, guid: a3870498d2540094a8aa7b9e6dadfb95, type: 2}
+  floorWood: {fileID: 1945260657652118, guid: 610fb923aa6001549b857ef2559384cd, type: 3}
+  floorTiles: {fileID: 1263473793766684, guid: 8633d1fc084eee24383e522b8b29e723, type: 3}
+  ceilingTile: {fileID: 1214209354835962, guid: d6f8259009a182b409dbf91536e72166, type: 3}
+  ceilingMaterial: {fileID: 2100000, guid: 1dde1b5b292d72f49be4fb4e218fe3f5, type: 2}
+  lightDiffuser: {fileID: 2100000, guid: 1e751a626e771544eada722b668be104, type: 2}
+  exitSign: {fileID: 2100000, guid: a8651f41c1d396b45b3a6f7ac97d8026, type: 2}
+  posters:
+  - {fileID: 2100000, guid: a19fb2a91f70d99479228e70177c1585, type: 2}
+  - {fileID: 2100000, guid: 133f9dfd2913f9640811f60a82e9718e, type: 2}
+  - {fileID: 2100000, guid: 1ad2037de722214418ca3b76137d67ad, type: 2}
+  - {fileID: 2100000, guid: c13945bb1a9cd71479c0794fd92eafcd, type: 2}
+  - {fileID: 2100000, guid: e118906ecb5d4b841b429f2573e733fc, type: 2}

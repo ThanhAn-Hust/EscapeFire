@@ -98,6 +98,13 @@ namespace EscapeFire.Hazards
             }
         }
 
+        /// <summary>Course level 3: water on burning oil — the fire suddenly grows (it boils over).</summary>
+        public void FlareUp(float factor)
+        {
+            if (IsExtinguished) return;
+            FireIntensity *= Mathf.Max(1f, factor);
+        }
+
         public void Extinguish(float amount)
         {
             if (IsExtinguished) return;

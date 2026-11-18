@@ -31,6 +31,15 @@ namespace EscapeFire.Generation
         public GameObject[] people = new GameObject[0];
         public TMP_FontAsset font;
 
+        [Header("V6 room finishes (a generated room is no longer a grey box)")]
+        public GameObject floorWood;
+        public GameObject floorTiles;
+        public GameObject ceilingTile;
+        public Material ceilingMaterial;
+        public Material lightDiffuser;
+        public Material exitSign;
+        public Material[] posters = new Material[0];
+
         public Entry Find(string category) => categories.Find(e => e.category == category);
 
         public int PrefabCount

@@ -95,6 +95,15 @@ namespace EscapeFire.EditorTools
             lib.fire = fire;
             lib.people = People.Select(Load).Where(g => g != null).ToArray();
             lib.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FONT);
+            // V6 finishes of a generated room
+            lib.floorWood = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PolygonOffice/Prefabs/Buildings/SM_Bld_Floor_Wood_01.prefab");
+            lib.floorTiles = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PolygonOffice/Prefabs/Buildings/SM_Bld_Floor_Tiles_01.prefab");
+            lib.ceilingTile = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PolygonOffice/Prefabs/Buildings/SM_Bld_Ceiling_Panel_01.prefab");
+            lib.ceilingMaterial = BuildingBuilder.Mat("EF_CeilingTile", new Color(0.95f, 0.95f, 0.93f), 0.15f);
+            lib.lightDiffuser = AssetDatabase.LoadAssetAtPath<Material>("Assets/Settings/EF_LightDiffuser.mat");
+            lib.exitSign = BuildingDressing.SignMaterial("EF_Sign_Exit_Down", true);
+            lib.posters = new[] { "EF_Poster_PASS", "EF_Poster_114", "EF_Poster_Triangle", "EF_Poster_NoiQuy", "EF_Poster_4TaiCho" }
+                .Select(t => BuildingDressing.SignMaterial(t, false)).ToArray();
             EditorUtility.SetDirty(lib);
             AssetDatabase.SaveAssets();
             log.Add($"library: {lib.categories.Count} categories, {lib.PrefabCount} prefabs ({missing} names not found), {lib.people.Length} people");

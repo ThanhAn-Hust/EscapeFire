@@ -41,6 +41,8 @@ namespace EscapeFire.EditorTools
             CorridorLight();
             Facade();
             Yard();
+            LabInterior();
+            Campus();
             log.Add($"dressing: {_pieces} pieces (ceilings, lights, sprinklers, detectors, frames, signs, facade, yard)");
         }
 
@@ -121,7 +123,7 @@ namespace EscapeFire.EditorTools
 
         // ------------------------------------------------------------------ prefab placement
 
-        private static GameObject Place(string prefab, Vector3 pos, Quaternion rot, Transform parent, Vector3? scale = null, bool keepColliders = false)
+        internal static GameObject Place(string prefab, Vector3 pos, Quaternion rot, Transform parent, Vector3? scale = null, bool keepColliders = false)
         {
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(PO + prefab + ".prefab");
             if (asset == null) { Debug.LogWarning("[Dressing] missing " + prefab); return null; }
@@ -144,6 +146,15 @@ namespace EscapeFire.EditorTools
         // ------------------------------------------------------------------ ceilings
 
         /// <summary>Suspended ceiling tiles just under the structural ceiling, light panels, sprinklers and detectors.</summary>
+        /// <summary>Suspended ceiling with light panels, sprinklers and detectors under <paramref name="parent"/>.</summary>
+        internal static void CeilingInto(Transform parent, string room, float x0, float x1, float z0, float z1, float y, Vector2[] lights)
+        {
+            var keep = _root;
+            _root = parent;
+            Ceiling(room, x0, x1, z0, z1, y, lights);
+            _root = keep;
+        }
+
         private static void Ceiling(string room, float x0, float x1, float z0, float z1, float y, Vector2[] lights)
         {
             var g = Group("Ceiling_" + room);
@@ -346,6 +357,116 @@ namespace EscapeFire.EditorTools
                 BuildingBuilder.Box(g, "Band_S", new Vector3(0f, by, -7.24f), Quaternion.identity, new Vector3(18.5f, 0.3f, 0.1f), band, false);
                 BuildingBuilder.Box(g, "Band_W", new Vector3(-9.24f, by, 0f), Quaternion.identity, new Vector3(0.1f, 0.3f, 14.5f), band, false);
                 BuildingBuilder.Box(g, "Band_E", new Vector3(9.24f, by, 0f), Quaternion.identity, new Vector3(0.1f, 0.3f, 14.5f), band, false);
+                _pieces += 3;
+            }
+        }
+
+        // ------------------------------------------------------------------ V6: lab interior, campus
+
+        /// <summary>
+        /// The lab was a bare box with a grey slab for a whiteboard: two-tone walls with skirting, a whiteboard with a
+        /// lecture on it, the fire-safety rules and the escape plan by the door, a clock, ceiling air-conditioners.
+        /// </summary>
+        private static void LabInterior()
+        {
+            var g = Group("LabInterior");
+            var dado = M("EF_LabDado", new Color(0.55f, 0.62f, 0.68f));
+            var rail = M("EF_DadoRail", new Color(0.95f, 0.95f, 0.93f));
+            var skirt = M("EF_Skirting", new Color(0.25f, 0.25f, 0.27f));
+            // inner faces: north z 6.9, east x 8.9, south z -6.9 (door x -1..1); the west wall is glass
+            var runs = new[]
+            {
+                (c: new Vector3(0f, 0f, 6.894f), len: 17.8f, o: Vector3.back, gap: 99f),
+                (c: new Vector3(8.894f, 0f, 0f), len: 13.8f, o: Vector3.left, gap: 99f),
+                (c: new Vector3(-5f, 0f, -6.894f), len: 7.8f, o: Vector3.forward, gap: 99f),
+                (c: new Vector3(5f, 0f, -6.894f), len: 7.8f, o: Vector3.forward, gap: 99f),
+            };
+            foreach (var r in runs)
+            {
+                var q = Quaternion.LookRotation(r.o);
+                BuildingBuilder.Box(g, "Dado", r.c + Vector3.up * 0.55f, q, new Vector3(r.len, 1.1f, 0.01f), dado, false);
+                BuildingBuilder.Box(g, "Rail", r.c + Vector3.up * 1.1f + r.o * 0.01f, q, new Vector3(r.len, 0.05f, 0.025f), rail, false);
+                BuildingBuilder.Box(g, "Skirting", r.c + Vector3.up * 0.05f + r.o * 0.01f, q, new Vector3(r.len, 0.1f, 0.025f), skirt, false);
+                _pieces += 3;
+            }
+            var wb = GameObject.Find("Teacher_Whiteboard_Large");
+            if (wb != null && wb.TryGetComponent<Renderer>(out var wr))
+            {
+                Bounds b = wr.bounds;
+                bool thinX = b.size.x < b.size.z;
+                Vector3 outward = thinX ? (b.center.x > 0 ? Vector3.left : Vector3.right) : (b.center.z > 0 ? Vector3.back : Vector3.forward);
+                float w = thinX ? b.size.z : b.size.x;
+                Sign(g, "Whiteboard", "EF_Whiteboard_Lecture", b.center + outward * ((thinX ? b.size.x : b.size.z) * 0.5f + 0.004f), outward, w * 0.97f, b.size.y * 0.95f, false);
+            }
+            Sign(g, "NoiQuyPCCC", "EF_Poster_NoiQuy", new Vector3(-3.2f, 1.6f, -6.89f), Vector3.forward, 0.6f, 0.8f, false);
+            Sign(g, "EscapePlanLab", "EF_Sign_EscapePlan", new Vector3(2.6f, 1.6f, -6.89f), Vector3.forward, 0.8f, 0.6f, false);
+            Sign(g, "Clock", "EF_ClockFace", new Vector3(8.89f, 3.3f, 0f), Vector3.left, 0.45f, 0.45f, false);
+            Place("Props/Roof Props/SM_Bld_Ceiling_Aircon_01", new Vector3(-4f, 4.44f, 0.5f), Quaternion.identity, g);
+            Place("Props/Roof Props/SM_Bld_Ceiling_Aircon_01", new Vector3(4f, 4.44f, 0.5f), Quaternion.identity, g);
+        }
+
+        /// <summary>
+        /// The yard was a lawn with one building: neighbouring lecture blocks with window bands, the campus gate with its
+        /// sign, a fence, the street outside, more trees and bike stands.
+        /// </summary>
+        private static void Campus()
+        {
+            var g = Group("Campus");
+            float y = BuildingBuilder.GroundY;
+            Block(g, "Block_West", new Vector3(-30f, y, -12f), new Vector3(14f, 16f, 30f), Vector3.right);
+            Block(g, "Block_East", new Vector3(32f, y, -16f), new Vector3(14f, 12f, 26f), Vector3.left);
+            Block(g, "Block_North", new Vector3(0f, y, 30f), new Vector3(40f, 20f, 14f), Vector3.back);
+            // fence along the south edge, gate on the path, street beyond
+            var wall = M("EF_FenceWall", new Color(0.85f, 0.82f, 0.76f));
+            var rail = M("EF_FenceRail", new Color(0.2f, 0.22f, 0.25f), 0.5f, 0.6f);
+            foreach (var seg in new[] { (x0: -40f, x1: -6f), (x0: -1f, x1: 40f) })
+            {
+                float len = seg.x1 - seg.x0, cx = (seg.x0 + seg.x1) / 2f;
+                BuildingBuilder.Box(g, "FenceBase", new Vector3(cx, y + 0.3f, -40f), Quaternion.identity, new Vector3(len, 0.6f, 0.25f), wall, true);
+                BuildingBuilder.Box(g, "FenceRail", new Vector3(cx, y + 1.35f, -40f), Quaternion.identity, new Vector3(len, 0.06f, 0.06f), rail, false);
+                for (float x = seg.x0; x <= seg.x1; x += 2.5f)
+                    BuildingBuilder.Box(g, "FencePost", new Vector3(x, y + 0.95f, -40f), Quaternion.identity, new Vector3(0.12f, 0.8f, 0.12f), rail, false);
+                _pieces += 3;
+            }
+            var pillar = M("EF_GatePillar", new Color(0.7f, 0.66f, 0.6f));
+            BuildingBuilder.Box(g, "GatePillar_W", new Vector3(-6.3f, y + 1.6f, -40f), Quaternion.identity, new Vector3(0.7f, 3.2f, 0.7f), pillar, true);
+            BuildingBuilder.Box(g, "GatePillar_E", new Vector3(-0.7f, y + 1.6f, -40f), Quaternion.identity, new Vector3(0.7f, 3.2f, 0.7f), pillar, true);
+            BuildingBuilder.Box(g, "GateBeam", new Vector3(-3.5f, y + 3.5f, -40f), Quaternion.identity, new Vector3(6.4f, 0.6f, 0.5f), pillar, false);
+            Sign(g, "GateSign", "EF_Sign_Gate", new Vector3(-3.5f, y + 3.5f, -39.73f), Vector3.forward, 5.6f, 0.5f, false);
+            BuildingBuilder.Box(g, "PathToGate", new Vector3(-3.5f, y + 0.004f, -32.5f), Quaternion.identity, new Vector3(3f, 0.01f, 15f), M("EF_Path", new Color(0.66f, 0.64f, 0.6f)), false);
+            BuildingBuilder.Box(g, "Street", new Vector3(0f, y + 0.003f, -47f), Quaternion.identity, new Vector3(140f, 0.01f, 9f), M("EF_Asphalt", new Color(0.22f, 0.22f, 0.24f), 0.2f), false);
+            var lane = M("EF_LaneMark", new Color(0.95f, 0.95f, 0.9f));
+            for (float x = -60f; x <= 60f; x += 6f)
+                BuildingBuilder.Box(g, "LaneMark", new Vector3(x, y + 0.01f, -47f), Quaternion.identity, new Vector3(2.5f, 0.01f, 0.15f), lane, false);
+            BuildingBuilder.Box(g, "Sidewalk", new Vector3(0f, y + 0.06f, -42.2f), Quaternion.identity, new Vector3(140f, 0.12f, 2.2f), M("EF_Path", Color.gray), false);
+            var rng = new System.Random(11);
+            foreach (var p in new[] { new Vector2(-24f, -36f), new Vector2(-18f, -2f), new Vector2(-22f, 14f), new Vector2(20f, -34f), new Vector2(22f, 12f), new Vector2(10f, -37f), new Vector2(-12f, -37f), new Vector2(24f, -6f) })
+                Place($"Generic/SM_Generic_Tree_0{1 + rng.Next(4)}", new Vector3(p.x, y, p.y), Quaternion.Euler(0f, rng.Next(360), 0f), g, Vector3.one * (1.3f + (float)rng.NextDouble() * 0.5f), true);
+            for (int i = 0; i < 3; i++)
+                Place("Props/Exterior/SM_Prop_BikeStand_01", new Vector3(6f + i * 1.2f, y, -36.5f), Quaternion.identity, g, null, true);
+        }
+
+        /// <summary>A neighbouring lecture block: walls, a glass band per storey with mullions, a parapet.</summary>
+        private static void Block(Transform g, string name, Vector3 baseCentre, Vector3 size, Vector3 facing)
+        {
+            var wallM = M("EF_BlockWall", new Color(0.86f, 0.83f, 0.77f));
+            var glass = M("EF_FacadeGlass", new Color(0.22f, 0.3f, 0.36f), 0.9f, 0.3f);
+            var frame = M("EF_WindowFrame", new Color(0.35f, 0.36f, 0.38f), 0.5f, 0.5f);
+            var band = M("EF_FacadeBand", new Color(0.92f, 0.91f, 0.88f));
+            BuildingBuilder.Box(g, name, baseCentre + Vector3.up * size.y / 2f, Quaternion.identity, size, wallM, true);
+            BuildingBuilder.Box(g, name + "_Parapet", baseCentre + Vector3.up * (size.y + 0.4f), Quaternion.identity, new Vector3(size.x + 0.3f, 0.8f, size.z + 0.3f), band, false);
+            int floors = Mathf.FloorToInt(size.y / 4f);
+            bool alongX = Mathf.Abs(facing.z) > 0.5f;
+            float faceLen = alongX ? size.x : size.z;
+            Vector3 faceCentre = baseCentre + facing * ((alongX ? size.z : size.x) / 2f + 0.03f);
+            Quaternion q = Quaternion.LookRotation(facing);
+            for (int f = 0; f < floors; f++)
+            {
+                Vector3 c = faceCentre + Vector3.up * (f * 4f + 2.2f);
+                BuildingBuilder.Box(g, name + "_Glass", c, q, new Vector3(faceLen - 1.2f, 1.6f, 0.04f), glass, false);
+                BuildingBuilder.Box(g, name + "_Band", c + Vector3.down * 1.35f + facing * 0.03f, q, new Vector3(faceLen, 0.35f, 0.06f), band, false);
+                for (float u = -faceLen / 2f + 0.6f; u <= faceLen / 2f - 0.6f; u += 2.5f)
+                    BuildingBuilder.Box(g, name + "_Mullion", c + q * Vector3.right * u + facing * 0.03f, q, new Vector3(0.12f, 1.6f, 0.05f), frame, false);
                 _pieces += 3;
             }
         }

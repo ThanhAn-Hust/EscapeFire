@@ -21,6 +21,7 @@ namespace EscapeFire.EditorTools
             EscapeFireSceneBuilder.BuildAARScene();
             ApplyRig(EscapeFireSceneBuilder.AARPath, log);
             LessonRoomBuilder.Build();
+            TrainingCentreBuilder.Run(); // V6: menu, AAR and lesson dressed as a training centre
             VietnameseFontSetup.Run();
             RemoveSceneManagers("Assets/Scenes/BasicScene.unity", log);
             Debug.Log("[EscapeFire] V5.1 flow scenes rebuilt: " + string.Join("; ", log));

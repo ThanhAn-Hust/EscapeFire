@@ -1,0 +1,54 @@
+{
+  "title": "Phòng học A2 — thùng rác cháy",
+  "room_type": "office",
+  "width_m": 10,
+  "depth_m": 8,
+  "exits": [
+    {
+      "wall": "south",
+      "position": 0.3
+    },
+    {
+      "wall": "east",
+      "position": 0.6
+    }
+  ],
+  "furniture": [
+    {
+      "category": "desk",
+      "count": 6
+    },
+    {
+      "category": "chair",
+      "count": 8
+    },
+    {
+      "category": "trash_bin",
+      "count": 1
+    },
+    {
+      "category": "plant",
+      "count": 1
+    }
+  ],
+  "fire": {
+    "source": "trash_bin",
+    "class": "A"
+  },
+  "extinguishers": [
+    {
+      "type": "WaterFoam",
+      "count": 1
+    },
+    {
+      "type": "CO2",
+      "count": 1
+    }
+  ],
+  "npcs": [],
+  "learning_goals": [
+    "R03_RIGHT_AGENT",
+    "R04_PASS"
+  ],
+  "level": 1
+}

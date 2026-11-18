@@ -44,6 +44,8 @@ namespace EscapeFire.Tests.PlayMode.XR
             finally
             {
                 Application.logMessageReceived -= OnLog;
+                Course.ResetAll();
+                Course.Current = null;
             }
             Assert.IsEmpty(_problems, "console during the flow:\n" + string.Join("\n", _problems));
         }
@@ -75,9 +77,14 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return PressAndHold(Hand.Right, top, Vector3.down);
             yield return WaitForScene(SceneNames.MAIN_MENU);
             ProgressionStore.LessonDone = true; // scenario setup: lesson finished (covered by V1LessonTests)
+            Course.ResetAll();
+            for (int i = 0; i < 3; i++) { Course.Current = Course.Levels[i]; Course.Record(100, true); } // scenario setup: levels 1-3 passed (V6CourseTests)
+            Course.Current = null;
 
             // Menu -> lab drill -> AAR
-            yield return PressUi("BẮT ĐẦU BÀI TẬP PHÒNG LAB");
+            yield return PressUi("2. KHOÁ HỌC");
+            yield return PressUi("MÀN 4");
+            yield return PressUi("BẮT ĐẦU MÀN NÀY");
             yield return WaitForScene(SceneNames.LAB);
             Shot("flow_03_lab");
             var c = LabProgressiveScenarioController.Instance;
@@ -94,7 +101,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return WaitForScene(SceneNames.MAIN_MENU);
 
             // Menu -> a generated room -> leave by the EXIT -> AAR
-            yield return PressUi("5. PHÒNG MỚI");
+            yield return PressUi("4. THỬ THÁCH PHÒNG LẠ");
             yield return WaitForScene(SceneNames.GENERATED);
             var builder = Object.FindFirstObjectByType<ScenarioBuilder>();
             Assert.IsTrue(builder.Built, string.Join(",", builder.Errors));

@@ -10,7 +10,7 @@ using EscapeFire.Lesson;
 
 namespace EscapeFire.Tests.PlayMode.XR
 {
-    /// <summary>V1.4 — the five lesson stations, each practised with the VR hands and answered with a fingertip.</summary>
+    /// <summary>V1.4 / V6 — the lesson stations (0: controllers, 1–5: PCCC), each practised with the VR hands and answered with a fingertip.</summary>
     public class V1LessonTests : XRSceneTest
     {
         private LessonController _lesson;
@@ -58,8 +58,36 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return LoadLesson();
             Shot("00_lesson_room");
 
+            // ---- Station 0: the controllers — grip the block, poke the button, crouch, walk onto the circle; answer A
+            var s0 = St(0);
+            Transform t0 = s0.transform.Find("Table"), block = s0.transform.Find("GrabBlock"), tryBtn = s0.transform.Find("TryButton");
+            yield return StandAt(new Vector3(t0.position.x + 0.75f, 1.6f, t0.position.z), t0.position + Vector3.up * 0.9f);
+            Shot("00b_controls_station");
+            yield return GripAt(Hand.Right, block.position, 0.5f);
+            yield return Xr.MoveHand(Hand.Right, block.position + Vector3.up * 0.3f, Quaternion.identity, 0.5f);
+            yield return Xr.Wait(0.2f);
+            yield return Release(Hand.Right);
+            yield return Poke(Hand.Right, tryBtn.GetComponent<Collider>().ClosestPoint(tryBtn.position + Vector3.up), Vector3.down, 0.015f);
+            yield return Xr.Wait(0.2f);
+            Vector3 here = new Vector3(t0.position.x + 0.75f, 0.85f, t0.position.z);
+            yield return StandAt(here, here + Vector3.left); // crouch down low
+            yield return Xr.Wait(1.3f);
+            var circle = s0.transform.Find("WalkCircle").position;
+            for (float x = here.x; x <= circle.x; x += 0.02f) // walking over (the thumbstick walk is V0RigTests)
+            {
+                Xr.LookAt(new Vector3(x, 1.6f, circle.z), new Vector3(x + 1f, 1.6f, circle.z));
+                yield return null;
+            }
+            yield return Xr.Wait(0.3f);
+            Assert.IsTrue(s0.PracticeDone, "controllers practised: grip, poke, crouch, walk");
+            yield return StandAt(new Vector3(t0.position.x + 0.75f, 1.6f, t0.position.z), t0.position + Vector3.up * 0.9f);
+            var a0 = s0.transform.Find("Answer_A");
+            yield return Poke(Hand.Right, a0.GetComponent<Collider>().ClosestPoint(a0.position + Vector3.up), Vector3.down, 0.015f);
+            yield return Xr.Wait(0.3f);
+            Assert.IsTrue(s0.IsComplete, "station 0 complete");
+
             // ---- Station 1: put the lid on the burning tray, then answer B (oxygen)
-            var s1 = St(0);
+            var s1 = St(1);
             Transform lid = s1.transform.Find("Lid"), tray = s1.transform.Find("Tray");
             yield return Visit(new Vector3(tray.position.x + 0.15f, 0f, tray.position.z));
             Shot("01_tray_fire");
@@ -77,7 +105,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             Assert.IsTrue(s1.IsComplete, "station 1 complete");
 
             // ---- Station 2: put the CO2 extinguisher on the electrical-fire stand, answer B
-            var s2 = St(1);
+            var s2 = St(2);
             Transform co2Mini = s2.transform.Find("Mini_CO2"), water = s2.transform.Find("Mini_WaterFoam"), socket = s2.transform.Find("Socket");
             yield return Visit(new Vector3(s2.transform.Find("Table").position.x, 0f, socket.position.z));
             yield return GripAt(Hand.Right, water.GetComponent<Collider>().bounds.center, 0.5f);
@@ -99,7 +127,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             Assert.IsTrue(s2.IsComplete);
 
             // ---- Station 3: PASS on the training fire
-            var s3 = St(2);
+            var s3 = St(3);
             var ext = s3.GetComponentInChildren<FireExtinguisher>();
             var fire = s3.transform.Find("TrainingFire").GetComponent<FireHazard>();
             Transform handle = ext.transform.Find("CarryHandle"), pin = ext.transform.Find("SafetyPin"), horn = ext.transform.Find("Horn");
@@ -142,7 +170,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             Assert.IsTrue(s3.IsComplete);
 
             // ---- Station 4: press the call point, answer B
-            var s4 = St(3);
+            var s4 = St(4);
             var cp = s4.transform.Find("CallPoint");
             yield return StandAt(new Vector3(cp.position.x, 1.6f, cp.position.z - 0.6f), cp.position);
             Vector3 cpFace = cp.GetComponent<Collider>().ClosestPoint(cp.position + Vector3.back);
@@ -154,7 +182,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             Assert.IsTrue(s4.IsComplete);
 
             // ---- Station 5: through the smoke corridor keeping the head under 1.2 m, answer B
-            var s5 = St(4);
+            var s5 = St(5);
             Vector3 start = new Vector3(-4.5f, 1.0f, -0.4f);
             yield return StandAt(start, start + Vector3.back);
             Shot("07_smoke_corridor_crouched");
@@ -182,7 +210,7 @@ namespace EscapeFire.Tests.PlayMode.XR
         public IEnumerator SmokeCorridor_StandingUp_DoesNotCount()
         {
             yield return LoadLesson();
-            var s5 = St(4);
+            var s5 = St(5);
             for (float z = -0.4f; z >= -4.6f; z -= 0.02f)
             {
                 Xr.LookAt(new Vector3(-4.5f, 1.65f, z), new Vector3(-4.5f, 1.65f, z - 1f));
@@ -197,7 +225,7 @@ namespace EscapeFire.Tests.PlayMode.XR
         public IEnumerator Quiz_BeforePractice_IsRefused()
         {
             yield return LoadLesson();
-            var s1 = St(0);
+            var s1 = St(1);
             yield return Visit(s1.transform.Find("Table").position);
             yield return Answer(s1, 'B');
             Assert.IsFalse(s1.QuizDone, "practice first, then the question");

@@ -125,7 +125,8 @@ namespace EscapeFire.Tests.PlayMode
                 Object.Destroy(head);
                 Assert.IsFalse(SessionResult.Passed, rec.Summary());
                 StringAssert.Contains("Ngạt khói", SessionResult.FailCause);
-                Assert.That(rec.MentorLines, Has.Some.Contains("khom người"), "Socratic smoke warning expected");
+                // VL.5: the first smoke warning asks before it tells (the posture question), later ones say "khom người"
+                Assert.That(rec.MentorLines, Has.Some.Contains(SocraticRules.QuestionFor(SocraticTrigger.StandingInSmoke)).Or.Some.Contains("khom người"), "Socratic smoke warning expected");
             }
         }
 

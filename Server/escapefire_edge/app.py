@@ -13,14 +13,19 @@ from pathlib import Path
 
 import re
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
-from pydantic import ValidationError
+from fastapi import FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
+from pydantic import BaseModel, Field, ValidationError
 
 from .aar import DebriefRequest, DebriefResponse, generate_debrief
 from .director import MODES, Director
 from .scenario import ScenarioRequest, ScenarioResponse, generate_scenario
 from .llm import LLMClient, OllamaClient, ScriptedLLM
 from .schema import DirectiveResultMessage, TelemetryMessage
+from .tts import PiperSpeaker, Speaker, line_key
+
+
+class TtsRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=600)
 
 log = logging.getLogger("escapefire.edge")
 _SAFE_ID = re.compile(r"[A-Za-z0-9-]{1,64}")
@@ -40,15 +45,26 @@ DEMO_OUTPUTS = [  # one challenge per tier, in order (scripted stand-in for the 
 def create_app(llm: LLMClient | None = None, log_dir: Path | None = Path("logs"),
                min_observation_s: float | None = None, llm_timeout_s: float = 6.0,
                debrief_timeout_s: float = 8.0, director_mode: str = "enum",
-               scenario_timeout_s: float = 30.0) -> FastAPI:
+               scenario_timeout_s: float = 30.0, speaker: Speaker | None = None) -> FastAPI:
     app = FastAPI(title="EscapeFire Edge AI Director")
     director = Director(llm or OllamaClient(), log_dir=log_dir, timeout_s=llm_timeout_s, mode=director_mode,
                         **({} if min_observation_s is None else {"min_observation_s": min_observation_s}))
     app.state.director = director
+    voice = speaker or PiperSpeaker()
 
     @app.get("/health")
     async def health() -> dict:
-        return {"status": "ok", "llm": type(director.llm).__name__, "director_mode": director.mode}
+        return {"status": "ok", "llm": type(director.llm).__name__, "director_mode": director.mode,
+                "tts": voice.available}
+
+    @app.post("/tts")
+    async def tts(req: TtsRequest) -> Response:
+        """Mentor line -> Vietnamese speech (WAV, Piper on this laptop). 503 when no voice model is installed."""
+        if not voice.available:
+            raise HTTPException(status_code=503, detail="no TTS voice installed")
+        import asyncio
+        data = await asyncio.get_running_loop().run_in_executor(None, voice.wav, req.text)
+        return Response(content=data, media_type="audio/wav", headers={"X-Line-Key": line_key(req.text)})
 
     @app.post("/scenario/generate", response_model=ScenarioResponse)
     async def scenario_generate(req: ScenarioRequest) -> ScenarioResponse:

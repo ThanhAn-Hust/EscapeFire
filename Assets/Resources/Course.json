@@ -1,0 +1,119 @@
+{
+  "levels": [
+    {
+      "id": "L1",
+      "title": "Thùng rác cháy trong phòng học",
+      "place": "Phòng học A2, tầng 1",
+      "scene": "generated",
+      "scenario": "classroom_trash",
+      "mode": "Guided",
+      "goal": "Một thùng rác giấy bốc cháy giữa giờ học. Cháy chất rắn (lớp A): dùng bình NƯỚC, kỹ thuật PASS, rồi ra cửa.",
+      "skills": [
+        "R12_FIRE_TRIANGLE",
+        "R03_RIGHT_AGENT",
+        "R04_PASS"
+      ]
+    },
+    {
+      "id": "L2",
+      "title": "Cháy giá sách ở thư viện",
+      "place": "Thư viện tầng 2",
+      "scene": "generated",
+      "scenario": "library",
+      "mode": "Guided",
+      "goal": "Giấy và gỗ cháy âm ỉ. Bình CO2 làm lửa tắt rồi bùng lại vì không làm nguội — chọn bình phù hợp, đi thấp dưới khói.",
+      "skills": [
+        "R03_RIGHT_AGENT",
+        "R07_STAY_LOW"
+      ]
+    },
+    {
+      "id": "L3",
+      "title": "Chảo dầu cháy ở căng tin",
+      "place": "Căng tin",
+      "scene": "generated",
+      "scenario": "canteen_oil",
+      "mode": "Guided",
+      "goal": "Dầu ăn bốc cháy (lớp B). TUYỆT ĐỐI không dùng nước — nước làm dầu sôi trào, lửa bùng lớn. Dùng bình CO2 rồi thoát.",
+      "skills": [
+        "R03_RIGHT_AGENT",
+        "R04_PASS"
+      ]
+    },
+    {
+      "id": "L4",
+      "title": "Cháy tủ điện phòng Lab",
+      "place": "Phòng Lab 302, tầng 3",
+      "scene": "lab",
+      "mode": "Guided",
+      "goal": "Báo cháy, gọi 114, ngắt điện, dập bằng CO2, dìu bạn bị choáng, thoát bằng thang bộ, điểm danh. Mentor nhắc từng bước.",
+      "skills": [
+        "R01_ALARM_EARLY",
+        "R02_POWER_OFF_FIRST",
+        "R03_RIGHT_AGENT",
+        "R04_PASS",
+        "R08_DOOR_BACK_OF_HAND",
+        "R09_RESCUE_KEEP_LOW",
+        "R10_NO_ELEVATOR"
+      ]
+    },
+    {
+      "id": "L5",
+      "title": "Đêm mất điện, khói dày",
+      "place": "Phòng Lab 302 — buổi tối",
+      "scene": "lab",
+      "mode": "Guided",
+      "goal": "Đèn phòng tắt khi cháy, khói tràn xuống thấp, buồng thang B bị khói chặn. Đi thấp, thử cửa bằng mu bàn tay, chọn đúng lối thoát.",
+      "skills": [
+        "R07_STAY_LOW",
+        "R08_DOOR_BACK_OF_HAND",
+        "R10_NO_ELEVATOR"
+      ],
+      "forced": {
+        "pieces": [
+          {
+            "piece": "LIGHTS_OFF",
+            "params": {
+              "zone": "lab"
+            },
+            "delay_s": 0
+          },
+          {
+            "piece": "SMOKE_SURGE",
+            "params": {
+              "drop_m": 0.5,
+              "speed": 1.5
+            },
+            "delay_s": 4
+          },
+          {
+            "piece": "BLOCK_ROUTE",
+            "params": {
+              "route": "stairwell_b"
+            },
+            "delay_s": 10
+          }
+        ],
+        "pccc_rule_reference": "R07_STAY_LOW",
+        "pedagogical_reason": "Màn 5 của khóa học: mất điện, khói dày, một lối thoát bị chặn."
+      }
+    },
+    {
+      "id": "L6",
+      "title": "Sát hạch tổng hợp",
+      "place": "Phòng Lab 302",
+      "scene": "lab",
+      "mode": "Exam",
+      "goal": "Không có gợi ý. AI chọn tình huống nhắm vào kỹ năng bạn còn yếu. Làm đúng toàn bộ quy trình như khi cháy thật.",
+      "skills": [
+        "R01_ALARM_EARLY",
+        "R02_POWER_OFF_FIRST",
+        "R03_RIGHT_AGENT",
+        "R04_PASS",
+        "R07_STAY_LOW",
+        "R09_RESCUE_KEEP_LOW",
+        "R10_NO_ELEVATOR"
+      ]
+    }
+  ]
+}

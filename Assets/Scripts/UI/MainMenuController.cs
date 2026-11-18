@@ -125,24 +125,62 @@ namespace EscapeFire.UI
             get
             {
                 if (!requireProgression || ProgressionStore.LessonDone) return true;
-                SetStatus("Hãy học BÀI GIẢNG trước khi làm trắc nghiệm tổng.");
+                SetStatus("Mục này đang khoá: hãy học <b>1. BÀI GIẢNG</b> trước khi làm trắc nghiệm tổng.");
                 return false;
             }
         }
 
         public void Refresh() => RefreshStatus();
 
+        /// <summary>The course opens once the lesson is done.</summary>
+        public bool CanOpenCourse
+        {
+            get
+            {
+                if (!requireProgression || ProgressionStore.LessonDone) return true;
+                SetStatus("Mục này đang khoá: hãy học <b>1. BÀI GIẢNG</b> trước khi vào khoá học.");
+                return false;
+            }
+        }
+
         private void RefreshStatus()
         {
-            string mode = _selectedMode == TrainingMode.Guided ? "Huấn luyện có Hướng dẫn" : "Sát hạch Thực chiến";
-            string height = GameSession.IsCalibrated
-                ? $"H₀ = {GameSession.CalibratedHeight:F2}m (khom khi < {GameSession.CalibratedHeight * EscapeFire.Player.PostureRules.CrouchFraction:F2}m)"
-                : "Chưa hiệu chuẩn chiều cao";
-            // plain words: the Vietnamese font has no check-mark / circle glyphs (they showed as blanks)
-            string quiz = ProgressionStore.QuizBest < 0 ? "chưa làm" : $"{ProgressionStore.QuizBest}/12";
-            string ladder = $"Bài giảng: {(ProgressionStore.LessonDone ? "xong" : "chưa")}  ·  Có hướng dẫn: {(ProgressionStore.GuidedPassed ? "đạt" : "chưa")}  ·  Trắc nghiệm: {quiz}  ·  Sát hạch: {(ProgressionStore.ExamUnlocked ? "mở" : "khoá")}";
-            SetStatus($"Chế độ: {mode}\n{height}\n{ladder}");
+            // two short lines a first-time learner can act on: where they are on the path, and what to do next
+            int quiz = ProgressionStore.QuizBest, passed = Course.PassedCount(), levels = Course.Levels.Count;
+            string lesson = ProgressionStore.LessonDone ? "<color=#7CFC9A>xong</color>" : "<color=#FFD27F>mở</color>";
+            string course = !ProgressionStore.LessonDone ? "<color=#8C96A0>khoá</color>" : passed == levels ? "<color=#7CFC9A>xong</color>" : $"<color=#FFD27F>{passed}/{levels} màn</color>";
+            string quizS = quiz >= 0 ? $"<color=#7CFC9A>{quiz}/12</color>" : ProgressionStore.LessonDone ? "<color=#FFD27F>mở</color>" : "<color=#8C96A0>khoá</color>";
+            string path = $"1. Bài giảng {lesson} → 2. Khoá học {course} → 3. Trắc nghiệm {quizS}";
+            string next;
+            if (!ProgressionStore.LessonDone) next = "Lần đầu? Bấm <b>1. BÀI GIẢNG</b>: học từng trạm, làm thử bằng tay, rồi trả lời câu hỏi.";
+            else if (passed < levels) next = $"Tiếp theo: <b>2. KHOÁ HỌC</b> — màn {passed + 1}: {Course.Levels[passed].Title}.";
+            else if (quiz < FinalQuizController.PassMark) next = "Tiếp theo: <b>3. TRẮC NGHIỆM TỔNG</b>.";
+            else next = "Bạn đã hoàn thành khoá học. Thử <b>4. THỬ THÁCH PHÒNG LẠ</b> để luyện trong căn phòng chưa gặp.";
+            if (!GameSession.IsCalibrated) next += " <color=#B8C4D0>(Đứng thẳng, bấm XÁC NHẬN CHIỀU CAO trước.)</color>";
+            SetStatus($"<size=88%>{path}</size>\n{next}");
+            UpdateLocks();
         }
+
+        /// <summary>Locked buttons look locked (grey); pressing one still explains why it is locked.</summary>
+        private void UpdateLocks()
+        {
+            foreach (var b in GetComponentsInParentScene<UnityEngine.UI.Button>())
+            {
+                bool? open = null;
+                string n = b.name;
+                if (n.Contains("2. KHOÁ HỌC") || n.Contains("3. TRẮC NGHIỆM") || n.Contains("4. THỬ THÁCH")) open = !requireProgression || ProgressionStore.LessonDone;
+                if (open == null) continue;
+                var img = b.GetComponent<UnityEngine.UI.Image>();
+                if (!_colors.ContainsKey(b)) _colors[b] = img.color;
+                img.color = open.Value ? _colors[b] : new Color(0.32f, 0.34f, 0.37f);
+                var label = b.GetComponentInChildren<TMP_Text>();
+                if (label != null) label.alpha = open.Value ? 1f : 0.55f;
+            }
+        }
+
+        private readonly System.Collections.Generic.Dictionary<UnityEngine.UI.Button, Color> _colors = new System.Collections.Generic.Dictionary<UnityEngine.UI.Button, Color>();
+
+        private static T[] GetComponentsInParentScene<T>() where T : Component => FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
         private void SetStatus(string message)
         {

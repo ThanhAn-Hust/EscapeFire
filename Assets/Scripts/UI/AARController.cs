@@ -25,6 +25,8 @@ namespace EscapeFire.UI
         private void Start()
         {
             Render();
+            if (SessionResult.HasResult) ShowCourseLevel();
+            else if (nextLevelButton != null) nextLevelButton.SetActive(false);
             if (SessionResult.HasResult && !string.IsNullOrEmpty(GameSession.EdgeHttpBase))
             {
                 StartCoroutine(FetchGenerativeDebrief());
@@ -143,6 +145,28 @@ namespace EscapeFire.UI
                 sb.AppendLine($"{(o.Correct ? "<color=#7CFC9A>ĐẠT</color>" : "<color=#FF8A80>CHƯA</color>")} {title}: {p * 100f:F0}%  <size=70%>({o.Why})</size>");
             }
             return sb.ToString();
+        }
+
+        [SerializeField] private GameObject nextLevelButton;
+
+        /// <summary>Course: the next level, once this one is passed.</summary>
+        public void NextLevel()
+        {
+            var cur = Course.Current;
+            if (cur == null) return;
+            int i = Course.IndexOf(cur);
+            if (i < 0 || i + 1 >= Course.Levels.Count || !Course.Passed(cur.Id)) return;
+            CourseLauncher.Start(Course.Levels[i + 1], GameSession.StudentId);
+        }
+
+        private void ShowCourseLevel()
+        {
+            var cur = Course.Current;
+            int i = cur != null ? Course.IndexOf(cur) : -1;
+            bool next = i >= 0 && i + 1 < Course.Levels.Count && Course.Passed(cur.Id);
+            if (nextLevelButton != null) nextLevelButton.SetActive(next);
+            if (cur != null && headlineText != null)
+                headlineText.text = $"MÀN {i + 1}: {cur.Title.ToUpperInvariant()}\n<size=60%>{headlineText.text} · {Course.Stars(cur.Id)}/3 sao (cao nhất {Mathf.Max(0, Course.BestScore(cur.Id))}/100)</size>";
         }
 
         public void Retry()

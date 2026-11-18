@@ -57,19 +57,43 @@ namespace EscapeFire.EditorTools
             // V6: the menu and the final quiz share the board; one panel is shown at a time
             var menuPanel = CreatePanel(canvas, "MenuPanel", new Color(0f, 0f, 0f, 0f));
             CreateText(menuPanel, "Title", "DIỄN TẬP PCCC THỰC TẾ ẢO\nPhòng Lab Máy tính", 54, new Vector2(0f, 395f), new Vector2(950f, 150f));
-            var status = CreateText(menuPanel, "Status", "", 30, new Vector2(0f, 255f), new Vector2(980f, 120f));
+            var status = CreateText(menuPanel, "Status", "", 25, new Vector2(0f, 255f), new Vector2(980f, 120f));
             SetPrivateField(menu, "statusText", status);
 
             CreateButton(menuPanel, "XÁC NHẬN CHIỀU CAO (đứng thẳng)", new Vector2(0f, 135f), menu.CalibrateHeight);
             CreateButton(menuPanel, "1. BÀI GIẢNG (bắt đầu từ đây)", new Vector2(0f, 35f), menu.StartLesson, 700f, new Color(0.15f, 0.45f, 0.75f));
-            CreateButton(menuPanel, "2. CHẾ ĐỘ: CÓ HƯỚNG DẪN", new Vector2(-240f, -65f), menu.SelectGuidedMode, 440f);
-            CreateButton(menuPanel, "3. CHẾ ĐỘ: SÁT HẠCH", new Vector2(240f, -65f), menu.SelectExamMode, 440f);
-            CreateButton(menuPanel, "BẮT ĐẦU BÀI TẬP PHÒNG LAB", new Vector2(0f, -165f), menu.StartDrill, 700f, new Color(0.75f, 0.15f, 0.12f));
-
+            var courseGo = new GameObject("[Course]");
+            var course = courseGo.AddComponent<CourseMenuController>();
+            CreateButton(menuPanel, "2. KHOÁ HỌC: 6 MÀN DIỄN TẬP", new Vector2(0f, -65f), course.Show, 700f, new Color(0.75f, 0.15f, 0.12f));
             var quizGo = new GameObject("[FinalQuiz]");
             var quiz = quizGo.AddComponent<FinalQuizController>();
-            CreateButton(menuPanel, "4. TRẮC NGHIỆM TỔNG (12 câu)", new Vector2(0f, -265f), quiz.Begin, 700f, new Color(0.1f, 0.5f, 0.45f));
-            CreateButton(menuPanel, "5. PHÒNG MỚI (sinh từ mô tả)", new Vector2(0f, -365f), menu.StartGeneratedRoom, 700f, new Color(0.45f, 0.25f, 0.65f));
+            CreateButton(menuPanel, "3. TRẮC NGHIỆM TỔNG (12 câu)", new Vector2(0f, -165f), quiz.Begin, 700f, new Color(0.1f, 0.5f, 0.45f));
+            CreateButton(menuPanel, "4. THỬ THÁCH PHÒNG LẠ (AI tạo)", new Vector2(0f, -265f), menu.StartGeneratedRoom, 700f, new Color(0.45f, 0.25f, 0.65f));
+            // CC BY 4.0 attribution of the Mentor's voice (Piper vi_VN-vais1000, VAIS-1000 corpus)
+            CreateText(menuPanel, "Credits", "Giọng Mentor: Piper (MIT) · dữ liệu giọng VAIS-1000 (CC BY 4.0)", 16, new Vector2(0f, -460f), new Vector2(960f, 30f)).color = new Color(0.6f, 0.65f, 0.72f);
+
+            // V6 course board: six level cards, the briefing of the chosen level, start / back
+            var coursePanel = CreatePanel(canvas, "CoursePanel", new Color(0.05f, 0.08f, 0.12f, 0.95f));
+            CreateText(coursePanel, "CourseTitle", "KHOÁ HỌC PCCC — 6 MÀN", 34, new Vector2(0f, 430f), new Vector2(960f, 60f)).color = new Color(1f, 0.82f, 0.5f);
+            var levelButtons = new Button[6];
+            UnityAction[] select = { course.Select0, course.Select1, course.Select2, course.Select3, course.Select4, course.Select5 };
+            for (int i = 0; i < 6; i++)
+                levelButtons[i] = CreateButton(coursePanel, "MÀN " + (i + 1), new Vector2(i % 2 == 0 ? -240f : 240f, 335f - (i / 2) * 100f), select[i], 460f);
+            var brief = CreateText(coursePanel, "Brief", "", 25, new Vector2(0f, -110f), new Vector2(960f, 330f), TextAlignmentOptions.TopLeft);
+            CreateButton(coursePanel, "BẮT ĐẦU MÀN NÀY", new Vector2(220f, -390f), course.StartSelected, 440f, new Color(0.75f, 0.15f, 0.12f));
+            var startBtn = coursePanel.Find("Button_BẮT ĐẦU MÀN NÀY").gameObject;
+            CreateButton(coursePanel, "VỀ MENU (khoá học)", new Vector2(-250f, -390f), course.Back, 440f, new Color(0.3f, 0.32f, 0.36f));
+            SetPrivateField(course, "menuPanel", menuPanel.gameObject);
+            SetPrivateField(course, "coursePanel", coursePanel.gameObject);
+            SetPrivateField(course, "briefText", brief);
+            SetPrivateField(course, "startButton", startBtn);
+            SetPrivateField(course, "menu", menu);
+            var cso = new SerializedObject(course);
+            var carr = cso.FindProperty("levelButtons");
+            carr.arraySize = 6;
+            for (int i = 0; i < 6; i++) carr.GetArrayElementAtIndex(i).objectReferenceValue = levelButtons[i];
+            cso.ApplyModifiedPropertiesWithoutUndo();
+            coursePanel.gameObject.SetActive(false);
 
             var quizPanel = CreatePanel(canvas, "QuizPanel", new Color(0.05f, 0.08f, 0.12f, 0.92f));
             var progress = CreateText(quizPanel, "Progress", "TRẮC NGHIỆM TỔNG", 30, new Vector2(0f, 420f), new Vector2(960f, 60f));
@@ -137,6 +161,8 @@ namespace EscapeFire.EditorTools
 
             CreateButton(canvas, "LÀM LẠI BÀI TẬP", new Vector2(-260f, -300f), aar.Retry, 480f);
             CreateButton(canvas, "VỀ MENU CHÍNH", new Vector2(260f, -300f), aar.BackToMenu, 480f);
+            CreateButton(canvas, "MÀN TIẾP THEO", new Vector2(0f, -395f), aar.NextLevel, 480f, new Color(0.12f, 0.5f, 0.3f));
+            SetPrivateField(aar, "nextLevelButton", canvas.Find("Button_MÀN TIẾP THEO").gameObject);
 
             SaveScene(scene, AARPath);
         }

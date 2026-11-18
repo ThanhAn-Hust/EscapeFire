@@ -51,6 +51,8 @@ namespace EscapeFire.Scenario
         {
             if (Instance == null) Instance = this;
             else { Destroy(gameObject); return; }
+            if (GetComponent<GuidedCoach>() == null) gameObject.AddComponent<GuidedCoach>(); // step-by-step help (Guided only)
+            if (GetComponent<CourseLevelRunner>() == null) gameObject.AddComponent<CourseLevelRunner>(); // course level situations
 
             // Resolved in Awake (not Start) so SmokeDensityController / FM200System can read ServerFire in their Start.
             // Include inactive objects: the fire is hidden until phase 2.
@@ -140,7 +142,7 @@ namespace EscapeFire.Scenario
                     }
                     // Exam mode gives no procedure hints (plan Phần B.0-8): the learner must know what to do.
                     SetAIMentorGuidance(GameSession.Mode == TrainingMode.Guided
-                        ? "CHÁY RỒI! Báo động cho mọi người, ngắt Aptomat, dùng bình CO2 theo PASS và khom người né khói độc!"
+                        ? "CHÁY RỒI! Bình tĩnh, làm từng việc một — Mentor sẽ nhắc từng bước."
                         : "Có cháy ở tủ server!");
                     break;
 

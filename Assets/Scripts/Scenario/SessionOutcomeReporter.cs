@@ -62,6 +62,7 @@ namespace EscapeFire.Scenario
 
             SessionResult.RecordSkills(observations, skills);
             SessionResult.DrillScene = SceneNames.LAB;
+            Course.Record(AfterActionReport.Total(scorecard), won); // stars of the course level being played
             SessionResult.RecordReview(facts, scorecard, radar, debrief,
                 collector != null ? collector.Positions : null,
                 collector != null ? collector.StandingInSmokeFlags : null);

@@ -144,6 +144,90 @@ namespace EscapeFire.Generation
                 l.transform.position = new Vector3((i % 2 == 0 ? -1 : 1) * w / 4, WallHeight - 0.3f, (i < 2 ? -1 : 1) * d / 4);
             }
             foreach (var e in Layout.Exits) ExitStub(e);
+            Finishes(wallC);
+        }
+
+        /// <summary>
+        /// V6: floor boards or tiles, a suspended ceiling with light panels, a painted dado with skirting and two PCCC
+        /// posters on walls without a door — the same look as the drill building, built at runtime from the library.
+        /// </summary>
+        private void Finishes(Color wallC)
+        {
+            if (library == null) return;
+            float w = Spec.Width, d = Spec.Depth;
+            var floor = Spec.RoomType == "library" || Spec.RoomType == "office" ? library.floorWood : library.floorTiles;
+            Tiles(floor, w, d, 0.004f, null);
+            Tiles(library.ceilingTile, w, d, WallHeight - 0.005f, library.ceilingMaterial);
+            if (library.lightDiffuser != null)
+                for (int i = 0; i < 4; i++)
+                {
+                    var p = Box("LightPanel_" + i, new Vector3((i % 2 == 0 ? -1 : 1) * w / 4, WallHeight - 0.04f, (i < 2 ? -1 : 1) * d / 4), new Vector3(0.6f, 0.02f, 1.2f), Color.white, false);
+                    p.GetComponent<Renderer>().sharedMaterial = library.lightDiffuser;
+                }
+            Color dado = new Color(wallC.r * 0.72f, wallC.g * 0.76f, wallC.b * 0.8f);
+            var posterWalls = new List<string>();
+            foreach (var side in new[] { "north", "south", "east", "west" })
+            {
+                bool ns = side == "north" || side == "south";
+                float len = ns ? w : d;
+                float face = (side == "north" ? d / 2 : side == "south" ? -d / 2 : side == "east" ? w / 2 : -w / 2) - (side == "north" || side == "east" ? 0.006f : -0.006f);
+                Vector3 inward = -Outward(side);
+                var gaps = new List<float>();
+                foreach (var e in Layout.Exits) if (e.Kind == side) gaps.Add(ns ? e.X : e.Z);
+                gaps.Sort();
+                if (gaps.Count == 0) posterWalls.Add(side);
+                float from = -len / 2;
+                var runs = new List<(float a, float b)>();
+                foreach (float g in gaps) { runs.Add((from, g - LayoutSolver.DoorWidth / 2)); from = g + LayoutSolver.DoorWidth / 2; }
+                runs.Add((from, len / 2));
+                foreach (var (ra, rb) in runs)
+                {
+                    if (rb - ra < 0.05f) continue;
+                    float mid = (ra + rb) / 2, l = rb - ra;
+                    Vector3 c = ns ? new Vector3(mid, 0f, face) : new Vector3(face, 0f, mid);
+                    Vector3 size(float h, float t) => ns ? new Vector3(l, h, t) : new Vector3(t, h, l);
+                    Box("Dado", c + Vector3.up * 0.55f, size(1.1f, 0.01f), dado, false);
+                    Box("Rail", c + Vector3.up * 1.1f + inward * 0.01f, size(0.05f, 0.025f), new Color(0.95f, 0.95f, 0.93f), false);
+                    Box("Skirting", c + Vector3.up * 0.05f + inward * 0.01f, size(0.1f, 0.025f), new Color(0.25f, 0.25f, 0.27f), false);
+                }
+            }
+            for (int i = 0; i < posterWalls.Count && i < 2 && library.posters.Length > 0; i++)
+            {
+                string side = posterWalls[i];
+                bool ns = side == "north" || side == "south";
+                Vector3 inward = -Outward(side);
+                float face = side == "north" ? d / 2 : side == "south" ? -d / 2 : side == "east" ? w / 2 : -w / 2;
+                Vector3 c = (ns ? new Vector3(0f, 1.6f, face) : new Vector3(face, 1.6f, 0f)) + inward * 0.015f;
+                Quad("Poster_" + i, c, inward, 0.6f, 0.8f, library.posters[(_rng.Next(library.posters.Length) + i) % library.posters.Length]);
+            }
+        }
+
+        /// <summary>Covers the room with 2.5 m tiles (pivot at the max-x / min-z corner), scaled to fit, no colliders.</summary>
+        private void Tiles(GameObject prefab, float w, float d, float y, Material mat)
+        {
+            if (prefab == null) return;
+            int nx = Mathf.CeilToInt(w / 2.5f), nz = Mathf.CeilToInt(d / 2.5f);
+            float sx = w / (nx * 2.5f), sz = d / (nz * 2.5f);
+            for (int i = 0; i < nx; i++)
+                for (int j = 0; j < nz; j++)
+                {
+                    var t = Instantiate(prefab, Root);
+                    t.transform.SetPositionAndRotation(new Vector3(-w / 2 + (i + 1) * 2.5f * sx, y, -d / 2 + j * 2.5f * sz), Quaternion.identity);
+                    t.transform.localScale = new Vector3(sx, 1f, sz);
+                    foreach (var c in t.GetComponentsInChildren<Collider>()) Destroy(c);
+                    if (mat != null) foreach (var r in t.GetComponentsInChildren<Renderer>()) r.sharedMaterial = mat;
+                }
+        }
+
+        private void Quad(string name, Vector3 pos, Vector3 outward, float wd, float h, Material mat)
+        {
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            q.name = name;
+            Destroy(q.GetComponent<Collider>());
+            q.transform.SetParent(Root, false);
+            q.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(-outward, Vector3.up)); // a quad is seen from -z
+            q.transform.localScale = new Vector3(wd, h, 1f);
+            q.GetComponent<Renderer>().sharedMaterial = mat;
         }
 
         private void WallPiece(bool ns, float line, float from, float to, float y0, float y1, Color c)
@@ -171,8 +255,11 @@ namespace EscapeFire.Generation
             Box("ExitEnd", door + o * (StubDepth + 0.3f) + Vector3.up * DoorHeight / 2, Abs(o * 0.1f + side * 1.6f) + Vector3.up * DoorHeight, grey, true);
             Box("ExitCeil", mid + Vector3.up * (DoorHeight + 0.05f), Abs(o * (StubDepth + 0.4f) + side * 1.6f) + Vector3.up * 0.1f, grey, true);
             var inward = Quaternion.LookRotation(-o);
-            var sign = Box("ExitSign", door - o * 0.12f + Vector3.up * (DoorHeight + 0.25f), Abs(side * 0.6f + o * 0.05f) + Vector3.up * 0.2f, new Color(0.05f, 0.75f, 0.3f), false);
-            Label("EXIT", sign.transform.position - o * 0.03f, Quaternion.LookRotation(o), new Vector2(0.6f, 0.2f), 1.0f, "<b>EXIT  LỐI THOÁT</b>");
+            var sign = Box("ExitSign", door - o * 0.12f + Vector3.up * (DoorHeight + 0.25f), Abs(side * 0.72f + o * 0.05f) + Vector3.up * 0.3f, new Color(0.92f, 0.92f, 0.9f), false);
+            if (library != null && library.exitSign != null) // V6: the backlit LỐI THOÁT / EXIT lightbox
+                Quad("ExitSignFace", sign.transform.position - o * 0.027f, -o, 0.68f, 0.26f, library.exitSign);
+            else
+                Label("EXIT", sign.transform.position - o * 0.03f, Quaternion.LookRotation(o), new Vector2(0.6f, 0.2f), 1.0f, "<b>EXIT  LỐI THOÁT</b>");
             var glow = new GameObject("ExitGlow").AddComponent<Light>();
             glow.transform.SetParent(Root, false);
             glow.transform.SetPositionAndRotation(door - o * 0.4f + Vector3.up * 2.3f, inward);
