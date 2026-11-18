@@ -153,28 +153,24 @@ namespace EscapeFire.Tests.PlayMode.XR
         /// </summary>
         protected IEnumerator RautekIntoStairwellA(VictimBody v, string shotPrefix)
         {
-            // both hands under the armpits: Rautek hold, drag back to the stairwell door
+            // open the stairwell door first (he lies with his head at it), then kneel in the doorway at his head
+            Xr.Grip(Hand.Left, false); Xr.Grip(Hand.Right, false);
+            var door = Door("StairwellA", "FireDoor_F3");
+            yield return StickWalk(new Vector3(0.7f, 0f, -12.9f));
+            Body(185f);
+            yield return Xr.Wait(0.2f);
+            yield return PushBar(door);
+            Assert.IsTrue(door.IsOpen, "fire door pushed open");
+            yield return StickWalk(new Vector3(0.3f, 0f, -13.15f)); // in the doorway (keeps the door open), at his head
             yield return KneelAndGrip(v, true);
             Assert.IsTrue(v.IsDragged, "Rautek hold with both hands");
             HoldUnderArms(v);
             yield return Xr.Wait(0.5f);
             Shot(shotPrefix + "02_two_hands_under_the_arms");
-            yield return DragBackTo(v, new Vector3(0.25f, 0f, -12.75f));
+            // walk backwards straight through the doorway: his body follows in line with it
+            yield return DragBackTo(v, new Vector3(0.3f, 0f, -14.0f));
             Shot(shotPrefix + "03_dragging_backwards");
-
-            // put him down, stand, push the fire door's bar, kneel again in the doorway and drag through
-            Xr.Grip(Hand.Left, false); Xr.Grip(Hand.Right, false);
-            yield return Xr.Wait(0.3f);
-            Assert.IsFalse(v.IsDragged, "let go: he is lowered to the floor");
-            var door = Door("StairwellA", "FireDoor_F3");
-            Body(180f);
-            yield return Xr.Wait(0.3f);
-            yield return PushBar(door);
-            Assert.IsTrue(door.IsOpen, "fire door pushed open");
-            yield return StickWalk(new Vector3(0.3f, 0f, -12.95f)); // stand in the doorway (keeps the door open)
-            yield return KneelAndGrip(v, true);
-            Assert.IsTrue(v.IsDragged, "hold again");
-            yield return DragBackTo(v, new Vector3(0.3f, 0f, -14.0f), new Vector3(0.65f, 0f, -14.6f), new Vector3(0.65f, 0f, -15.5f));
+            yield return DragBackTo(v, new Vector3(0.5f, 0f, -14.6f), new Vector3(0.6f, 0f, -15.5f));
             yield return Xr.Wait(0.3f);
             Shot(shotPrefix + "04_in_the_stairwell");
             Debug.Log($"[Rautek] heels {v.Heels} chest {v.ChestPoint} safe={v.IsSafe} maxHead={v.MaxHeadHeight:F2} dragged={v.DragDistance:F1}m");
@@ -193,6 +189,7 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return GripAt(Hand.Right, minh.ShoulderPoint, 0.4f);
             yield return Xr.Wait(0.3f);
             if (shot != null) Shot(shot);
+            Debug.Log($"[StopMinh] stopped={minh.Stopped} trapped={minh.Trapped} shoulder={minh.ShoulderPoint} hand={Xr.HandPosition(Hand.Right)} head={Xr.HeadPosition} t={Time.time:F1}");
             Assert.IsTrue(minh.Stopped, "taken by the arm, he listens");
             yield return Release(Hand.Right);
         }

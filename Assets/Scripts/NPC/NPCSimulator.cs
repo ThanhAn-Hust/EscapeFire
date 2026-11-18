@@ -11,9 +11,12 @@ namespace EscapeFire.NPC
     /// NPC behaviour during the drill (NPC_TIMELINE_STORYBOARD):
     /// - Before the fire both NPCs stay put (working at their desks).
     /// - Minh: when the fire erupts he panics, knocks his chair over and runs along the floor to the exit, then leaves.
-    /// - Hoa: faints from smoke a few seconds into the fire (lies on the floor) — optional rescue objective.
-    ///   When rescued (select / poke her) she gets up, bent low, and follows the rescuer out (escort), instead of
-    ///   leaving on her own. Without an escort target she walks to the exit by herself.
+    /// - Both flinch the moment the server explodes (forearms over the head, knees bent) instead of standing still.
+    /// - Hoa: overcome by smoke (conscious but weak, NOT unconscious: the unconscious victim is Nam, Rautek drag):
+    ///   she coughs with a hand over her mouth, then sinks down and sits slumped on the floor. Helped up under the arm
+    ///   she gets up slowly and walks bent low, slowly, only where the supporting hand leads. Let go and she sits down
+    ///   again and waits. Outside the lab another person can take her over (<see cref="HandOverTo"/>: Minh leads her
+    ///   down the stairs), so she is never just left behind.
     /// Legs/arms move with <see cref="ProceduralWalk"/> (no walk clips in the project).
     /// Movement is purely horizontal so NPCs never float or sink; the root pivot must be at the feet.
     /// </summary>
@@ -41,8 +44,11 @@ namespace EscapeFire.NPC
         [SerializeField] private Transform escortTarget;
         [SerializeField] private float escortDistance = 1.1f;
 
-        private enum State { Idle, Waiting, Moving, Fainted, Following, Gone }
+        private enum State { Idle, Waiting, Moving, Fainted, StandingUp, Following, Gone }
         private ProceduralWalk _walk;
+        private NpcBodyPose _pose;
+        private Transform _handoverDoor;
+        [SerializeField] private float weakWalkSpeed = 0.6f;
 
         private State _state = State.Idle;
         private float _timer;
@@ -61,6 +67,8 @@ namespace EscapeFire.NPC
             _standingLocalPosition = visualRoot.localPosition;
             _walk = GetComponent<ProceduralWalk>();
             if (_walk == null) _walk = gameObject.AddComponent<ProceduralWalk>();
+            _pose = GetComponent<NpcBodyPose>();
+            if (_pose == null) _pose = gameObject.AddComponent<NpcBodyPose>();
         }
 
         private void OnEnable() => EventBus<PhaseChangedEvent>.Subscribe(OnPhaseChanged);
@@ -73,6 +81,9 @@ namespace EscapeFire.NPC
             {
                 _state = State.Waiting;
                 _timer = reactionDelaySeconds;
+                // startled by the explosion: forearms over the head, crouch; Hoa then starts coughing in the smoke
+                _pose.Set(BodyPose.CoverHeadCrouch, 0.25f);
+                _coughAt = role == NPCRole.HoaFaint ? Time.time + 1.0f : -1f;
             }
         }
 
@@ -82,6 +93,8 @@ namespace EscapeFire.NPC
             {
                 if (chairToKnockOver != null) chairToKnockOver.transform.Rotate(Vector3.right, 75f, Space.Self);
                 if (animator != null) animator.SetTrigger(PANIC_RUN);
+                _pose.Set(BodyPose.None, 0.3f);
+                _walk.Hunch = 0.45f; // runs bent low under the smoke
                 StartMoving(runSpeed);
                 Debug.Log("[NPC] Minh panicked and ran towards the exit door!");
             }
@@ -90,8 +103,9 @@ namespace EscapeFire.NPC
                 IsFainted = true;
                 _state = State.Fainted;
                 if (animator != null) animator.SetTrigger(FAINT);
-                else LieDown();
-                Debug.Log("[NPC] Hoa fainted from smoke inhalation!");
+                _pose.Set(BodyPose.SitSlumped, 1.6f); // sinks down and sits slumped, head down
+                EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent("Hoa bị choáng vì khói, ngồi gục xuống sàn: bạn ấy còn tỉnh nhưng không tự đi được."));
+                Debug.Log("[NPC] Hoa is overcome by smoke and sits slumped on the floor.");
             }
         }
 
@@ -110,9 +124,8 @@ namespace EscapeFire.NPC
             if (escortTarget == null && Camera.main != null) escortTarget = Camera.main.transform;
             if (escortTarget != null)
             {
-                _state = State.Following;
-                _walk.Hunch = 0.6f; // stays low under the smoke while being led out
-                Debug.Log("[NPC] Hoa was rescued and follows the learner out.");
+                StandUp();
+                Debug.Log("[NPC] Hoa is helped up and is led out, supported.");
             }
             else
             {
@@ -127,7 +140,12 @@ namespace EscapeFire.NPC
             {
                 case State.Waiting:
                     _timer -= Time.deltaTime;
+                    if (_coughAt > 0f && Time.time >= _coughAt) { _coughAt = -1f; _pose.Set(BodyPose.CoughHunch, 0.5f); }
                     if (_timer <= 0f) TriggerEmergencyReaction();
+                    break;
+
+                case State.StandingUp:
+                    if (!_pose.Blending) { _state = State.Following; _walk.Hunch = 0.85f; }
                     break;
 
                 case State.Moving:
@@ -161,21 +179,60 @@ namespace EscapeFire.NPC
         private bool _heldByHand;
         private EscapeFire.Interactions.ExitDoor _exitDoor;
 
+        private float _coughAt = -1f;
+        private bool _seated;
+
+        private void StandUp()
+        {
+            _seated = false;
+            _state = State.StandingUp;
+            _pose.Set(BodyPose.None, 1.3f); // gets up slowly
+        }
+
+        /// <summary>
+        /// Someone else (Minh) takes over: Hoa gets up and goes with <paramref name="helper"/> to
+        /// <paramref name="stairsDoor"/>, then down the stairs (leaves the floor).
+        /// </summary>
+        public void HandOverTo(Transform helper, Transform stairsDoor)
+        {
+            if (role != NPCRole.HoaFaint || !IsRescued || _state == State.Gone) return;
+            escortTarget = helper;
+            escortDistance = 0.7f;
+            _heldByHand = false;
+            _handoverDoor = stairsDoor;
+            StandUp();
+        }
+
+        /// <summary>True while Hoa, already helped, sits waiting for someone to lead her on.</summary>
+        public bool WaitingForHelp => role == NPCRole.HoaFaint && IsRescued && _seated && gameObject.activeInHierarchy;
+
         private void FollowEscort()
         {
             if (escortTarget == null)
             {
-                if (_heldByHand) return; // let go: she waits, bent low, for the rescuer to take her arm again
-                StartMoving(walkSpeed);
+                if (!_heldByHand) { StartMoving(walkSpeed); return; }
+                // let go: too weak to go on alone, she sits down again and waits for someone to lead her
+                if (!_seated) { _seated = true; _pose.Set(BodyPose.SitSlumped, 1.0f); }
                 return;
             }
-            // Once the rescuer is through the exit, walk out on her own the last metres.
-            if (_exitDoor == null) _exitDoor = FindFirstObjectByType<EscapeFire.Interactions.ExitDoor>();
-            bool doorOpen = _exitDoor == null || _exitDoor.IsOpen;
-            if (doorOpen && exitDoorTarget != null && HorizontalDistance(escortTarget.position, exitDoorTarget.position) < 1.5f)
+            if (_seated) { StandUp(); return; } // taken by the arm again
+            if (_handoverDoor != null && HorizontalDistance(transform.position, _handoverDoor.position) < 1.3f) // right behind the helper at the door
             {
-                StartMoving(walkSpeed);
+                _state = State.Gone;
+                EventBus<MentorMessageEvent>.Publish(new MentorMessageEvent("Minh đang dìu Hoa xuống thang bộ B."));
+                gameObject.SetActive(false);
                 return;
+            }
+            // Led by a non-hand target (logic tests): walk out on her own once at the open exit.
+            if (!_heldByHand && _handoverDoor == null)
+            {
+                if (_exitDoor == null) _exitDoor = FindFirstObjectByType<EscapeFire.Interactions.ExitDoor>();
+                bool doorOpen = _exitDoor == null || _exitDoor.IsOpen;
+                if (doorOpen && exitDoorTarget != null && HorizontalDistance(escortTarget.position, exitDoorTarget.position) < 1.5f)
+                {
+                    StartMoving(walkSpeed);
+                    return;
+                }
             }
             Vector3 target = escortTarget.position;
             target.y = transform.position.y;
@@ -183,7 +240,8 @@ namespace EscapeFire.NPC
             float dist = toTarget.magnitude;
             if (dist > escortDistance)
             {
-                float speed = Mathf.Lerp(walkSpeed, walkSpeed * 1.6f, Mathf.Clamp01((dist - escortDistance) / 2f));
+                // weak: slow, bent low, never faster than a supported shuffle
+                float speed = _heldByHand || _handoverDoor != null ? weakWalkSpeed : Mathf.Lerp(walkSpeed, walkSpeed * 1.6f, Mathf.Clamp01((dist - escortDistance) / 2f));
                 transform.position = Vector3.MoveTowards(transform.position, target - toTarget / dist * escortDistance, speed * Time.deltaTime);
                 SnapToGround();
             }
@@ -229,12 +287,5 @@ namespace EscapeFire.NPC
                 Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(toTarget.normalized, Vector3.up), 10f * Time.deltaTime));
         }
 
-        /// <summary>Procedural faint (no animation clip needed): tip the body over onto the floor around the feet.</summary>
-        private void LieDown()
-        {
-            visualRoot.SetLocalPositionAndRotation(
-                visualRoot.localPosition + new Vector3(0f, 0.15f, 0f),
-                _standingRotation * Quaternion.Euler(-90f, 0f, 0f));
-        }
     }
 }

@@ -108,7 +108,7 @@ namespace EscapeFire.Tests.PlayMode.XR
         [UnityTest, Timeout(300000)]
         public IEnumerator Rautek_TwoHandsRequired_DragIntoStairwell_HeadKeptLow()
         {
-            yield return Setup(TrainingMode.Guided, new Vector3(0.6f, 0f, -12.35f), 90f);
+            yield return Setup(TrainingMode.Guided, new Vector3(0.75f, 0f, -12.3f), 270f);
             var v = Rescue("Victim_Nam").GetComponent<VictimBody>();
             Shot("rautek_01_victim_in_the_corridor");
 
@@ -141,7 +141,7 @@ namespace EscapeFire.Tests.PlayMode.XR
         {
             yield return Setup(TrainingMode.Guided, new Vector3(0.2f, 0f, -8.3f), 180f);
             var minh = Object.FindFirstObjectByType<PanicRunner>();
-            yield return Xr.Wait(13f);
+            yield return Xr.Wait(16f);
             Assert.IsTrue(minh.Trapped, "nobody stopped him: he took the lift and is stuck");
         }
     }

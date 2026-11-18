@@ -54,6 +54,33 @@ namespace EscapeFire.Tests.PlayMode.XR
 
         private void Look(Vector3 target) => Xr.LookAt(_eye, target);
 
+        /// <summary>
+        /// Pushes a door leaf open along its arc while stepping in after it, so the hand never gets further than an
+        /// arm's length (~0.55 m horizontally) from the head. The other hand (supporting someone) moves with the body.
+        /// </summary>
+        private IEnumerator PushDoorWalking(Hand hand, Vector3 hinge, float degrees, float seconds)
+        {
+            Hand other = hand == Hand.Left ? Hand.Right : Hand.Left;
+            Vector3 start = Xr.HandPosition(hand);
+            Quaternion rot = Xr.HandRotation(hand);
+            for (float t = 0f; t <= seconds; t += Time.deltaTime)
+            {
+                Quaternion q = Quaternion.AngleAxis(degrees * Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t / seconds)), Vector3.up);
+                Vector3 h = hinge + q * (start - hinge);
+                Vector3 flat = new Vector3(h.x - _eye.x, 0f, h.z - _eye.z);
+                if (flat.magnitude > 0.55f)
+                {
+                    Vector3 step = flat - flat.normalized * 0.55f;
+                    Xr.SetHand(other, Xr.HandPosition(other) + step, Xr.HandRotation(other));
+                    _eye += step;
+                }
+                Xr.SetHead(_eye, Quaternion.LookRotation(Flat(h - _eye)));
+                Xr.SetHand(hand, h, q * rot);
+                yield return null;
+            }
+            yield return Xr.Wait(0.1f);
+        }
+
         private IEnumerator SetEyeHeight(float h)
         {
             float from = _eyeHeight;
@@ -196,10 +223,17 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return SetEyeHeight(0.95f);
             Look(gp);
             yield return GripAt(Hand.Right, grip.GripPoint, 0.6f);
-            yield return Xr.Wait(0.4f);
+            // she gets up slowly: the supporting hand rises with her shoulder while the rescuer stands up too
+            for (float t = 0f; t < 1.5f; t += Time.deltaTime)
+            {
+                _eyeHeight = Mathf.Lerp(0.95f, 1.15f, t / 1.5f); // stays low in the smoke
+                _eye.y = _eyeHeight;
+                Xr.SetHead(_eye, Quaternion.LookRotation(Flat(grip.GripPoint - _eye)));
+                Xr.SetHand(Hand.Right, grip.GripPoint + Vector3.down * 0.05f, Xr.HandRotation(Hand.Right));
+                yield return null;
+            }
             Shot("08_helping_hoa_up");
             Assert.IsTrue(hoa.IsRescued && grip.IsSupported, "Hoa helped up by the arm");
-            yield return SetEyeHeight(1.15f);
             Vector3 doorPt = exitDoor.transform.position;
             yield return WalkTo(0.6f, new Vector3(EastAisleX, 0f, FrontRowZ), new Vector3(doorPt.x + 0.45f, 0f, doorPt.z + 0.75f));
             Shot("09_leading_hoa_to_the_door");
@@ -218,13 +252,14 @@ namespace EscapeFire.Tests.PlayMode.XR
             var hp = leftHinge.Find("EF_HandlePivotIn");
             yield return GripAt(Hand.Left, hp.Find("GrabPoint").position, 0.4f);
             yield return ArcMove(Hand.Left, hp.position, hp.forward, 40f, 0.5f);
-            yield return ArcMove(Hand.Left, leftHinge.position, Vector3.up, 95f, 1.0f);
+            yield return PushDoorWalking(Hand.Left, leftHinge.position, 95f, 1.8f); // steps in with the door, arm within reach
             yield return Release(Hand.Left);
             Shot("11_door_open");
             Assert.IsTrue(exitDoor.IsOpen, "door opened: handle turned, leaf pushed");
 
             // ---- 8. through the door into the floor-3 corridor (Hoa follows out of the lab), walk up to stairwell A
-            yield return WalkTo(0.7f, new Vector3(0.3f, 0f, doorPt.z + 0.4f), new Vector3(0.3f, 0f, -8.2f), new Vector3(0.2f, 0f, -10f));
+            // just outside the lab: Minh is at the lift, so Hoa is set down here and the learner runs to stop him
+            yield return WalkTo(0.6f, new Vector3(0.3f, 0f, doorPt.z + 0.4f), new Vector3(0.3f, 0f, -8.3f));
             yield return SetEyeHeight(1.6f);
             yield return Xr.Wait(0.5f);
             Look(new Vector3(0f, 1f, -5f));
@@ -235,7 +270,7 @@ namespace EscapeFire.Tests.PlayMode.XR
                 $"Hoa came out through the open door with the rescuer (at {hoa.transform.position})");
 
             // From here on the learner stays at this spot of the play area and moves with the thumbstick.
-            yield return Release(Hand.Right); // let go of Hoa's arm (she walks on to the stairs with the others)
+            yield return Release(Hand.Right); // set Hoa down by the wall: she sits and waits; Minh will help her down
             Vector3 spot = Xr.TrackingSpace.InverseTransformPoint(Xr.HeadPosition);
             PlayAreaSpot = new Vector3(spot.x, 0f, spot.z);
 
@@ -244,10 +279,11 @@ namespace EscapeFire.Tests.PlayMode.XR
 
             // ---- 10. Nam lies unconscious by stairwell A: Rautek drag into the protected stairwell
             var nam = GameObject.Find("[RESCUE_V3]").transform.Find("Victim_Nam").GetComponent<VictimBody>();
-            yield return StickWalk(new Vector3(0.6f, 0f, -12.35f));
+            yield return StickWalk(new Vector3(0.75f, 0f, -11.9f)); // beside Nam
             yield return RautekIntoStairwellA(nam, "14_rautek_");
             Xr.Grip(Hand.Left, false); Xr.Grip(Hand.Right, false);
             yield return Xr.Wait(0.3f);
+            Assert.IsFalse(hoa.gameObject.activeInHierarchy, "Hoa was not left behind: Minh helped her down stairwell B");
 
             // ---- 11. stairs, not the lift: thumbstick on down two storeys (gravity on the flights)
             var building = GameObject.Find("[BUILDING_V2]").transform;

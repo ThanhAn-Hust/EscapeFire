@@ -27,7 +27,8 @@ namespace EscapeFire.EditorTools
 
         /// <summary>Stairwell A past the floor-3 fire door (landing + first flight): the protected space a victim is dragged into.</summary>
         public static readonly Bounds StairwellALanding = new Bounds(new Vector3(0f, -0.25f, -14.875f), new Vector3(2.6f, 3.5f, 3.25f));
-        public static readonly Vector3 VictimHeels = new Vector3(2.55f, 0f, -12.35f);
+        // V6: he collapsed just before the stairwell A door, head towards it (dragged head first straight through)
+        public static readonly Vector3 VictimHeels = new Vector3(0.3f, 0f, -11.15f);
 
         [MenuItem("EscapeFire/V3/Build Rescue Scenario (rebuilds V2 building too)")]
         public static void Run()
@@ -66,6 +67,7 @@ namespace EscapeFire.EditorTools
             }
             log.Add($"teleport areas set to the Teleport layer: {fixedAreas}");
             BuildingDressing.Build(log); // V6 graphics: ceilings, frames, signs, facade, yard
+            SoundSetup.Apply(log);       // V6 sound: fire, explosion, alarm bell, extinguishers, breaker
             log.Add($"static-batched building pieces: {MarkStatic()}");
             log.Add("V3: sink + tap + towel, radio + 114 dialogue, victim Nam (Rautek), Minh at the lift, roll call board, wall-follow tracker");
         }
@@ -228,7 +230,7 @@ namespace EscapeFire.EditorTools
         {
             var v = new GameObject("Victim_Nam").transform;
             v.SetParent(root, false);
-            v.SetPositionAndRotation(VictimHeels, Quaternion.LookRotation(Vector3.left)); // heels east, head west towards the stairwell door
+            v.SetPositionAndRotation(VictimHeels, Quaternion.LookRotation(Vector3.back)); // heels north, head south at the stairwell door
             var tilt = new GameObject("Tilt").transform;
             tilt.SetParent(v, false);
             var model = Person("SM_Chr_Developer_Male_02.prefab", "Person_Visual", tilt);
@@ -257,7 +259,7 @@ namespace EscapeFire.EditorTools
             Pose(model);
             var lift = Object.FindFirstObjectByType<ElevatorTrap>();
             var building = GameObject.Find("[BUILDING_V2]");
-            var stairs = building != null ? building.transform.Find("StairwellA/FireDoor_F3") : null;
+            var stairs = building != null ? building.transform.Find("StairwellB/FireDoor_F3") : null; // A is for Nam's drag
             m.gameObject.AddComponent<PanicRunner>().Configure(lift, stairs, new Bounds(new Vector3(0f, 1.2f, -10.2f), new Vector3(6f, 3f, 6f)));
         }
 

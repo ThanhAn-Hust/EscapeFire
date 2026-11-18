@@ -32,7 +32,7 @@ namespace EscapeFire.NPC
         private void Awake()
         {
             _npc = GetComponent<NPCSimulator>();
-            foreach (var t in GetComponentsInChildren<Transform>(true))
+            foreach (var t in GetComponentsInChildren<Transform>()) // the shown model (an NPC holds several)
                 if (t.name == "Shoulder_R" || t.name == "Shoulder_L") { _armpit = t; break; }
         }
 

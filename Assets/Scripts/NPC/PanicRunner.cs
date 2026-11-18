@@ -18,7 +18,7 @@ namespace EscapeFire.NPC
         [SerializeField] private ElevatorTrap elevator;
         [SerializeField] private Transform stairsDoor;       // where he goes when stopped
         [SerializeField] private Bounds triggerSpace;         // learner's head entering this wakes the scene up
-        [SerializeField] private float carArrivesAfter = 9f;
+        [SerializeField] private float carArrivesAfter = 12f; // lift doors open 10 s after he starts pressing: a fair chance even while helping someone
         [SerializeField] private float reach = 0.3f;
         [SerializeField] private float walkSpeed = 1.3f;
         [SerializeField] private string displayName = "Minh";
@@ -36,6 +36,9 @@ namespace EscapeFire.NPC
         public Vector3 ShoulderPoint => _shoulder != null ? _shoulder.position : transform.position + Vector3.up * 1.35f;
 
         private bool _armed;
+        private NpcBodyPose _pose;
+        private NPCSimulator _hoa;
+        private bool _withHoa;
 
         /// <summary>V4 NPC_BEHAVIOUR piece: Minh rushes to the lift now, wherever the learner is.</summary>
         public void Arm() => _armed = true;
@@ -47,9 +50,11 @@ namespace EscapeFire.NPC
 
         private void Awake()
         {
-            foreach (var t in GetComponentsInChildren<Transform>(true))
+            foreach (var t in GetComponentsInChildren<Transform>()) // the shown model
                 if (t.name == "Shoulder_R") { _shoulder = t; break; }
             _walk = GetComponentInChildren<ProceduralWalk>();
+            _pose = GetComponent<NpcBodyPose>();
+            if (_pose == null) _pose = gameObject.AddComponent<NpcBodyPose>();
             SetVisible(false);
         }
 
@@ -75,6 +80,7 @@ namespace EscapeFire.NPC
                     if (!emergency || (!_armed && !triggerSpace.Contains(_head.position))) return;
                     _state = State.AtButton;
                     SetVisible(true);
+                    _pose.Set(BodyPose.PressButton, 0.3f); // jabbing the call button
                     if (elevator != null) elevator.CallByNpc(carArrivesAfter - 2f);
                     Say($"[{displayName}] Thang máy! Thang máy nhanh hơn! Sao nó chưa lên?!");
                     if (GameSession.Mode == TrainingMode.Guided)
@@ -82,9 +88,10 @@ namespace EscapeFire.NPC
                     break;
 
                 case State.AtButton:
+                    _pose.Jab = Mathf.PingPong(Time.time * 3f, 1f);
                     if (Gripped())
                     {
-                        _state = State.Stopped;
+                        Stop();
                         Say($"[{displayName}] ...Ừ, cháy thì không đi thang máy. Mình xuống thang bộ!");
                         return;
                     }
@@ -92,7 +99,7 @@ namespace EscapeFire.NPC
                     break;
 
                 case State.EnteringCar:
-                    if (Gripped()) { _state = State.Stopped; Say($"[{displayName}] Được rồi, mình đi thang bộ."); return; }
+                    if (Gripped()) { Stop(); Say($"[{displayName}] Được rồi, mình đi thang bộ."); return; }
                     if (WalkTo(elevator.Car.center))
                     {
                         _state = State.Trapped;
@@ -102,16 +109,34 @@ namespace EscapeFire.NPC
                     break;
 
                 case State.Stopped:
+                    // Hoa sits weak in the corridor: he helps her up and takes her down the stairs with him
+                    if (!_withHoa && _hoa != null && _hoa.WaitingForHelp)
+                    {
+                        if (!WalkTo(_hoa.transform.position, 0.8f)) break;
+                        _withHoa = true;
+                        _hoa.HandOverTo(transform, stairsDoor);
+                        Say($"[{displayName}] Hoa, bám vào mình! Mình dìu bạn xuống thang bộ.");
+                        walkSpeed = 0.6f; // her pace
+                        break;
+                    }
                     if (stairsDoor == null || WalkTo(stairsDoor.position)) { _state = State.Gone; SetVisible(false); }
                     break;
             }
         }
 
-        private bool WalkTo(Vector3 target)
+        private void Stop()
+        {
+            _state = State.Stopped;
+            _pose.Set(BodyPose.None, 0.3f);
+            foreach (var n in FindObjectsByType<NPCSimulator>(FindObjectsSortMode.None)) if (n.Role == NPCRole.HoaFaint) _hoa = n;
+            Debug.Log($"[NPC] {displayName} stopped; Hoa {(_hoa == null ? "not found" : $"waiting={_hoa.WaitingForHelp} active={_hoa.gameObject.activeInHierarchy} rescued={_hoa.IsRescued} at {_hoa.transform.position}")}");
+        }
+
+        private bool WalkTo(Vector3 target, float arrive = 0.3f)
         {
             target.y = transform.position.y;
             Vector3 d = target - transform.position;
-            if (d.magnitude < 0.3f) { if (_walk != null) _walk.enabled = false; return true; }
+            if (d.magnitude < arrive) { if (_walk != null) _walk.enabled = false; return true; }
             if (_walk != null) _walk.enabled = true;
             transform.SetPositionAndRotation(Vector3.MoveTowards(transform.position, target, walkSpeed * Time.deltaTime),
                 Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(d.normalized, Vector3.up), 8f * Time.deltaTime));

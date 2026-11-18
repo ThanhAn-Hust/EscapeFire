@@ -145,13 +145,22 @@ namespace EscapeFire.NPC
             if (d.sqrMagnitude > 1e-4f)
             {
                 Vector3 dir = d.normalized;
-                if (gap > 0f)
+                Vector3 newHeels = heels;
+                if (gap > 0f) newHeels = heels + dir * Mathf.Min(gap, maxDragSpeed * Time.deltaTime);
+                Quaternion newRot = Quaternion.LookRotation(dir, Vector3.up);
+                // the body is solid: it does not pass through walls or door frames (it snags and the rescuer must
+                // line it up with the doorway)
+                if (BodyFits(newHeels, newRot))
                 {
-                    Vector3 step = dir * Mathf.Min(gap, maxDragSpeed * Time.deltaTime);
-                    transform.position = heels + step;
-                    DragDistance += step.magnitude;
+                    DragDistance += (newHeels - heels).magnitude;
+                    transform.SetPositionAndRotation(newHeels, newRot);
                 }
-                transform.rotation = Quaternion.LookRotation(dir, Vector3.up);
+                else if (BodyFits(heels, newRot)) transform.rotation = newRot;
+                else if (!_snagHint)
+                {
+                    _snagHint = true;
+                    Say($"{victimName} bị vướng vào tường / khung cửa. Lùi thẳng hướng cửa để thân bạn ấy đi qua khung cửa.");
+                }
             }
             SnapToGround();
 
@@ -162,6 +171,29 @@ namespace EscapeFire.NPC
                 _headHint = true;
                 Say($"Giữ đầu {victimName} thấp — khói và khí nóng ở trên cao. Kéo lê sát sàn, đừng bế đứng.");
             }
+        }
+
+        private bool _snagHint;
+        private static readonly Collider[] _overlap = new Collider[16];
+
+        /// <summary>True if the lying body (heels → head) at this place does not cut into a wall or a solid object.</summary>
+        private bool BodyFits(Vector3 heels, Quaternion rot)
+        {
+            Vector3 along = rot * Vector3.forward;
+            for (float s = 0.15f; s <= headLength - 0.1f; s += 0.35f)
+            {
+                Vector3 p = heels + along * s + Vector3.up * 0.25f;
+                int n = Physics.OverlapSphereNonAlloc(p, 0.13f, _overlap, ~0, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < n; i++)
+                {
+                    var c = _overlap[i];
+                    if (c.transform.IsChildOf(transform) || c is CharacterController) continue;
+                    if (c.GetComponentInParent<XROrigin>() != null || c.GetComponentInParent<NPCSimulator>() != null || c.GetComponentInParent<PanicRunner>() != null) continue;
+                    if (c.attachedRigidbody != null && !c.attachedRigidbody.isKinematic) continue; // loose objects get pushed
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void SnapToGround()

@@ -18,10 +18,10 @@ namespace EscapeFire.Tests.PlayMode.XR
             yield return LoadLab();
             LabProgressiveScenarioController.Instance.SetPhase(ScenarioPhase.Phase2_ServerExplosionFire);
             foreach (var n in Object.FindObjectsByType<NPCSimulator>(FindObjectsSortMode.None)) if (n.Role == NPCRole.HoaFaint) _hoa = n;
-            _hoa.TriggerEmergencyReaction(); // scenario: she has fainted (not a learner action)
+            _hoa.TriggerEmergencyReaction(); // scenario: she is overcome by smoke (not a learner action)
             _grip = _hoa.GetComponent<EscortGrip>();
             Assert.IsNotNull(_grip, "Run EscapeFire > V0 > Setup Realistic Rig");
-            yield return Xr.Wait(0.3f);
+            yield return Xr.Wait(1.9f); // she sinks down and sits slumped
             Vector3 g = _grip.GripPoint;
             Vector3 eye = new Vector3(g.x + 0.55f, eyeHeight, g.z - 0.35f);
             yield return StandAt(eye, g);
